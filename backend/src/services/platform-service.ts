@@ -2,14 +2,16 @@ import { randomUUID } from "node:crypto";
 import type { Store } from "../repositories/store.js";
 import type { ListOptions, ResourceRecord } from "../types/domain.js";
 
-type ResourceName = "investigations" | "detection_rules" | "hunts" | "connectors" | "remediations";
+type ResourceName = "investigations" | "detection_rules" | "hunts" | "connectors" | "remediations" | "threat_intel_reports" | "threat_indicators";
 
 const PREFIX: Record<ResourceName, string> = {
   investigations: "INV",
   detection_rules: "RULE",
   hunts: "HUNT",
   connectors: "CON",
-  remediations: "REM"
+  remediations: "REM",
+  threat_intel_reports: "TIR",
+  threat_indicators: "IOC"
 };
 
 export class PlatformService {
@@ -69,6 +71,37 @@ export class PlatformService {
       enabledDetectionRules: this.store.count("detection_rules", tenantId, "enabled = 1"),
       operationalConnectors: this.store.count("connectors", tenantId, "status = 'operational'"),
       recentInvestigations: this.list("investigations", tenantId, { limit: 5 })
+    };
+  }
+
+  threatIntelDetail(tenantId: string, id: string): Record<string, unknown> | undefined {
+    const report = this.get("threat_intel_reports", tenantId, id);
+    if (!report) return undefined;
+    return { ...report, indicators: this.store.list("threat_indicators", tenantId, { reportId: id }) };
+  }
+
+  launchThreatHunt(tenantId: string, id: string): ResourceRecord | undefined {
+    const report = this.get("threat_intel_reports", tenantId, id);
+    if (!report) return undefined;
+    return this.update("threat_intel_reports", tenantId, id, {
+      hunt_status: "hunting",
+      hunts_launched: Number(report.hunts_launched) + 1
+    });
+  }
+
+  threatIntelDashboard(tenantId: string): Record<string, unknown> {
+    const reports = this.list("threat_intel_reports", tenantId, { limit: 500 });
+    const indicators = this.list("threat_indicators", tenantId, { limit: 500 });
+    const bySource: Record<string, number> = {};
+    for (const r of reports) bySource[String(r.source)] = (bySource[String(r.source)] || 0) + 1;
+    return {
+      totalReports: reports.length,
+      totalIndicators: indicators.length,
+      indicatorsWithHits: indicators.filter((i) => Number(i.hits) > 0).length,
+      activeHunts: reports.filter((r) => r.hunt_status === "hunting").length,
+      findingsTotal: reports.reduce((sum, r) => sum + Number(r.findings_count), 0),
+      reportsBySource: bySource,
+      recentReports: reports.slice(0, 5)
     };
   }
 }

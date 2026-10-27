@@ -4,7 +4,8 @@ import type { ListOptions, ResourceRecord } from "../types/domain.js";
 const JSON_FIELDS: Record<string, string[]> = {
   artifacts: ["metadata_json"],
   detection_rules: ["mitre_techniques_json"],
-  connectors: ["config_json"]
+  connectors: ["config_json"],
+  threat_intel_reports: ["tags_json"]
 };
 
 const SECRET_FIELDS = new Set(["secret_ciphertext"]);
@@ -14,16 +15,20 @@ const MUTABLE_FIELDS: Record<string, Set<string>> = {
   detection_rules: new Set(["name", "description", "mitre_techniques", "execution_mode", "enabled", "severity", "detections", "investigations", "false_positive_rate", "recommendation_status", "last_activity_at"]),
   hunts: new Set(["name", "query", "source", "status", "verdict", "findings_count", "last_run_at"]),
   connectors: new Set(["type", "name", "description", "workspace_url", "client_id", "secret", "config", "status", "last_tested_at"]),
-  remediations: new Set(["investigation_id", "action_type", "title", "description", "connector", "status", "executed_at"])
+  remediations: new Set(["investigation_id", "action_type", "title", "description", "connector", "status", "executed_at"]),
+  threat_intel_reports: new Set(["title", "summary", "source", "report_type", "severity", "status", "ioc_count", "hunt_status", "hunts_launched", "findings_count", "tags", "published_at"]),
+  threat_indicators: new Set(["report_id", "indicator_type", "value", "severity", "status", "hits", "last_seen_at"])
 };
-const STATUS_TABLES = new Set(["investigations", "hunts", "connectors", "remediations"]);
-const SEVERITY_TABLES = new Set(["investigations", "detection_rules"]);
+const STATUS_TABLES = new Set(["investigations", "hunts", "connectors", "remediations", "threat_intel_reports", "threat_indicators"]);
+const SEVERITY_TABLES = new Set(["investigations", "detection_rules", "threat_intel_reports", "threat_indicators"]);
 const SEARCH_FIELDS: Record<string, string[]> = {
   investigations: ["title", "source", "primary_entity"],
   detection_rules: ["name", "description"],
   hunts: ["name", "query"],
   connectors: ["name", "description"],
-  remediations: ["title", "description"]
+  remediations: ["title", "description"],
+  threat_intel_reports: ["title", "summary", "source"],
+  threat_indicators: ["value", "indicator_type"]
 };
 
 export class Store {
@@ -35,6 +40,7 @@ export class Store {
     if (options.status && STATUS_TABLES.has(table)) { clauses.push("status = ?"); params.push(options.status); }
     if (options.severity && SEVERITY_TABLES.has(table)) { clauses.push("severity = ?"); params.push(options.severity); }
     if (options.investigationId && ["artifacts", "remediations"].includes(table)) { clauses.push("investigation_id = ?"); params.push(options.investigationId); }
+    if (options.reportId && table === "threat_indicators") { clauses.push("report_id = ?"); params.push(options.reportId); }
     if (options.search) {
       const fields = SEARCH_FIELDS[table] ?? [];
       clauses.push(`(${fields.map((field) => `${field} LIKE ?`).join(" OR ")})`);

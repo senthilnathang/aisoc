@@ -118,10 +118,48 @@ function migrate(db: DatabaseSync): void {
       FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS threat_intel_reports (
+      id TEXT NOT NULL,
+      tenant_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      summary TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL DEFAULT '7AI',
+      report_type TEXT NOT NULL DEFAULT 'threat_report' CHECK (report_type IN ('threat_report','advisory','ioc_feed','hunt_pack')),
+      severity TEXT NOT NULL CHECK (severity IN ('low','medium','high','critical')),
+      status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','reviewing','actionable','archived')),
+      ioc_count INTEGER NOT NULL DEFAULT 0,
+      hunt_status TEXT NOT NULL DEFAULT 'not_started' CHECK (hunt_status IN ('not_started','hunting','completed','no_findings')),
+      hunts_launched INTEGER NOT NULL DEFAULT 0,
+      findings_count INTEGER NOT NULL DEFAULT 0,
+      tags_json TEXT NOT NULL DEFAULT '[]',
+      published_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (tenant_id, id)
+    );
+
+    CREATE TABLE IF NOT EXISTS threat_indicators (
+      id TEXT NOT NULL,
+      tenant_id TEXT NOT NULL,
+      report_id TEXT NOT NULL,
+      indicator_type TEXT NOT NULL CHECK (indicator_type IN ('ip','domain','hash_sha256','hash_md5','url','email','cve')),
+      value TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'medium',
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','mitigated','expired','false_positive')),
+      hits INTEGER NOT NULL DEFAULT 0,
+      last_seen_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (tenant_id, id),
+      FOREIGN KEY (tenant_id, report_id) REFERENCES threat_intel_reports(tenant_id, id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_investigations_tenant_status ON investigations(tenant_id, status);
     CREATE INDEX IF NOT EXISTS idx_remediations_investigation ON remediations(tenant_id, investigation_id);
     CREATE INDEX IF NOT EXISTS idx_rules_tenant_enabled ON detection_rules(tenant_id, enabled);
-    INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (1, datetime('now'));
+    CREATE INDEX IF NOT EXISTS idx_threat_intel_tenant_status ON threat_intel_reports(tenant_id, status);
+    CREATE INDEX IF NOT EXISTS idx_indicators_report ON threat_indicators(tenant_id, report_id);
+    INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (2, datetime('now'));
   `);
 }
 
@@ -166,4 +204,42 @@ function seed(db: DatabaseSync): void {
     ["REM-001", "INV-4814", "revoke_sessions", "Revoke all active sessions", "Invalidate browser and refresh tokens.", "Microsoft Defender"],
     ["REM-002", "INV-4814", "isolate_device", "Quarantine Setu.exe on OKAMI-FIN-074", "Isolate endpoint and quarantine SHA-256.", "Microsoft Defender"]
   ]) insertRemediation.run(...row, now, now);
+
+  const insertReport = db.prepare(`INSERT INTO threat_intel_reports
+    (id, tenant_id, title, summary, source, report_type, severity, status, ioc_count, hunt_status, hunts_launched, findings_count, tags_json, published_at, created_at, updated_at)
+    VALUES (?, 'demo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const reports: [string, string, string, string, string, string, string, number, string, number, number, string, string][] = [
+    ["TIR-001", "CRXfiltrate — Remote-Controlled Manifest V3 Browser Extensions", "Backdoored Chrome extensions using Manifest V3 exfiltrate browser data through covert update channels.", "7AI Threat Intelligence", "threat_report", "critical", "actionable", 12, "completed", 2, 3, '["browser","extension","exfiltration"]', "2026-10-20T14:00:00Z"],
+    ["TIR-002", "APT42 — Gov Phishing Wave", "Iranian state-sponsored group targeting government contractors with credential-harvesting campaigns.", "7AI Threat Intelligence", "advisory", "high", "actionable", 8, "completed", 1, 1, '["apt42","phishing","government"]', "2026-10-18T09:30:00Z"],
+    ["TIR-003", "Click, Install, Compromise: The New Wave of Zoom-Themed Attacks", "Threat actors distributing trojanized Zoom installers through SEO-poisoned search results.", "Google Threat Intelligence", "threat_report", "high", "reviewing", 6, "hunting", 1, 0, '["zoom","trojan","seo-poisoning"]', "2026-10-22T11:15:00Z"],
+    ["TIR-004", "UNC1549 — Aerospace Harvest", "Espionage cluster targeting aerospace and defense supply chain via compromised vendor portals.", "Google Threat Intelligence", "advisory", "medium", "archived", 4, "no_findings", 1, 0, '["unc1549","aerospace","supply-chain"]', "2026-10-10T08:00:00Z"],
+    ["TIR-005", "Lumma Stealer C2 Infrastructure Update", "New Lumma Stealer command-and-control domains and IPs observed rotating across bulletproof hosting.", "7AI Threat Intelligence", "ioc_feed", "critical", "actionable", 15, "completed", 3, 5, '["lumma","stealer","c2"]', "2026-10-21T16:45:00Z"],
+    ["TIR-006", "CVE-2026-42897 — Microsoft Exchange Server XSS / Spoofing Vulnerability", "Unauthenticated cross-site scripting allowing session hijack on OWA; public exploit available.", "NIST NVD", "advisory", "high", "new", 3, "not_started", 0, 0, '["cve","exchange","xss"]', "2026-10-23T12:00:00Z"],
+    ["TIR-007", "Black Basta Ransomware TTPs — Q4 2026", "Updated playbook covering Black Basta initial access via QakBot, lateral movement, and double extortion.", "Mandiant", "hunt_pack", "critical", "reviewing", 9, "hunting", 2, 0, '["black-basta","ransomware","qakbot"]', "2026-10-19T10:00:00Z"],
+    ["TIR-008", "Cobalt Strike Malleable C2 Profiles", "Newly observed Cobalt Strike profiles mimicking CDN and cloud API traffic patterns.", "Recorded Future", "ioc_feed", "high", "actionable", 11, "completed", 2, 2, '["cobalt-strike","c2","malleable"]', "2026-10-15T13:30:00Z"]
+  ];
+  for (const row of reports) insertReport.run(...row, now, now);
+
+  const insertIndicator = db.prepare(`INSERT INTO threat_indicators
+    (id, tenant_id, report_id, indicator_type, value, severity, status, hits, last_seen_at, created_at, updated_at)
+    VALUES (?, 'demo', ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const indicators: [string, string, string, string, string, string, number, string | null][] = [
+    ["IOC-001", "TIR-001", "domain", "crx-update.cloudgateway.cc", "critical", "active", 2, now],
+    ["IOC-002", "TIR-001", "domain", "ext-telemetry.appcdn.services", "critical", "active", 1, now],
+    ["IOC-003", "TIR-001", "hash_sha256", "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", "high", "active", 3, now],
+    ["IOC-004", "TIR-002", "domain", "gov-auth-portal.iranianhost.top", "high", "active", 0, null],
+    ["IOC-005", "TIR-002", "ip", "185.220.101.45", "high", "active", 2, now],
+    ["IOC-006", "TIR-003", "domain", "zoom-download-center.com", "high", "active", 0, null],
+    ["IOC-007", "TIR-003", "hash_sha256", "f7e8d9c0b1a2f7e8d9c0b1a2f7e8d9c0b1a2f7e8d9c0b1a2f7e8d9c0b1a2f7e8", "high", "active", 0, null],
+    ["IOC-008", "TIR-004", "ip", "103.224.182.250", "medium", "expired", 0, null],
+    ["IOC-009", "TIR-005", "ip", "45.83.12.9", "critical", "active", 2, now],
+    ["IOC-010", "TIR-005", "domain", "releases.cloudgateway.cc", "critical", "active", 1, now],
+    ["IOC-011", "TIR-005", "hash_md5", "31fc9a2b7e4d8f1a0c6e3b9d5a7f2c8e", "high", "active", 1, now],
+    ["IOC-012", "TIR-006", "cve", "CVE-2026-42897", "high", "active", 0, null],
+    ["IOC-013", "TIR-007", "domain", "qakbot-c2-node.darkhost.xyz", "critical", "active", 0, null],
+    ["IOC-014", "TIR-007", "ip", "194.36.189.72", "critical", "active", 0, null],
+    ["IOC-015", "TIR-008", "ip", "104.21.79.237", "high", "active", 2, now],
+    ["IOC-016", "TIR-008", "domain", "cdn-api-gateway.azureedge.cc", "high", "mitigated", 4, now]
+  ];
+  for (const row of indicators) insertIndicator.run(...row, now, now);
 }

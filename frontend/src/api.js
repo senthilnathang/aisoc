@@ -52,6 +52,11 @@ class ApiClient {
   testConnector(id) { return this.action("connectors", id, "test"); }
   remediations(query) { return this.list("remediations", query); }
   executeRemediation(id) { return this.action("remediations", id, "execute"); }
+  threatIntelDashboard() { return this.request("/threat-intel/dashboard"); }
+  threatIntelReports(query) { return this.list("threat-intel-reports", query); }
+  threatIntelReport(id) { return this.get("threat-intel-reports", id); }
+  launchThreatHunt(id) { return this.action("threat-intel-reports", id, "launch-hunt"); }
+  threatIndicators(query) { return this.list("threat-indicators", query); }
 }
 
 export const api = new ApiClient();

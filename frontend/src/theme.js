@@ -3,7 +3,7 @@ import { extendTheme } from "@chakra-ui/react";
 export const ui = {
   ink: "#151820",
   muted: "#667080",
-  quiet: "#949cab",
+  quiet: "#6a7385",
   page: "#f1f2f6",
   panel: "#ffffff",
   soft: "#f7f8fa",
