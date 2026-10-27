@@ -1,0 +1,24 @@
+{
+  "name": "sevenai-local-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/src/server.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "NODE_ENV=test tsx --test test/**/*.test.ts",
+    "db:reset": "tsx src/scripts/reset-database.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "10.0.2",
+    "@sinclair/typebox": "0.34.33",
+    "fastify": "^5.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.1",
+    "tsx": "4.19.3",
+    "typescript": "5.8.2"
+  }
+}

@@ -1,0 +1,151 @@
+@font-face {
+  font-family: Graphik;
+  src: url("/fonts/Graphik-Regular.woff") format("woff");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Graphik;
+  src: url("/fonts/Graphik-Bold.woff") format("woff");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Review Condensed";
+  src: url("/fonts/ReviewCondensed-Regular-Web.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Review Condensed";
+  src: url("/fonts/ReviewCondensed-Bold-Web.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-enter {
+  animation: enter 0.18s ease both;
+}
+.page-enter p {
+  font-size: 11px !important;
+  line-height: 1.48;
+}
+.page-enter th,
+.page-enter td {
+  font-size: 10px !important;
+}
+.page-enter .chakra-badge {
+  font-size: 9px !important;
+  padding: 4px 7px;
+}
+.chakra-button:focus-visible,
+.chakra-input:focus-visible,
+.chakra-select:focus-visible {
+  box-shadow: 0 0 0 2px #6056e8 !important;
+}
+.chakra-button:hover {
+  transform: translateY(-1px);
+}
+.response-row {
+  transition: background-color 0.16s ease, transform 0.16s ease;
+}
+.response-row:hover {
+  background: #fafaff;
+  transform: translateX(2px);
+}
+.metric-number {
+  font-family: "Review Condensed", "Arial Narrow", sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.thin-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #cbd0d9;
+}
+.sankey {
+  position: relative;
+  min-height: 330px;
+  overflow: hidden;
+  background: linear-gradient(#fff, #fbfcfd);
+}
+.sankey-flow {
+  position: absolute;
+  height: 34px;
+  transform-origin: left center;
+  border-radius: 50%;
+  opacity: 0.58;
+  filter: saturate(0.65);
+}
+.radar-grid {
+  background:
+    repeating-radial-gradient(
+      circle at center,
+      transparent 0,
+      transparent 24px,
+      #dfe2e8 25px,
+      #dfe2e8 26px
+    ),
+    linear-gradient(45deg, transparent 49.5%, #e6e8ed 50%, transparent 50.5%),
+    linear-gradient(-45deg, transparent 49.5%, #e6e8ed 50%, transparent 50.5%);
+}
+.spark-line {
+  height: 22px;
+  background: linear-gradient(
+      170deg,
+      transparent 45%,
+      #56bcb8 47%,
+      #56bcb8 49%,
+      transparent 51%
+    )
+    center/100% 100% no-repeat;
+}
+@media (max-width: 760px) {
+  .desktop-nav {
+    overflow-x: auto;
+    position: sticky;
+  }
+  .account-nav {
+    display: none !important;
+  }
+  .primary-nav {
+    min-width: max-content;
+  }
+  .main-content {
+    margin-left: 0 !important;
+  }
+  .tool-rail {
+    display: none !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+  .page-enter {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .page-enter p {
+    font-size: 12px !important;
+  }
+}

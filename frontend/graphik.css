@@ -1,0 +1,35 @@
+/* Graphik Font Family - Licensed for 7AI */
+
+@font-face {
+  font-family: 'Graphik';
+  src: url('/fonts/Graphik-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Graphik';
+  src: url('/fonts/Graphik-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Review Condensed Font Family */
+
+@font-face {
+  font-family: 'Review Condensed';
+  src: url('/fonts/ReviewCondensed-Regular-Web.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Review Condensed';
+  src: url('/fonts/ReviewCondensed-Bold-Web.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
