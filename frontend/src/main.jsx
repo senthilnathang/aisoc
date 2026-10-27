@@ -42,6 +42,44 @@ import { theme, ui } from "./theme";
 import { api } from "./api";
 import "./app.css";
 
+const I = ({ d, size = 14, color = "currentColor", ...props }) => (
+  <Box as="svg" width={`${size}px`} height={`${size}px`} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" display="inline-block" verticalAlign="middle" flexShrink={0} {...props}>
+    {typeof d === "string" ? <path d={d} /> : d}
+  </Box>
+);
+const Icon = {
+  search: (p) => <I {...p} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />,
+  filter: (p) => <I {...p} d={<polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" fill="none" stroke={p?.color || "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />} />,
+  bell: (p) => <I {...p} d={<><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></>} />,
+  chevronDown: (p) => <I {...p} d="M6 9l6 6 6-6" />,
+  chevronRight: (p) => <I {...p} d="M9 18l6-6-6-6" />,
+  chevronLeft: (p) => <I {...p} d="M15 18l-6-6 6-6" />,
+  arrowLeft: (p) => <I {...p} d={<><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12,19 5,12 12,5" /></>} />,
+  sort: (p) => <I {...p} size={p?.size || 10} d={<><path d="M7 15l5 5 5-5" /><path d="M7 9l5-5 5 5" /></>} />,
+  grid: (p) => <I {...p} d={<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>} />,
+  plus: (p) => <I {...p} d={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />,
+  settings: (p) => <I {...p} d={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" /></>} />,
+  user: (p) => <I {...p} d={<><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></>} />,
+  star: (p) => <I {...p} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />,
+  clock: (p) => <I {...p} d={<><circle cx="12" cy="12" r="10" /><polyline points="12,6 12,12 16,14" /></>} />,
+  play: (p) => <I {...p} d={<polygon points="5,3 19,12 5,21" fill="none" stroke={p?.color || "currentColor"} strokeWidth="2" strokeLinejoin="round" />} />,
+  refresh: (p) => <I {...p} d={<><polyline points="23,4 23,10 17,10" /><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" /></>} />,
+  eye: (p) => <I {...p} d={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>} />,
+  shield: (p) => <I {...p} d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+  zap: (p) => <I {...p} d={<polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="none" stroke={p?.color || "currentColor"} strokeWidth="2" strokeLinejoin="round" />} />,
+  activity: (p) => <I {...p} d="M22 12h-4l-3 9L9 3l-3 9H2" />,
+  alertCircle: (p) => <I {...p} d={<><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></>} />,
+  check: (p) => <I {...p} d="M20 6L9 17l-5-5" />,
+  x: (p) => <I {...p} d={<><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>} />,
+  externalLink: (p) => <I {...p} d={<><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15,3 21,3 21,9" /><line x1="10" y1="14" x2="21" y2="3" /></>} />,
+  messageSquare: (p) => <I {...p} d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />,
+  clipboard: (p) => <I {...p} d={<><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" /></>} />,
+  calendar: (p) => <I {...p} d={<><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></>} />,
+  target: (p) => <I {...p} d={<><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>} />,
+  layers: (p) => <I {...p} d={<><polygon points="12,2 2,7 12,12 22,7" /><polyline points="2,17 12,22 22,17" /><polyline points="2,12 12,17 22,12" /></>} />,
+  compass: (p) => <I {...p} d={<><circle cx="12" cy="12" r="10" /><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88" /></>} />,
+};
+
 const nav = ["Detect", "Investigate", "Respond", "Hunt", "Threat Intel", "Memory", "Build"];
 const viewForNav = {
   Detect: "detect",
@@ -152,7 +190,7 @@ function TopNav({ view, setView }) {
       </HStack>
       <HStack className="account-nav" ml="auto" spacing="18px" flexShrink="0">
         <Button variant="unstyled" fontSize="11px">
-          Enterprise Demo⌄
+          Enterprise Demo {Icon.chevronDown({ size: 10 })}
         </Button>
         <Button
           variant="unstyled"
@@ -163,11 +201,11 @@ function TopNav({ view, setView }) {
         </Button>
         <Box
           position="relative"
-          fontSize="13px"
           role="img"
           aria-label="Notifications"
+          cursor="pointer"
         >
-          ♧
+          {Icon.bell({ size: 16, color: "#c7cad2" })}
           <Badge
             position="absolute"
             top="-7px"
@@ -179,15 +217,17 @@ function TopNav({ view, setView }) {
           </Badge>
         </Box>
         <Flex
-          w="23px"
-          h="23px"
+          w="24px"
+          h="24px"
           rounded="full"
-          bg="#d8dbe2"
-          color="#606876"
+          bg="#6056e8"
+          color="white"
           align="center"
           justify="center"
+          fontSize="10px"
+          fontWeight="600"
         >
-          ●
+          WA
         </Flex>
         <Box className="hide-mobile">
           <Text fontSize="9px">Walter Abeson</Text>
@@ -195,7 +235,7 @@ function TopNav({ view, setView }) {
             7AI
           </Text>
         </Box>
-        <Text>⌄</Text>
+        {Icon.chevronDown({ size: 12, color: "#8c929f" })}
       </HStack>
     </Flex>
   );
@@ -221,10 +261,10 @@ function ToolRail() {
       color="#858d9b"
       fontSize="14px"
     >
-      <Text color={ui.violet}>✣</Text>
-      <Text>＋</Text>
-      <Text>⌁</Text>
-      <Text>↟</Text>
+      {Icon.grid({ size: 16, color: ui.violet })}
+      {Icon.plus({ size: 16 })}
+      {Icon.messageSquare({ size: 16 })}
+      {Icon.settings({ size: 16 })}
     </Flex>
   );
 }
@@ -237,8 +277,9 @@ function Breadcrumb({ section, title }) {
       color={ui.muted}
       fontSize="11px"
     >
+      {Icon.grid({ size: 13, color: ui.quiet })}
       <Text>{section}</Text>
-      <Text>›</Text>
+      {Icon.chevronRight({ size: 12, color: ui.quiet })}
       <Text color={ui.ink} fontWeight="600">
         {title}
       </Text>
@@ -341,10 +382,10 @@ function QueueDashboard({ setView }) {
           There Are {dashboard.queueItems} Items In Your Queue:
         </Heading>
         <Badge ml="15px" bg="white" color={ui.ink}>
-          ＋ {dashboard.openInvestigations} open cases
+          {Icon.alertCircle({ size: 11 })} {dashboard.openInvestigations} open cases
         </Badge>
         <Badge ml="8px" bg="white" color={ui.ink}>
-          ⚒ {dashboard.openRemediations} open remediations
+          {Icon.shield({ size: 11 })} {dashboard.openRemediations} open remediations
         </Badge>
         <Button ml="auto" variant="outline">
           ∞ Agentic flywheel
@@ -562,7 +603,7 @@ function QueueColumn({ title, subtitle, children }) {
     >
       <Box px="10px" py="8px" borderBottom="1px solid" borderColor={ui.line}>
         <Text fontSize="10px" fontWeight="600">
-          ◉ &nbsp;{title}
+          {Icon.activity({ size: 12, color: ui.violet })} &nbsp;{title}
         </Text>
         <Text fontSize="7px" color={ui.muted} mt="2px">
           {subtitle}
@@ -670,7 +711,7 @@ function InvestigationsDashboard({ setView }) {
   return (
     <Box className="page-enter">
       <HStack px="15px" mb="12px">
-        <Button variant="outline">▣ Last 7 days</Button>
+        <Button variant="outline" leftIcon={Icon.calendar({ size: 12 })}>Last 7 days</Button>
       </HStack>
       <Panel borderX="0" borderRadius="0" p="16px 7% 20px">
         <Box
@@ -889,20 +930,21 @@ function InvestigationDetail({ id }) {
       )}
       <Flex px="15px" py="8px" bg="#f5f6f9" align="center">
         <InputGroup w="140px">
-          <InputLeftElement>⌕</InputLeftElement>
+          <InputLeftElement>{Icon.search({ size: 13, color: ui.muted })}</InputLeftElement>
           <Input placeholder="Press F to search" bg="white" />
         </InputGroup>
         <HStack ml="auto">
-          <Button variant="outline">☰ Investigation History</Button>
-          <Button variant="outline">⌁ Add Feedback⌄</Button>
+          <Button variant="outline" leftIcon={Icon.clock({ size: 13 })}>Investigation History</Button>
+          <Button variant="outline" leftIcon={Icon.messageSquare({ size: 13 })}>Add Feedback {Icon.chevronDown({ size: 10 })}</Button>
           <Button
             variant="outline"
+            leftIcon={Icon.refresh({ size: 13 })}
             isLoading={replaying}
             onClick={reinvestigate}
           >
-            ▷ Reinvestigate
+            Reinvestigate
           </Button>
-          <Button variant="outline">◐ {investigation?.status || "Open"}</Button>
+          <Button variant="outline" leftIcon={Icon.target({ size: 13 })}>{investigation?.status || "Open"}</Button>
         </HStack>
       </Flex>
       <Flex
@@ -928,7 +970,7 @@ function InvestigationDetail({ id }) {
           </Button>
         ))}
         <Button ml="auto" variant="unstyled" fontSize="8px">
-          ▣ Open Chat⌄
+          {Icon.messageSquare({ size: 11 })} Open Chat {Icon.chevronDown({ size: 9 })}
         </Button>
       </Flex>
       {tab === "Summary" ? (
@@ -990,9 +1032,8 @@ function SummaryView({ investigation }) {
             color="white"
             align="center"
             justify="center"
-            fontSize="18px"
           >
-            ◉
+            {Icon.shield({ size: 20, color: ui.violet })}
           </Flex>
           <Box ml="12px">
             <Heading fontSize="14px">
@@ -1079,7 +1120,7 @@ function TranscriptView() {
         { text: "Query network connections from Setu.exe PID 4812", rows: "3 rows", time: "0.42s", ok: true },
         { text: "Check releases.cloudgateway.cc in threat intel databases", rows: "1 row", time: "0.31s", ok: true },
       ],
-      badges: ["▣", "▣"],
+      badges: ["log", "alert"],
     },
     {
       title: "Confirm browser credential access, compare file and outbound byte counts, and verify endpoint containment.",
@@ -1088,7 +1129,7 @@ function TranscriptView() {
         { text: "Enumerate file reads by Setu.exe on credential stores", rows: "6 rows", time: "0.55s", ok: true },
         { text: "Verify endpoint isolation status for OKAMI-FIN-074", rows: "1 row", time: "0.19s", ok: true },
       ],
-      badges: ["▣"],
+      badges: ["query"],
     },
     {
       title: "Resolve the Python packaging lead, determine fleet prevalence, and check certificate reuse.",
@@ -1097,7 +1138,7 @@ function TranscriptView() {
         { text: "Search for Setu.exe hash across fleet endpoints", rows: "1 row", time: "0.67s", ok: true },
         { text: "Extract and validate the signing certificate chain", rows: "1 row", time: "0.28s", ok: true },
       ],
-      badges: ["▣"],
+      badges: ["query"],
     },
   ];
   return (
@@ -1115,7 +1156,7 @@ function TranscriptView() {
               <HStack ml="8px" flexShrink={0} spacing="4px">
                 {step.badges && step.badges.map((b, bi) => <Badge key={bi} bg={ui.violet} color="white" fontSize="7px">{b}</Badge>)}
                 <Badge variant="outline" fontSize="7px">Query {step.queries.length}</Badge>
-                <Text fontSize="9px" color={ui.muted}>{expanded[i] ? "▾" : "▸"}</Text>
+                {expanded[i] ? Icon.chevronDown({ size: 12, color: ui.muted }) : Icon.chevronRight({ size: 12, color: ui.muted })}
               </HStack>
             </Flex>
             {expanded[i] && (
@@ -1220,7 +1261,7 @@ function ArtifactView({ tab, investigation }) {
           </Box>
           <HStack>
             <Button variant="outline" onClick={() => toast({ title: "Audit log", description: "Audit trail for all actions", status: "info", duration: 2000 })}>◎ Audit Log</Button>
-            <Button isDisabled={!pendingCount} onClick={executeAll}>✦ Execute {pendingCount} Action{pendingCount !== 1 ? "s" : ""}</Button>
+            <Button isDisabled={!pendingCount} onClick={executeAll} leftIcon={Icon.zap({ size: 13 })}>Execute {pendingCount} Action{pendingCount !== 1 ? "s" : ""}</Button>
           </HStack>
         </Flex>
 
@@ -1446,7 +1487,7 @@ function MitreMatrix({ onClose }) {
           <HStack spacing="4px"><Box w="8px" h="8px" bg={ui.green} rounded="2px" /><Text fontSize="8px">Covered</Text></HStack>
           <HStack spacing="4px"><Box w="8px" h="8px" bg={ui.amber} rounded="2px" /><Text fontSize="8px">Partial</Text></HStack>
           <HStack spacing="4px"><Box w="8px" h="8px" bg="#e2e4ea" rounded="2px" /><Text fontSize="8px">No coverage</Text></HStack>
-          <Button variant="outline" ml="8px" onClick={onClose}>← Back to rules</Button>
+          <Button variant="outline" ml="8px" onClick={onClose} leftIcon={Icon.arrowLeft({ size: 13 })}>Back to rules</Button>
         </HStack>
       </Flex>
       <Box overflowX="auto" pb="8px">
@@ -1603,7 +1644,7 @@ function DetectionRules({ setView }) {
                 <Heading fontSize="14px">Detection Tuning Recommendations</Heading>
                 <Text fontSize="9px" color={ui.muted} mt="2px">{noisyCount} rules flagged for false-positive tuning</Text>
               </Box>
-              <Button variant="outline" onClick={() => setShowTuning(false)}>← Back to rules</Button>
+              <Button variant="outline" onClick={() => setShowTuning(false)} leftIcon={Icon.arrowLeft({ size: 13 })}>Back to rules</Button>
             </Flex>
             <Stack spacing="10px">
               {tuningRecommendations.map((rec) => (
@@ -1640,10 +1681,10 @@ function DetectionRules({ setView }) {
           <>
             <Flex px="15px" py="8px" align="center">
               <InputGroup w="170px">
-                <InputLeftElement>⌕</InputLeftElement>
+                <InputLeftElement>{Icon.search({ size: 13, color: ui.muted })}</InputLeftElement>
                 <Input bg="white" placeholder="Search detection rules" value={query} onChange={(e) => setQuery(e.target.value)} />
               </InputGroup>
-              <Button variant="ghost" ml="8px">⚑ Filters</Button>
+              <Button variant="ghost" ml="8px" leftIcon={Icon.filter({ size: 13 })}>Filters</Button>
               <HStack ml="auto" spacing="6px">
                 <Button variant="outline" onClick={() => setShowMitre(true)}>MITRE Coverage</Button>
                 <Button variant="outline" onClick={() => setShowTuning(true)}>Tuning ({noisyCount})</Button>
@@ -1664,7 +1705,7 @@ function DetectionRules({ setView }) {
                       <Thead>
                         <Tr>
                           {["Name", "MITRE", "Execution", "Status", "Detections", "Investigations", "FPR", "AI recommendations", "Severity", "Activity"].map((h) => (
-                            <Th key={h} fontSize="7px" color={ui.muted} py="10px" borderColor={ui.line}>{h} ☰</Th>
+                            <Th key={h} fontSize="7px" color={ui.muted} py="10px" borderColor={ui.line}><HStack spacing="4px" display="inline-flex"><Text>{h}</Text>{Icon.sort({ size: 8, color: ui.quiet })}</HStack></Th>
                           ))}
                         </Tr>
                       </Thead>
@@ -1679,7 +1720,7 @@ function DetectionRules({ setView }) {
                             </Td>
                             <Td py="14px" fontSize="8px" borderColor={ui.line}>
                               <Text>{rule.cells[2].split(" · ")[0]}</Text>
-                              <Text fontSize="7px" color={ui.muted}>▣ {rule.cells[2].split(" · ")[1]}</Text>
+                              <HStack spacing="3px" display="inline-flex"><Box>{Icon.layers({ size: 9, color: ui.quiet })}</Box><Text fontSize="7px" color={ui.muted}>{rule.cells[2].split(" · ")[1]}</Text></HStack>
                             </Td>
                             <Td py="14px" fontSize="8px" borderColor={ui.line}>
                               <Text color={rule.cells[3] === "Enabled" ? ui.green : ui.muted} fontWeight="500" cursor="pointer" onClick={() => toggleRule(rule)}>
@@ -1731,7 +1772,7 @@ function DetectionRules({ setView }) {
                       <Text fontSize="9px" color={ui.muted}>{catalogRules.length} rules available to deploy · Maintained by 7AI and community contributors</Text>
                     </Box>
                     <InputGroup w="200px">
-                      <InputLeftElement>⌕</InputLeftElement>
+                      <InputLeftElement>{Icon.search({ size: 13, color: ui.muted })}</InputLeftElement>
                       <Input bg="white" placeholder="Search catalog..." />
                     </InputGroup>
                   </Flex>
@@ -1840,7 +1881,7 @@ function DetectionRuleDetail({ id, setView }) {
       {loadFailed && <Box px="15px" pt="8px"><SampleDataNotice show /></Box>}
       <Flex px="15px" py="10px" bg="#f5f6f9" align="center" justify="space-between">
         <HStack>
-          <Button variant="ghost" onClick={() => setView("detect")}>← Back to rules</Button>
+          <Button variant="ghost" onClick={() => setView("detect")} leftIcon={Icon.arrowLeft({ size: 13 })}>Back to rules</Button>
           <Text fontWeight="600" fontSize="13px">{rule.name}</Text>
           <Badge bg={sevColor} color="white">{String(rule.severity).toUpperCase()}</Badge>
           <Badge bg={rule.enabled ? ui.green : ui.muted} color="white">{rule.enabled ? "Enabled" : "Disabled"}</Badge>
@@ -1894,7 +1935,7 @@ function DetectionRuleDetail({ id, setView }) {
                 </FormControl>
                 <FormControl>
                   <FormLabel fontSize="8px" color={ui.muted}>Data source</FormLabel>
-                  <Text fontSize="11px">▣ {rule.source}</Text>
+                  <HStack spacing="4px" display="inline-flex"><Box>{Icon.layers({ size: 11, color: ui.quiet })}</Box><Text fontSize="11px">{rule.source}</Text></HStack>
                 </FormControl>
                 <FormControl>
                   <FormLabel fontSize="8px" color={ui.muted}>Schedule</FormLabel>
@@ -2094,8 +2135,8 @@ function HuntDashboard({ setView }) {
     <Box className="page-enter" px="15px">
       <SampleDataNotice show={loadFailed} />
       <Flex mb="12px" gap="8px" align="center">
-        <Button variant="outline">▣ Last 7 days</Button>
-        <Button variant="outline">▣ Last 30 days</Button>
+        <Button variant="outline" leftIcon={Icon.calendar({ size: 12 })}>Last 7 days</Button>
+        <Button variant="outline" leftIcon={Icon.calendar({ size: 12 })}>Last 30 days</Button>
         <Button variant="ghost" ml="auto" onClick={() => setView("threatIntel")}>View threat intel →</Button>
       </Flex>
       <Grid templateColumns={{ base: "1fr", lg: "minmax(0,2.4fr) 1fr" }} gap="8px">
@@ -2424,7 +2465,7 @@ function RespondCenter({ setView }) {
           >
             View investigation
           </Button>
-          <Button isDisabled={!pending} onClick={() => setConfirmItem({ id: "__bulk__", title: `all ${pending} pending actions`, connector: "multiple connectors" })}>✦ Execute {pending} Action{pending !== 1 ? "s" : ""}</Button>
+          <Button isDisabled={!pending} onClick={() => setConfirmItem({ id: "__bulk__", title: `all ${pending} pending actions`, connector: "multiple connectors" })} leftIcon={Icon.zap({ size: 13 })}>Execute {pending} Action{pending !== 1 ? "s" : ""}</Button>
         </HStack>
       </Flex>
 
@@ -2750,7 +2791,7 @@ function MemoryCenter({ setView }) {
           </Text>
         </Box>
         <InputGroup ml={{ base: 0, md: "auto" }} maxW="390px">
-          <InputLeftElement h="34px">⌕</InputLeftElement>
+          <InputLeftElement h="34px">{Icon.search({ size: 14, color: ui.muted })}</InputLeftElement>
           <Input
             bg="white"
             pl="34px"
@@ -3035,7 +3076,7 @@ function ThreatIntelDashboard({ setView }) {
           <Text color={ui.muted} mt="4px">Ingest threat reports, track indicators, and launch proactive hunts across your environment.</Text>
         </Box>
         <HStack ml={{ base: 0, md: "auto" }}>
-          <Button variant="outline">▣ Last 30 days</Button>
+          <Button variant="outline" leftIcon={Icon.calendar({ size: 12 })}>Last 30 days</Button>
           <Button onClick={() => setView("hunt")}>View hunts</Button>
         </HStack>
       </Flex>
@@ -3214,12 +3255,12 @@ function ThreatIntelReportDetail({ id, setView }) {
     <Box className="page-enter">
       {loadFailed && <Box px="15px" pt="8px"><SampleDataNotice show /></Box>}
       <Flex px="15px" py="8px" bg="#f5f6f9" align="center" wrap="wrap" gap="8px">
-        <Button variant="ghost" onClick={() => setView("threatIntel")}>← Back to feed</Button>
+        <Button variant="ghost" onClick={() => setView("threatIntel")} leftIcon={Icon.arrowLeft({ size: 13 })}>Back to feed</Button>
         <HStack ml="auto">
           <Badge bg={reportTypeBg(report.report_type)} color="white">{reportTypeLabel(report.report_type)}</Badge>
           <Badge bg={report.severity === "critical" ? ui.red : report.severity === "high" ? ui.amber : ui.steel} color="white">{report.severity?.toUpperCase()}</Badge>
-          <Button variant="outline" isLoading={launching} onClick={launchHunt}>
-            {report.hunt_status === "hunting" ? "Hunting…" : report.hunt_status === "completed" ? "▷ Re-hunt" : "▷ Launch Hunt"}
+          <Button variant="outline" isLoading={launching} onClick={launchHunt} leftIcon={Icon.play({ size: 12 })}>
+            {report.hunt_status === "hunting" ? "Hunting…" : report.hunt_status === "completed" ? "Re-hunt" : "Launch Hunt"}
           </Button>
         </HStack>
       </Flex>
