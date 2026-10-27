@@ -1397,95 +1397,184 @@ const rules = [
     "Last alert today",
   ],
 ];
+const mitreTactics = [
+  { id: "TA0043", name: "Reconnaissance", techniques: 10, covered: 6 },
+  { id: "TA0042", name: "Resource Development", techniques: 8, covered: 4 },
+  { id: "TA0001", name: "Initial Access", techniques: 10, covered: 9 },
+  { id: "TA0002", name: "Execution", techniques: 14, covered: 12 },
+  { id: "TA0003", name: "Persistence", techniques: 20, covered: 14 },
+  { id: "TA0004", name: "Privilege Escalation", techniques: 14, covered: 11 },
+  { id: "TA0005", name: "Defense Evasion", techniques: 43, covered: 28 },
+  { id: "TA0006", name: "Credential Access", techniques: 17, covered: 15 },
+  { id: "TA0007", name: "Discovery", techniques: 32, covered: 22 },
+  { id: "TA0008", name: "Lateral Movement", techniques: 9, covered: 8 },
+  { id: "TA0009", name: "Collection", techniques: 17, covered: 12 },
+  { id: "TA0011", name: "Command and Control", techniques: 16, covered: 13 },
+  { id: "TA0010", name: "Exfiltration", techniques: 9, covered: 7 },
+  { id: "TA0040", name: "Impact", techniques: 14, covered: 11 },
+];
+const catalogRules = [
+  { id: "CAT-001", name: "Kerberoasting via SPN Request", tactics: ["Credential Access"], techniques: ["T1558.003"], source: "7AI", severity: "high", description: "Detects service ticket requests for SPNs indicating Kerberoasting attempts." },
+  { id: "CAT-002", name: "DCSync Attack Detection", tactics: ["Credential Access"], techniques: ["T1003.006"], source: "7AI", severity: "critical", description: "Identifies directory replication requests from non-DC sources." },
+  { id: "CAT-003", name: "Scheduled Task Creation via CLI", tactics: ["Persistence", "Execution"], techniques: ["T1053.005"], source: "7AI", severity: "medium", description: "Detects scheduled tasks created via schtasks.exe or at.exe command line." },
+  { id: "CAT-004", name: "LSASS Memory Dump Detection", tactics: ["Credential Access"], techniques: ["T1003.001"], source: "7AI", severity: "critical", description: "Identifies attempts to dump LSASS process memory for credential harvesting." },
+  { id: "CAT-005", name: "DNS Tunneling Detection", tactics: ["Command and Control", "Exfiltration"], techniques: ["T1071.004"], source: "7AI", severity: "high", description: "Detects high-entropy DNS queries indicating possible data exfiltration via DNS." },
+  { id: "CAT-006", name: "Cloud Storage Exfiltration", tactics: ["Exfiltration"], techniques: ["T1567.002"], source: "7AI", severity: "medium", description: "Monitors unusual uploads to cloud storage services outside approved providers." },
+  { id: "CAT-007", name: "WMI Lateral Movement", tactics: ["Lateral Movement", "Execution"], techniques: ["T1047"], source: "Community", severity: "high", description: "Detects WMI process creation on remote hosts indicative of lateral movement." },
+  { id: "CAT-008", name: "Registry Run Key Persistence", tactics: ["Persistence"], techniques: ["T1547.001"], source: "Community", severity: "medium", description: "Monitors modifications to registry run keys for auto-start persistence." },
+  { id: "CAT-009", name: "Token Impersonation Detection", tactics: ["Privilege Escalation", "Defense Evasion"], techniques: ["T1134.001"], source: "7AI", severity: "high", description: "Detects access token manipulation and impersonation attempts." },
+  { id: "CAT-010", name: "Suspicious Office Macro Execution", tactics: ["Execution"], techniques: ["T1204.002"], source: "Community", severity: "medium", description: "Identifies Office applications spawning suspicious child processes." },
+];
+const tuningRecommendations = [
+  { ruleId: "fixture-3", ruleName: "File Integrity Violations", fpr: 62, analystHours: 14.2, issue: "Service account svc-deploy triggers file modifications during scheduled deployments every 6 hours, generating ~40% of all false positives.", recommendation: "Add exclusion for process.user.name:\"svc-deploy\" AND file.path:\"C:\\\\Deploy\\\\*\" during maintenance windows (02:00-04:00 UTC).", impact: "Estimated FPR reduction: 62% → 38%" },
+  { ruleId: "fixture-4", ruleName: "Authentication Anomalies", fpr: 88, analystHours: 22.5, issue: "The VPN gateway IP pool 10.0.50.0/24 is classified as an anomalous source because geolocation returns null for internal addresses, triggering the anomaly threshold.", recommendation: "Whitelist source.ip in CIDR 10.0.50.0/24 when event.provider:\"corporate-vpn\" and add these as known-good in the baseline.", impact: "Estimated FPR reduction: 88% → 31%" },
+  { ruleId: "fixture-6", ruleName: "Multiple Accounts Failing Authentication from Same IP", fpr: 75, analystHours: 11.8, issue: "Conference room shared workstations (CONF-*) generate bursts of failed auth when users forget cached credentials, each appearing as a brute-force pattern.", recommendation: "Exclude host.name matching \"CONF-*\" when failure_count < 15 within 5 minutes, preserving detection for actual brute-force above that threshold.", impact: "Estimated FPR reduction: 75% → 28%" },
+];
+function MitreMatrix({ onClose }) {
+  const [selectedTactic, setSelectedTactic] = useState(null);
+  const totalTechniques = mitreTactics.reduce((s, t) => s + t.techniques, 0);
+  const totalCovered = mitreTactics.reduce((s, t) => s + t.covered, 0);
+  const pct = Math.round((totalCovered / totalTechniques) * 100);
+  return (
+    <Box>
+      <Flex justify="space-between" align="center" mb="16px">
+        <Box>
+          <Heading fontSize="14px">MITRE ATT&CK Coverage</Heading>
+          <Text fontSize="9px" color={ui.muted} mt="2px">{totalCovered} of {totalTechniques} techniques covered ({pct}%)</Text>
+        </Box>
+        <HStack>
+          <HStack spacing="4px"><Box w="8px" h="8px" bg={ui.green} rounded="2px" /><Text fontSize="8px">Covered</Text></HStack>
+          <HStack spacing="4px"><Box w="8px" h="8px" bg={ui.amber} rounded="2px" /><Text fontSize="8px">Partial</Text></HStack>
+          <HStack spacing="4px"><Box w="8px" h="8px" bg="#e2e4ea" rounded="2px" /><Text fontSize="8px">No coverage</Text></HStack>
+          <Button variant="outline" ml="8px" onClick={onClose}>← Back to rules</Button>
+        </HStack>
+      </Flex>
+      <Box overflowX="auto" pb="8px">
+        <Flex gap="3px" minW="900px">
+          {mitreTactics.map((tactic) => {
+            const gapCount = tactic.techniques - tactic.covered;
+            const partial = Math.floor(gapCount * 0.4);
+            const none = gapCount - partial;
+            return (
+              <Box key={tactic.id} flex="1" minW="62px" cursor="pointer" onClick={() => setSelectedTactic(selectedTactic?.id === tactic.id ? null : tactic)}>
+                <Box bg={ui.ink} color="white" p="4px" textAlign="center" fontSize="6px" fontWeight="600" lineHeight="1.3" minH="32px" display="flex" alignItems="center" justifyContent="center">
+                  {tactic.name}
+                </Box>
+                <Stack spacing="2px" mt="2px">
+                  {Array.from({ length: tactic.covered }, (_, i) => (
+                    <Box key={`c${i}`} h="14px" bg={ui.green} opacity={0.7 + (i % 3) * 0.1} borderRadius="1px" />
+                  ))}
+                  {Array.from({ length: partial }, (_, i) => (
+                    <Box key={`p${i}`} h="14px" bg={ui.amber} opacity={0.7} borderRadius="1px" />
+                  ))}
+                  {Array.from({ length: none }, (_, i) => (
+                    <Box key={`n${i}`} h="14px" bg="#e2e4ea" borderRadius="1px" />
+                  ))}
+                </Stack>
+                <Text mt="3px" textAlign="center" fontSize="6px" color={ui.muted}>{tactic.covered}/{tactic.techniques}</Text>
+              </Box>
+            );
+          })}
+        </Flex>
+      </Box>
+      {selectedTactic && (
+        <Panel mt="12px" p="14px">
+          <Flex justify="space-between" align="center">
+            <Box>
+              <Text fontWeight="600" fontSize="12px">{selectedTactic.name}</Text>
+              <Text fontSize="9px" color={ui.muted}>{selectedTactic.id} · {selectedTactic.covered} of {selectedTactic.techniques} techniques covered</Text>
+            </Box>
+            <Badge bg={selectedTactic.covered / selectedTactic.techniques > 0.7 ? ui.green : selectedTactic.covered / selectedTactic.techniques > 0.4 ? ui.amber : ui.red} color="white">
+              {Math.round((selectedTactic.covered / selectedTactic.techniques) * 100)}% coverage
+            </Badge>
+          </Flex>
+          <Box mt="12px" overflowX="auto">
+            <Box as="table" w="100%" fontSize="10px">
+              <Box as="thead">
+                <Box as="tr" borderBottom="1px solid" borderColor={ui.line}>
+                  <Box as="th" p="6px 10px" textAlign="left" fontSize="8px" color={ui.muted}>Technique</Box>
+                  <Box as="th" p="6px 10px" textAlign="left" fontSize="8px" color={ui.muted}>Status</Box>
+                  <Box as="th" p="6px 10px" textAlign="left" fontSize="8px" color={ui.muted}>Rules</Box>
+                  <Box as="th" p="6px 10px" textAlign="left" fontSize="8px" color={ui.muted}>Action</Box>
+                </Box>
+              </Box>
+              <Box as="tbody">
+                {Array.from({ length: selectedTactic.techniques }, (_, i) => {
+                  const covered = i < selectedTactic.covered;
+                  const partial = !covered && i < selectedTactic.covered + Math.floor((selectedTactic.techniques - selectedTactic.covered) * 0.4);
+                  const techId = `T${1000 + i + (selectedTactic.id === "TA0001" ? 189 : selectedTactic.id === "TA0002" ? 203 : 100)}`;
+                  return (
+                    <Box as="tr" key={i} borderBottom="1px solid" borderColor={ui.line} _hover={{ bg: ui.soft }}>
+                      <Box as="td" p="6px 10px"><Text fontFamily="mono" fontSize="9px">{techId}</Text></Box>
+                      <Box as="td" p="6px 10px">
+                        <Badge bg={covered ? ui.green : partial ? ui.amber : "#e2e4ea"} color={covered || partial ? "white" : ui.muted} fontSize="7px">
+                          {covered ? "Covered" : partial ? "Partial" : "No coverage"}
+                        </Badge>
+                      </Box>
+                      <Box as="td" p="6px 10px" color={ui.muted}>{covered ? `${1 + (i % 3)} rules` : partial ? "1 rule (limited)" : "—"}</Box>
+                      <Box as="td" p="6px 10px">
+                        {!covered && <Text color={ui.violet} cursor="pointer" fontSize="9px">{partial ? "Improve coverage" : "Browse catalog →"}</Text>}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          </Box>
+        </Panel>
+      )}
+    </Box>
+  );
+}
 function DetectionRules({ setView }) {
   const [query, setQuery] = useState("");
   const [remoteRules, setRemoteRules] = useState(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [toggling, setToggling] = useState(null);
+  const [activeTab, setActiveTab] = useState("rules");
+  const [showMitre, setShowMitre] = useState(false);
+  const [showTuning, setShowTuning] = useState(false);
+  const [routingRule, setRoutingRule] = useState(null);
   const toast = useToast();
   useEffect(() => {
     let active = true;
-    api
-      .detectionRules()
-      .then((result) => active && setRemoteRules(result.items))
-      .catch(() => active && setLoadFailed(true));
-    return () => {
-      active = false;
-    };
+    api.detectionRules().then((result) => active && setRemoteRules(result.items)).catch(() => active && setLoadFailed(true));
+    return () => { active = false; };
   }, []);
   const tableRows = remoteRules
     ? remoteRules.map((rule) => ({
         id: rule.id,
-        cells: [
-          rule.name,
-          rule.mitre_techniques?.join(", ") || "No techniques",
-          `${rule.execution_mode || "scheduled"} · 7AI SIEM`,
-          rule.enabled ? "Enabled" : "Disabled",
-          String(rule.detections || 0),
-          String(rule.investigations || 0),
-          `${rule.false_positive_rate || 0}%`,
-          rule.recommendation_status?.replaceAll("_", " ") || "Not analyzed",
-          String(rule.severity || "medium").toUpperCase(),
-          rule.last_activity_at
-            ? new Date(rule.last_activity_at).toLocaleDateString()
-            : "No activity",
-        ],
+        cells: [rule.name, rule.mitre_techniques?.join(", ") || "No techniques", `${rule.execution_mode || "scheduled"} · 7AI SIEM`, rule.enabled ? "Enabled" : "Disabled", String(rule.detections || 0), String(rule.investigations || 0), `${rule.false_positive_rate || 0}%`, rule.recommendation_status?.replaceAll("_", " ") || "Not analyzed", String(rule.severity || "medium").toUpperCase(), rule.last_activity_at ? new Date(rule.last_activity_at).toLocaleDateString() : "No activity"],
       }))
-    : rules.map((cells, index) => ({
-        id: `fixture-${index}`,
-        cells: [cells[0], cells[1], cells[2], "Enabled", ...cells.slice(3)],
-      }));
-  const filtered = tableRows.filter((rule) =>
-    rule.cells.join(" ").toLowerCase().includes(query.toLowerCase()),
-  );
+    : rules.map((cells, index) => ({ id: `fixture-${index}`, cells: [cells[0], cells[1], cells[2], "Enabled", ...cells.slice(3)] }));
+  const filtered = tableRows.filter((rule) => rule.cells.join(" ").toLowerCase().includes(query.toLowerCase()));
   const toggleRule = async (rule) => {
     if (rule.id.startsWith("fixture-")) return;
     setToggling(rule.id);
     try {
       const updated = await api.toggleDetectionRule(rule.id);
-      setRemoteRules((current) =>
-        current.map((item) => (item.id === rule.id ? updated : item)),
-      );
-    } catch (error) {
-      toast({
-        title: "Could not change rule status",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-      });
-    } finally {
-      setToggling(null);
-    }
+      setRemoteRules((current) => current.map((item) => (item.id === rule.id ? updated : item)));
+    } catch (error) { toast({ title: "Could not change rule status", description: error.message, status: "error", duration: 3000 }); }
+    finally { setToggling(null); }
   };
   const totalRules = remoteRules ? remoteRules.length : 200;
   const totalDetections = remoteRules ? remoteRules.reduce((s, r) => s + (r.detections || 0), 0) : 7534;
-  const mitreCoverage = "78%";
+  const noisyCount = tuningRecommendations.length;
   return (
     <Flex className="page-enter">
-      {/* Detection Assistant sidebar */}
       <Box
         className="hide-mobile"
-        position="sticky"
-        top="48px"
-        alignSelf="flex-start"
-        w="28px"
-        minH="calc(100vh - 94px)"
-        bg="#f8f9fb"
-        borderRight="1px solid"
-        borderColor={ui.line}
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
+        position="sticky" top="48px" alignSelf="flex-start" w="28px" minH="calc(100vh - 94px)"
+        bg="#f8f9fb" borderRight="1px solid" borderColor={ui.line}
+        display="flex" alignItems="center" justifyContent="center"
         css={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
       >
-        <Text fontSize="8px" color={ui.quiet} fontWeight="600" letterSpacing=".06em" textTransform="uppercase">
-          Detection Assistant
-        </Text>
+        <Text fontSize="8px" color={ui.quiet} fontWeight="600" letterSpacing=".06em" textTransform="uppercase">Detection Assistant</Text>
       </Box>
       <Box flex="1">
         <SampleDataNotice show={loadFailed} />
         <HStack px="15px" mb="12px" spacing="8px">
-          <Panel w="135px" p="15px" textAlign="center">
+          <Panel w="135px" p="15px" textAlign="center" cursor="pointer" _hover={{ borderColor: ui.violet }} onClick={() => {}}>
             <Text fontSize="8px">Registry Rules</Text>
             <Text className="metric-number" fontSize="31px" whiteSpace="nowrap">{totalRules}</Text>
           </Panel>
@@ -1493,77 +1582,204 @@ function DetectionRules({ setView }) {
             <Text fontSize="8px">Triggered Alerts</Text>
             <Text className="metric-number" fontSize="31px" whiteSpace="nowrap">{totalDetections.toLocaleString()}</Text>
           </Panel>
-          <Panel w="135px" p="15px" textAlign="center">
+          <Panel w="135px" p="15px" textAlign="center" cursor="pointer" _hover={{ borderColor: ui.violet }} onClick={() => setShowMitre(true)}>
             <Text fontSize="8px">MITRE Coverage</Text>
-            <Text className="metric-number" fontSize="31px" whiteSpace="nowrap">{mitreCoverage}</Text>
+            <Text className="metric-number" fontSize="31px" whiteSpace="nowrap">78%</Text>
           </Panel>
+          {noisyCount > 0 && (
+            <Panel w="200px" p="15px" bg="#fff8f0" borderColor={ui.amber} cursor="pointer" _hover={{ bg: "#fff3e0" }} onClick={() => setShowTuning(true)}>
+              <Text fontSize="8px" color={ui.amber} fontWeight="600">⚠ Tuning Recommendations</Text>
+              <Text fontSize="11px" mt="4px">{noisyCount} detection tuning recommendations to improve ATT&CK coverage are ready for review</Text>
+            </Panel>
+          )}
         </HStack>
-        <Flex px="15px" py="8px">
-          <InputGroup w="145px">
-            <InputLeftElement>⌕</InputLeftElement>
-            <Input
-              bg="white"
-              placeholder="Search detection rules"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </InputGroup>
-          <Button variant="ghost" ml="8px">⚑ Filters</Button>
-          <Button ml="auto">Create new Detection Rule</Button>
-        </Flex>
-        <Box bg="white">
-          <HStack h="29px" px="18px" borderY="1px solid" borderColor={ui.line}>
-            <Button variant="unstyled" borderBottom="2px solid" borderColor={ui.ink}>Detection Rules</Button>
-            <Button variant="unstyled">Catalog</Button>
-          </HStack>
-          <TableContainer className="thin-scroll">
-            <Table size="sm">
-              <Thead>
-                <Tr>
-                  {["Name", "MITRE", "Execution", "Status", "Detections", "Investigations", "FPR", "AI recommendations", "Severity", "Activity"].map((h) => (
-                    <Th key={h} fontSize="7px" color={ui.muted}>{h} ☰</Th>
-                  ))}
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filtered.map((rule, i) => (
-                  <Tr key={rule.id} bg={i % 2 ? "#fff" : "#f8f8f9"}>
-                    {rule.cells.map((v, n) => (
-                      <Td key={n} py="11px" fontSize="7px" borderColor={ui.line} color={n === 1 || n === 6 || n === 7 ? ui.ink : undefined}>
-                        {n === 0 ? (
-                          <Text color={ui.ink} cursor="pointer" fontWeight="500" _hover={{ color: ui.violet }} onClick={() => setView("detectionRuleDetail", rule.id)}>{v}</Text>
-                        ) : n === 8 ? (
-                          <Badge bg={v === "HIGH" ? ui.red : v === "MEDIUM" ? ui.amber : v === "LOW" ? ui.green : ui.steel} color="white">{v}</Badge>
-                        ) : n === 6 ? (
-                          <><Text>{v}</Text><Text color={ui.quiet} fontSize="6px">{parseInt(v) > 50 ? "Medium" : "High"} confidence</Text></>
-                        ) : n === 3 ? (
-                          <Button variant="ghost" isLoading={toggling === rule.id} onClick={() => toggleRule(rule)} color={v === "Enabled" ? ui.green : ui.muted}>{v}</Button>
-                        ) : n === 2 ? (
-                          <><Text>{v.split(" · ")[0]}</Text><Text fontSize="6px">▣ {v.split(" · ")[1]}</Text></>
-                        ) : n === 7 && v.includes("recommendation") ? (
-                          <Text color={ui.violet} cursor="pointer">{v}</Text>
-                        ) : (
-                          v
-                        )}
-                      </Td>
-                    ))}
-                  </Tr>
+
+        {showMitre ? (
+          <Box px="15px"><MitreMatrix onClose={() => setShowMitre(false)} /></Box>
+        ) : showTuning ? (
+          <Box px="15px">
+            <Flex justify="space-between" align="center" mb="14px">
+              <Box>
+                <Heading fontSize="14px">Detection Tuning Recommendations</Heading>
+                <Text fontSize="9px" color={ui.muted} mt="2px">{noisyCount} rules flagged for false-positive tuning</Text>
+              </Box>
+              <Button variant="outline" onClick={() => setShowTuning(false)}>← Back to rules</Button>
+            </Flex>
+            <Stack spacing="10px">
+              {tuningRecommendations.map((rec) => (
+                <Panel key={rec.ruleId} p="16px">
+                  <Flex justify="space-between" align="start">
+                    <Box flex="1">
+                      <Flex align="center" gap="8px">
+                        <Text fontWeight="600" fontSize="12px">{rec.ruleName}</Text>
+                        <Badge bg={ui.red} color="white">{rec.fpr}% FPR</Badge>
+                      </Flex>
+                      <Text fontSize="9px" color={ui.muted} mt="2px">~{rec.analystHours} analyst-hours wasted per week</Text>
+                    </Box>
+                  </Flex>
+                  <Box mt="12px" p="10px" bg="#fef3f2" borderLeft="3px solid" borderLeftColor={ui.red} borderRadius="3px">
+                    <Text fontSize="8px" fontWeight="600" color={ui.red}>Problem</Text>
+                    <Text fontSize="9px" mt="4px">{rec.issue}</Text>
+                  </Box>
+                  <Box mt="8px" p="10px" bg="#f0fdf4" borderLeft="3px solid" borderLeftColor={ui.green} borderRadius="3px">
+                    <Text fontSize="8px" fontWeight="600" color={ui.green}>Recommended Change</Text>
+                    <Text fontSize="9px" mt="4px" fontFamily="mono">{rec.recommendation}</Text>
+                    <Text fontSize="8px" mt="4px" color={ui.green} fontWeight="600">{rec.impact}</Text>
+                  </Box>
+                  <Flex mt="10px" gap="8px" justify="end">
+                    <Button variant="outline" size="xs">Dismiss</Button>
+                    <Button size="xs" onClick={() => { toast({ title: "Tuning applied", description: `${rec.ruleName} exclusion added — requires human approval`, status: "success", duration: 3000 }); }}>
+                      Apply recommendation
+                    </Button>
+                  </Flex>
+                </Panel>
+              ))}
+            </Stack>
+          </Box>
+        ) : (
+          <>
+            <Flex px="15px" py="8px" align="center">
+              <InputGroup w="170px">
+                <InputLeftElement>⌕</InputLeftElement>
+                <Input bg="white" placeholder="Search detection rules" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </InputGroup>
+              <Button variant="ghost" ml="8px">⚑ Filters</Button>
+              <HStack ml="auto" spacing="6px">
+                <Button variant="outline" onClick={() => setShowMitre(true)}>MITRE Coverage</Button>
+                <Button variant="outline" onClick={() => setShowTuning(true)}>Tuning ({noisyCount})</Button>
+                <Button>Create new Detection Rule</Button>
+              </HStack>
+            </Flex>
+            <Box bg="white">
+              <HStack h="32px" px="18px" borderY="1px solid" borderColor={ui.line} spacing="0">
+                {[["rules", "Detection Rules"], ["catalog", "Catalog"]].map(([key, label]) => (
+                  <Button key={key} variant="unstyled" h="32px" px="12px" borderRadius="0" borderBottom="2px solid" borderColor={activeTab === key ? ui.ink : "transparent"} fontWeight={activeTab === key ? "700" : "400"} fontSize="9px" onClick={() => setActiveTab(key)}>{label}</Button>
                 ))}
-              </Tbody>
-            </Table>
-          </TableContainer>
-          <Flex px="18px" py="10px" bg="#fafafa" borderTop="1px solid" borderColor={ui.line} align="center" justify="space-between">
-            <Text fontSize="8px" color={ui.muted}>
-              Showing 1 – {filtered.length} of {totalRules} Detection Rules
-            </Text>
-            <HStack spacing="4px">
-              <Button variant="ghost" size="xs" isDisabled>‹</Button>
-              <Button variant="solid" size="xs" w="24px" h="24px" p="0">1</Button>
-              {totalRules > filtered.length && <Button variant="ghost" size="xs" w="24px" h="24px" p="0">2</Button>}
-              <Button variant="ghost" size="xs">›</Button>
-            </HStack>
-          </Flex>
-        </Box>
+              </HStack>
+
+              {activeTab === "rules" ? (
+                <>
+                  <TableContainer className="thin-scroll">
+                    <Table size="sm">
+                      <Thead>
+                        <Tr>
+                          {["Name", "MITRE", "Execution", "Status", "Detections", "Investigations", "FPR", "AI recommendations", "Severity", "Activity"].map((h) => (
+                            <Th key={h} fontSize="7px" color={ui.muted} py="10px" borderColor={ui.line}>{h} ☰</Th>
+                          ))}
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {filtered.map((rule, i) => (
+                          <Tr key={rule.id} bg={i % 2 ? "white" : "#fafafb"} _hover={{ bg: "#f2f3f7" }}>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line} maxW="220px">
+                              <Text color={ui.ink} cursor="pointer" fontWeight="500" _hover={{ color: ui.violet }} onClick={() => setView("detectionRuleDetail", rule.id)}>{rule.cells[0]}</Text>
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line} color={ui.violet} cursor="pointer">
+                              <Text textDecoration="underline" textDecorationColor={ui.violet+"44"}>{rule.cells[1]}</Text>
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line}>
+                              <Text>{rule.cells[2].split(" · ")[0]}</Text>
+                              <Text fontSize="7px" color={ui.muted}>▣ {rule.cells[2].split(" · ")[1]}</Text>
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line}>
+                              <Text color={rule.cells[3] === "Enabled" ? ui.green : ui.muted} fontWeight="500" cursor="pointer" onClick={() => toggleRule(rule)}>
+                                {toggling === rule.id ? "…" : rule.cells[3]}
+                              </Text>
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line} fontWeight="600" isNumeric>{rule.cells[4]}</Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line} isNumeric>
+                              <Text fontWeight="600">{rule.cells[5]}</Text>
+                              <Text fontSize="6px" color={ui.muted}>↗</Text>
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line}>
+                              <Text fontWeight="600">{rule.cells[6]}</Text>
+                              <Text fontSize="6px" color={ui.quiet}>{parseInt(rule.cells[6]) > 50 ? "Medium confidence" : "High confidence"}</Text>
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line}>
+                              {rule.cells[7].includes("recommendation") ? (
+                                <><Text color={ui.violet} cursor="pointer" textDecoration="underline">{rule.cells[7]}</Text><Text fontSize="6px" color={ui.quiet}>Analysis complete</Text></>
+                              ) : rule.cells[7] === "Validated" ? (
+                                <><Flex align="center" gap="4px"><Box w="7px" h="7px" rounded="full" border="2px solid" borderColor={ui.green} /><Text>Validated</Text></Flex><Text fontSize="6px" color={ui.quiet}>No tuning changes needed</Text></>
+                              ) : (
+                                <><Text color={ui.muted}>{rule.cells[7]}</Text><Text fontSize="6px" color={ui.violet} cursor="pointer">Queue for analysis</Text></>
+                              )}
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line}>
+                              <Badge bg={rule.cells[8] === "HIGH" || rule.cells[8] === "CRITICAL" ? ui.red : rule.cells[8] === "MEDIUM" ? ui.amber : ui.green} color="white">{rule.cells[8]}</Badge>
+                            </Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line} color={ui.muted}>{rule.cells[9]}</Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </TableContainer>
+                  <Flex px="18px" py="10px" bg={ui.ink} borderTop="1px solid" borderColor={ui.line} align="center" justify="space-between">
+                    <Text fontSize="8px" color="#ccc">Showing 1 – {filtered.length} of {totalRules} Detection Rules</Text>
+                    <HStack spacing="4px">
+                      <Button variant="ghost" size="xs" color="#ccc" isDisabled>‹</Button>
+                      <Button size="xs" w="24px" h="24px" p="0" bg={ui.violet} color="white">1</Button>
+                      {totalRules > filtered.length && <Button variant="ghost" size="xs" w="24px" h="24px" p="0" color="#ccc">2</Button>}
+                      <Button variant="ghost" size="xs" color="#ccc">›</Button>
+                    </HStack>
+                  </Flex>
+                </>
+              ) : (
+                <Box p="15px">
+                  <Flex mb="12px" justify="space-between" align="center">
+                    <Box>
+                      <Text fontWeight="600">Detection Rule Catalog</Text>
+                      <Text fontSize="9px" color={ui.muted}>{catalogRules.length} rules available to deploy · Maintained by 7AI and community contributors</Text>
+                    </Box>
+                    <InputGroup w="200px">
+                      <InputLeftElement>⌕</InputLeftElement>
+                      <Input bg="white" placeholder="Search catalog..." />
+                    </InputGroup>
+                  </Flex>
+                  <Stack spacing="0">
+                    {catalogRules.map((cr) => (
+                      <Flex key={cr.id} p="12px" borderBottom="1px solid" borderColor={ui.line} _hover={{ bg: ui.soft }} align="center">
+                        <Box flex="1">
+                          <Flex align="center" gap="8px">
+                            <Text fontSize="11px" fontWeight="500">{cr.name}</Text>
+                            <Badge bg={cr.severity === "critical" ? ui.red : cr.severity === "high" ? ui.red : cr.severity === "medium" ? ui.amber : ui.green} color="white" fontSize="7px">{cr.severity.toUpperCase()}</Badge>
+                            <Badge variant="outline" fontSize="7px">{cr.source}</Badge>
+                          </Flex>
+                          <Text fontSize="9px" color={ui.muted} mt="3px">{cr.description}</Text>
+                          <HStack mt="4px" spacing="4px">
+                            {cr.techniques.map((t) => <Badge key={t} variant="outline" color={ui.violet} borderColor={ui.violet} fontSize="7px">{t}</Badge>)}
+                            {cr.tactics.map((t) => <Text key={t} fontSize="7px" color={ui.quiet}>· {t}</Text>)}
+                          </HStack>
+                        </Box>
+                        <Button size="xs" variant="outline" onClick={() => toast({ title: `${cr.name} deployed`, description: "Rule added to registry and enabled", status: "success", duration: 2500 })}>
+                          Deploy
+                        </Button>
+                      </Flex>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+            </Box>
+          </>
+        )}
+
+        {routingRule && (
+          <Box position="fixed" top="0" left="0" right="0" bottom="0" bg="blackAlpha.500" zIndex="1000" onClick={() => setRoutingRule(null)}>
+            <Box position="absolute" right="0" top="0" bottom="0" w="420px" bg="white" p="20px" overflowY="auto" onClick={(e) => e.stopPropagation()}>
+              <Heading fontSize="14px" mb="12px">Detection Routing</Heading>
+              <Text fontSize="9px" color={ui.muted}>Configure how detections from this rule are routed.</Text>
+              <Stack mt="16px" spacing="10px">
+                {["Investigate", "Sample (10%)", "Suppress", "Escalate"].map((action) => (
+                  <Panel key={action} p="10px" cursor="pointer" _hover={{ borderColor: ui.violet }}>
+                    <Flex align="center" justify="space-between">
+                      <Text fontSize="11px" fontWeight="500">{action}</Text>
+                      <Box w="14px" h="14px" rounded="full" border="2px solid" borderColor={action === "Investigate" ? ui.violet : ui.line} bg={action === "Investigate" ? ui.violet : "transparent"} />
+                    </Flex>
+                  </Panel>
+                ))}
+              </Stack>
+            </Box>
+          </Box>
+        )}
       </Box>
     </Flex>
   );
