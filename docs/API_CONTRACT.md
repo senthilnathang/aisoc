@@ -57,6 +57,27 @@ Secrets are accepted for local testing but are never returned by list/detail end
 | GET/PATCH/DELETE | `/remediations/:id` | Read/update/delete |
 | POST | `/remediations/:id/execute` | Transition `pending` to `completed` |
 
+## Threat Intel Reports
+
+| Method | URL | Purpose |
+|---|---|---|
+| GET/POST | `/threat-intel-reports` | List/create reports; filter by `search`, `severity` |
+| GET/PATCH/DELETE | `/threat-intel-reports/:id` | Read (includes indicators)/update/delete |
+| POST | `/threat-intel-reports/:id/launch-hunt` | Launch or re-launch a hunt from report IOCs |
+
+## Threat Indicators
+
+| Method | URL | Purpose |
+|---|---|---|
+| GET/POST | `/threat-indicators` | List/create indicators; filter by `reportId` |
+| GET/PATCH/DELETE | `/threat-indicators/:id` | Read/update/delete |
+
+## Threat Intel Dashboard
+
+| Method | URL | Purpose |
+|---|---|---|
+| GET | `/threat-intel/dashboard` | Aggregated stats: total reports, indicators, hits, active hunts, by-source breakdown |
+
 ## Error Envelope
 
 ```json

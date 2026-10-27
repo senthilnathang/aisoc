@@ -48,6 +48,29 @@ All mutable tables include `tenant_id`, `created_at`, and `updated_at`.
 - `status`: pending, approved, running, completed, failed
 - `executed_at`
 
+### threat_intel_reports
+
+- `id`, `tenant_id`, `title`, `summary`
+- `source`: originating feed or organization
+- `report_type`: threat_report, advisory, ioc_feed, hunt_pack
+- `severity`: low, medium, high, critical
+- `status`: new, reviewing, actionable, archived
+- `ioc_count` integer
+- `tags_json`: array of string tags
+- `published_at`: original publication date
+- `hunt_status`: not_started, hunting, completed, no_findings
+- `hunts_launched` integer
+- `findings_count` integer
+
+### threat_indicators
+
+- `id`, `tenant_id`, `report_id` (FK to threat_intel_reports)
+- `indicator_type`: ip, domain, hash_sha256, hash_md5, url, email, cve
+- `value`: the IOC value itself
+- `severity`: low, medium, high, critical
+- `status`: active, mitigated, expired, false_positive
+- `hits` integer (environment match count)
+
 ## Migration Notes
 
 - JSON text columns become PostgreSQL `jsonb`.

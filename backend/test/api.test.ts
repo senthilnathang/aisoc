@@ -36,6 +36,67 @@ test("connector test and remediation execution update state", async () => {
   await app.close();
 });
 
+test("threat intel report CRUD and launch hunt", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  const created = await app.inject({ method: "POST", url: "/api/v1/threat-intel-reports", payload: { title: "APT29 Campaign", summary: "Cozy Bear phishing wave", source: "CISA", report_type: "threat_report", severity: "critical", ioc_count: 5, tags: ["apt29", "phishing"], published_at: "2026-10-01" } });
+  assert.equal(created.statusCode, 201);
+  const id = created.json().id;
+
+  const detail = await app.inject({ method: "GET", url: `/api/v1/threat-intel-reports/${id}` });
+  assert.equal(detail.statusCode, 200);
+  assert.equal(detail.json().title, "APT29 Campaign");
+  assert.ok(Array.isArray(detail.json().indicators));
+
+  const hunted = await app.inject({ method: "POST", url: `/api/v1/threat-intel-reports/${id}/launch-hunt` });
+  assert.equal(hunted.statusCode, 200);
+  assert.equal(hunted.json().hunt_status, "hunting");
+  assert.equal(hunted.json().hunts_launched, 1);
+  await app.close();
+});
+
+test("threat indicator CRUD and report linkage", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  const report = await app.inject({ method: "POST", url: "/api/v1/threat-intel-reports", payload: { title: "IOC Test", source: "Unit Test", severity: "high" } });
+  const reportId = report.json().id;
+
+  const indicator = await app.inject({ method: "POST", url: "/api/v1/threat-indicators", payload: { report_id: reportId, indicator_type: "ip", value: "198.51.100.42", severity: "high", hits: 3 } });
+  assert.equal(indicator.statusCode, 201);
+  assert.equal(indicator.json().indicator_type, "ip");
+
+  const detail = await app.inject({ method: "GET", url: `/api/v1/threat-intel-reports/${reportId}` });
+  assert.equal(detail.json().indicators.length, 1);
+  assert.equal(detail.json().indicators[0].value, "198.51.100.42");
+  await app.close();
+});
+
+test("threat intel dashboard aggregation", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  await app.inject({ method: "POST", url: "/api/v1/threat-intel-reports", payload: { title: "Report A", source: "CISA", severity: "high" } });
+  await app.inject({ method: "POST", url: "/api/v1/threat-intel-reports", payload: { title: "Report B", source: "CISA", severity: "medium" } });
+  await app.inject({ method: "POST", url: "/api/v1/threat-intel-reports", payload: { title: "Report C", source: "Mandiant", severity: "critical" } });
+
+  const dashboard = await app.inject({ method: "GET", url: "/api/v1/threat-intel/dashboard" });
+  assert.equal(dashboard.statusCode, 200);
+  const data = dashboard.json();
+  assert.ok(data.totalReports >= 3);
+  assert.ok(data.reportsBySource.CISA >= 2);
+  assert.ok(data.reportsBySource.Mandiant >= 1);
+  await app.close();
+});
+
+test("detection rule toggle flips enabled state", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  const created = await app.inject({ method: "POST", url: "/api/v1/detection-rules", payload: { name: "Toggle Test Rule", severity: "medium" } });
+  assert.equal(created.statusCode, 201);
+  const id = created.json().id;
+  const initial = created.json().enabled;
+
+  const toggled = await app.inject({ method: "POST", url: `/api/v1/detection-rules/${id}/toggle` });
+  assert.equal(toggled.statusCode, 200);
+  assert.equal(toggled.json().enabled, initial ? 0 : 1);
+  await app.close();
+});
+
 test("invalid resources are rejected and connector secrets are redacted", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   const invalid = await app.inject({ method: "POST", url: "/api/v1/investigations", payload: { title: "Missing required fields" } });
