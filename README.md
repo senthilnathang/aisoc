@@ -44,7 +44,8 @@ production requires token mode and HTTPS configuration.
 
 Open **Build → API sources** to connect any cloud, on-premises, or custom sender.
 Choose a detection rule and issue a scoped key. The sender maps its native event
-to the displayed JSON contract and POSTs to the source endpoint. Keys are shown
+using the configurable field mapper and sample preview, or sends normalized JSON
+directly to the source endpoint. Keys are shown
 once, stored as hashes, expire, and can be rotated or revoked immediately.
 Source keys cannot read cases or administer the workspace. See
 [the API contract](docs/API_CONTRACT.md) for endpoints and deployment settings.

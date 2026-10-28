@@ -58,10 +58,11 @@ cases are not in alert intake and therefore do not appear in this inventory.
 - [x] Provider-neutral sources bound to detection rules, with scoped ingestion keys.
 - [x] One-time key display, hashed storage, expiration, immediate rotation/revocation.
 - [x] API source management screen and normalized-alert ingestion endpoint.
+- [x] Native JSON field mappings with sample validation/preview and mapped event intake.
 - [x] Authentication, tenant boundary, key lifecycle, and expiry integration tests.
 
-Next: configurable mapping of native provider payloads into the normalized alert
-contract. Vendor polling, external tools, SSO, and granular operator roles remain
+Next: implement a real read-only provider adapter after test credentials are
+available. Vendor polling, external tools, SSO, and granular operator roles remain
 future work; the current worker still performs deterministic local analysis.
 
 ## Alert-to-investigation pipeline — implemented sequentially

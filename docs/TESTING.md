@@ -2,7 +2,7 @@
 
 ## Current workflow coverage
 
-Latest local run: **27 tests passed, 0 failed**. Backend typecheck, launcher syntax,
+Latest local run: **29 tests passed, 0 failed**. Backend typecheck, launcher syntax,
 and `git diff --check` passed. The frontend production build passed with Vite's
 existing chunk-size advisory.
 
@@ -14,7 +14,10 @@ syntax and whitespace checks in the [developer guide](DEVELOPMENT.md) as well.
 isolation, publish state and audit history, material version snapshots and
 archive behavior, HTTPS-only references, supported file types, and the 128 KiB
 content limit. Other test files cover the normalized intake/auth pipeline,
-detection registry, investigation persistence and the core resource API.
+detection registry, investigation persistence, provider event mapping/preview,
+and the core resource API. Provider mapping tests check severity normalization,
+required-field errors, unsafe-path rejection, saved mappings, native intake, and
+continued support for normalized intake.
 
 Browser screenshots and Playwright artifacts in `output/` are local verification
 artifacts and are excluded from source control. Browser coverage is manual; this

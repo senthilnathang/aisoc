@@ -31,7 +31,7 @@ The application uses clean client-side routes. Production web servers must serve
 | `/skills/templates` | Starter strategies | Live |
 | `/skills/suggestions` | Reviewable environment patterns | Live |
 | `/skills/outcomes` | Applications, ratings and labeled case counts | Live |
-| `/build/api-sources` | Scoped API source management | Live |
+| `/build/api-sources` | Scoped API source management and native-event mapping preview | Live |
 | `/memory` | Organizational memory / knowledge base | Live |
 | `/build/connectors/cribl` | Cribl connector setup (4-step wizard) | Live |
 

@@ -101,8 +101,9 @@ sessions are held in backend memory, not in SQLite.
   status, durable phase number, error/result JSON, timestamps. A partial unique
   index permits one active job per case. Processing is local and deterministic.
 - `api_sources`: tenant, name/provider, bound detection rule, hashed source key,
-  expiration/revocation, timestamps. Plain keys are returned once during create
-  or rotation and are not stored in readable form.
+  `mapping_json`, expiration/revocation, timestamps. Plain keys are returned once
+  during create or rotation and are not stored in readable form. The mapping
+  stores normalized target fields and provider JSON dot paths, not event samples.
 
 ### Skills and related records (additive migrations)
 

@@ -96,6 +96,10 @@ export function migratePipeline(db: DatabaseSync): void {
       CREATE INDEX idx_skill_feedback_app ON skill_application_feedback(tenant_id, application_id);
       INSERT INTO schema_migrations VALUES (10, datetime('now'));
     `);
+    if (!db.prepare("SELECT version FROM schema_migrations WHERE version = 11").get()) db.exec(`
+      ALTER TABLE api_sources ADD COLUMN mapping_json TEXT NOT NULL DEFAULT '{"fields":{}}';
+      INSERT INTO schema_migrations VALUES (11, datetime('now'));
+    `);
     db.exec("COMMIT");
   } catch (error) { db.exec("ROLLBACK"); throw error; }
 }

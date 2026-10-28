@@ -22,8 +22,9 @@ Each phase adds to the current UI rather than replacing it.
 - **Hunting and intelligence:** hunt definitions, local simulations, threat
   intelligence reports, and indicators exist. Cross-source querying and actual
   IOC extraction need integrations and a query layer.
-- **Provider intake:** generic normalized-alert API sources exist. Native event
-  mapping, provider polling, and action APIs remain future work.
+- **Provider intake:** generic normalized-alert API sources and configurable
+  native JSON field mapping with sample preview exist. Provider polling and
+  provider action APIs remain future work.
 - **Skills:** tenant-scoped strategy/content library, drafts and publishing,
   relevance scopes, linked/versioned materials, deterministic case-pattern
   suggestions, case/hunt application snapshots, analyst ratings, and sample-count
@@ -42,18 +43,15 @@ coverage. The current suite does not yet have automated UI or end-to-end tests.
 
 Next work, in dependency order:
 
-1. Add configurable native-event mappings and a validation/preview step to the
-   existing API source flow. Keep the normalized alert contract and current
-   direct JSON intake working.
-2. Implement one real, read-only provider adapter after a test tenant and API
+1. Implement one real, read-only provider adapter after a test tenant and API
    credentials are available. Record connector health, freshness, errors and
    source provenance; exercise tenant isolation before enabling sync.
-3. Add source-backed read-only case tools and evidence citations to the existing
+2. Add source-backed read-only case tools and evidence citations to the existing
    transcript. Preserve the deterministic worker as a fallback and keep plans
    observable for analysts.
-4. Add explicit analyst true-positive/false-positive labels, then use those
+3. Add explicit analyst true-positive/false-positive labels, then use those
    labeled samples for detection tuning and Skills outcome comparisons.
-5. Replace simulated response actions only after provider action previews,
+4. Replace simulated response actions only after provider action previews,
    authorization, confirmation, audit, retry and recovery behavior are defined.
 
 Do not count stored rule queries, local indicator checks, seed fixtures, or
@@ -68,7 +66,7 @@ claims.
 
 ## Phased delivery
 
-### 1. Data foundation and provider connectors — foundation shipped; adapters planned
+### 1. Data foundation and provider connectors — normalized intake and mapping shipped; provider adapters planned
 
 - Define provider-neutral schemas for alerts, entities, evidence, cases, actions,
   query results, and connector health. Keep the normalized alert contract stable.
@@ -78,8 +76,9 @@ claims.
   one SIEM, one identity source, and one cloud/email source. Prioritize CrowdStrike,
   Splunk, Okta, AWS, and Microsoft 365 from the supplied list after validating API
   access and a test tenant. Expand the catalog toward 50+ as adapters are proven.
-- Preserve API sources for webhook-based ingestion. Add native-to-normalized field
-  mappings and preview/validation before a connector can ingest events.
+- Preserve API sources for webhook-based ingestion. Native-to-normalized dot-path
+  field mappings and sample preview are implemented; mapped events use a separate
+  scoped endpoint while direct normalized intake stays supported.
 
 **Done when:** a configured connector can securely sync a bounded sample, map it
 to the common schema, show freshness and errors, and link the events to existing

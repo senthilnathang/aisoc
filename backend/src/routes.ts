@@ -109,12 +109,24 @@ export async function registerRoutes(app: FastifyInstance, service: PlatformServ
   });
   app.post("/api/v1/detection-rules/:id/clone", { schema: { params: IdParams } }, async (request, reply) => reply.code(201).send(service.cloneRule(tenant(request, defaultTenantId), (request.params as { id: string }).id)));
   const Days = Type.Integer({ minimum: 1, maximum: 365, default: 30 });
+  const EventMapping = Type.Object({
+    fields: Type.Record(Type.String(), Type.String()),
+    severity_map: Type.Optional(Type.Record(Type.String(), Severity))
+  }, { additionalProperties: false });
   app.get("/api/v1/api-sources", async request => ({ items: sources.list(tenant(request, defaultTenantId)) }));
   app.post("/api/v1/api-sources", { schema: { body: Type.Object({ name: Type.String({ minLength: 1, maxLength: 200, pattern: "\\S" }), provider: Type.String({ minLength: 1, maxLength: 100, pattern: "\\S" }), rule_id: Type.String({ minLength: 1 }), expires_in_days: Type.Optional(Days) }, { additionalProperties: false }) } }, async (request, reply) => {
     const body = request.body as { name: string; provider: string; rule_id: string; expires_in_days?: number };
     return reply.header("Cache-Control", "no-store").code(201).send(sources.create(tenant(request, defaultTenantId), { ...body, expires_in_days: body.expires_in_days ?? 30 }, request.principal?.id || "local-development"));
   });
   app.get("/api/v1/api-sources/:id", { schema: { params: IdParams } }, async request => required(sources.get(tenant(request, defaultTenantId), (request.params as { id: string }).id), "API source"));
+  app.patch("/api/v1/api-sources/:id/mapping", { schema: { params: IdParams, body: Type.Object({ mapping: EventMapping }, { additionalProperties: false }) } }, async request => {
+    const body = request.body as { mapping: unknown };
+    return sources.updateMapping(tenant(request, defaultTenantId), (request.params as { id: string }).id, body.mapping, request.principal?.id || "local-development");
+  });
+  app.post("/api/v1/api-sources/:id/mapping/preview", { bodyLimit: 131072, schema: { params: IdParams, body: Type.Object({ mapping: EventMapping, sample: Type.Record(Type.String(), Type.Unknown()) }, { additionalProperties: false }) } }, async request => {
+    const body = request.body as { mapping: unknown; sample: unknown };
+    return sources.previewMapping(tenant(request, defaultTenantId), (request.params as { id: string }).id, body.mapping, body.sample);
+  });
   app.post("/api/v1/api-sources/:id/rotate-key", { schema: { params: IdParams, body: Type.Object({ expires_in_days: Type.Optional(Days) }, { additionalProperties: false }) } }, async (request, reply) => reply.header("Cache-Control", "no-store").send(sources.rotate(tenant(request, defaultTenantId), (request.params as { id: string }).id, (request.body as { expires_in_days?: number }).expires_in_days ?? 30, request.principal?.id || "local-development")));
   app.post("/api/v1/api-sources/:id/revoke", { schema: { params: IdParams } }, async request => sources.revoke(tenant(request, defaultTenantId), (request.params as { id: string }).id, request.principal?.id || "local-development"));
   app.post("/api/v1/intake/:id/alerts", { config: { access: "source" }, bodyLimit: 131072, schema: { params: IdParams, body: Type.Omit(AlertSchema, ["source", "rule_id"]) } }, async (request, reply) => {
@@ -122,6 +134,16 @@ export async function registerRoutes(app: FastifyInstance, service: PlatformServ
     const token = request.headers.authorization!.slice(7);
     const source = sources.get(request.principal!.tenant_id, id)!;
     const result = pipeline.ingest(request.principal!.tenant_id, { ...(request.body as Omit<AlertInput, "source" | "rule_id">), source: source.source, rule_id: source.rule_id }, () => {
+      if (!sources.authenticate(id, token)) throw new ApiError(401, "UNAUTHENTICATED", "A valid credential is required.");
+    });
+    return reply.code(result.duplicate ? 200 : 201).send(result);
+  });
+  app.post("/api/v1/intake/:id/events", { config: { access: "source" }, bodyLimit: 131072, schema: { params: IdParams, body: Type.Record(Type.String(), Type.Unknown()) } }, async (request, reply) => {
+    const id = (request.params as { id: string }).id;
+    const token = request.headers.authorization!.slice(7);
+    const mapped = sources.mapEvent(request.principal!.tenant_id, id, request.body);
+    if (!mapped.normalized) throw new ApiError(400, "NATIVE_EVENT_INVALID", "The native event could not be mapped.", mapped.errors);
+    const result = pipeline.ingest(request.principal!.tenant_id, mapped.normalized, () => {
       if (!sources.authenticate(id, token)) throw new ApiError(401, "UNAUTHENTICATED", "A valid credential is required.");
     });
     return reply.code(result.duplicate ? 200 : 201).send(result);

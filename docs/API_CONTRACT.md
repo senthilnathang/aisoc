@@ -81,9 +81,22 @@ command creates private files and refuses to overwrite existing credentials.
 | POST | `/auth/logout` | Authenticated; invalidates session |
 | GET/POST | `/api-sources` | Operator: list sources / issue source and key |
 | GET | `/api-sources/:id` | Operator: source metadata, never the key |
+| PATCH | `/api-sources/:id/mapping` | Operator: save native field mapping |
+| POST | `/api-sources/:id/mapping/preview` | Operator: validate sample and preview normalized event |
 | POST | `/api-sources/:id/rotate-key` | Operator: invalidate old key and return replacement once |
 | POST | `/api-sources/:id/revoke` | Operator: revoke key; retain historical records |
 | POST | `/intake/:id/alerts` | Source Bearer key only; normalized alert intake |
+| POST | `/intake/:id/events` | Source Bearer key only; map a native event using saved mapping |
+
+Mappings require `fields.external_id`, `fields.title`, and `fields.severity`.
+Each value is a safe dot path into the event JSON (for example `alert.id`).
+Optional targets are `summary`, `category`, `alert_type`, `primary_entity`,
+`evidence`, and `insight_refs`. `severity_map` translates provider values to
+`low|medium|high|critical`. The preview accepts `{mapping, sample}` and returns
+`{valid, errors, normalized_alert}` without saving or ingesting the sample. Saving
+uses `{mapping}` and writes an audit event. Native events are limited to 128 KiB.
+The existing `/intake/:id/alerts` normalized contract remains unchanged and can
+be used regardless of whether a native mapping is configured.
 
 Create source body: `{ "name": "Hybrid SIEM", "provider": "custom",
 "rule_id": "RULE-001", "expires_in_days": 30 }`. Validity is 1–365 days,
