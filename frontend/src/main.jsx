@@ -40,6 +40,14 @@ import {
 } from "@chakra-ui/react";
 import { theme, ui } from "./theme";
 import { api } from "./api";
+import InvestigationCase from "./InvestigationCase";
+import InvestigationQueue from "./InvestigationQueue";
+import AuthGate from "./AuthGate";
+import ApiSources from "./ApiSources";
+import CreateDetectionRule from "./CreateDetectionRule";
+import DetectionRegistry, { RuleWorkspace } from "./DetectionRegistry";
+import DetectionIntelligence from "./DetectionIntelligence";
+import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import "./app.css";
 
 const I = ({ d, size = 14, color = "currentColor", ...props }) => (
@@ -80,34 +88,51 @@ const Icon = {
   compass: (p) => <I {...p} d={<><circle cx="12" cy="12" r="10" /><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88" /></>} />,
 };
 
-const nav = ["Detect", "Investigate", "Respond", "Hunt", "Threat Intel", "Memory", "Build"];
+const nav = ["Detect", "Investigate", "Respond", "Hunt", "Threat Intel", "Skills", "Memory", "Build"];
 const viewForNav = {
   Detect: "detect",
   Investigate: "investigations",
   Respond: "respond",
   Hunt: "hunt",
   "Threat Intel": "threatIntel",
+  Skills: "skills",
   Memory: "memory",
-  Build: "connector",
+  Build: "apiSources",
 };
 const navIsActive = (item, view) =>
   view === viewForNav[item] ||
   (item === "Respond" && view === "queue") ||
+  (item === "Build" && view === "connector") ||
   (item === "Detect" && view === "detectionRuleDetail") ||
-  (item === "Threat Intel" && view === "threatIntelDetail");
+  (item === "Detect" && view === "detectionIntelligence") ||
+  (item === "Threat Intel" && view === "threatIntelDetail") ||
+  (item === "Skills" && ["skillCreate", "skillDetail", "skillTemplates", "skillSuggestions", "skillOutcomes"].includes(view));
 
 const pathForView = {
   queue: "/",
   detect: "/detect/rules",
+  detectionIntelligence: "/detect/intelligence",
   investigations: "/investigations",
   respond: "/respond",
   hunt: "/hunt",
   threatIntel: "/threat-intel",
   memory: "/memory",
   connector: "/build/connectors/cribl",
+  apiSources: "/build/api-sources",
+  skills: "/skills",
+  skillCreate: "/skills/new",
+  skillTemplates: "/skills/templates",
+  skillSuggestions: "/skills/suggestions",
+  skillOutcomes: "/skills/outcomes",
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/skills/new") return { view: "skillCreate", skillId: null };
+  if (pathname === "/skills/templates") return { view: "skillTemplates", skillId: null };
+  if (pathname === "/skills/suggestions") return { view: "skillSuggestions", skillId: null };
+  if (pathname === "/skills/outcomes") return { view: "skillOutcomes", skillId: null };
+  const skillDetail = pathname.match(/^\/skills\/([^/]+)$/);
+  if (skillDetail) return { view: "skillDetail", skillId: decodeURIComponent(skillDetail[1]) };
   const invDetail = pathname.match(/^\/investigations\/([^/]+)$/);
   if (invDetail)
     return {
@@ -144,8 +169,9 @@ function Logo() {
       fontWeight="800"
       fontStyle="italic"
       letterSpacing="-.08em"
+      whiteSpace="nowrap"
     >
-      7AI
+      AISOC
     </Text>
   );
 }
@@ -164,7 +190,7 @@ function TopNav({ view, setView }) {
       zIndex="20"
       color="#f7f7fa"
     >
-      <Box w="32px">
+      <Box w="56px" flexShrink={0}>
         <Logo />
       </Box>
       <HStack
@@ -232,7 +258,7 @@ function TopNav({ view, setView }) {
         <Box className="hide-mobile">
           <Text fontSize="9px">Walter Abeson</Text>
           <Text color="#8c929f" fontSize="7px">
-            7AI
+            AISOC
           </Text>
         </Box>
         {Icon.chevronDown({ size: 12, color: "#8c929f" })}
@@ -447,7 +473,7 @@ function QueueDashboard({ setView }) {
                 bg={i === 1 ? "#111827" : i === 2 ? ui.red : ui.violet}
                 color="white"
               >
-                {i === 1 ? "7AI" : i === 2 ? "CS" : "AZ"}
+                {i === 1 ? "AI" : i === 2 ? "CS" : "AZ"}
               </Badge>
               <Box className="spark-line" flex="1" />
               <Text color={ui.green} fontSize="7px">
@@ -485,8 +511,8 @@ function QueueDashboard({ setView }) {
               {[
                 [ui.red, "Open"],
                 [ui.teal, "Closed"],
-                [ui.steel, "7AI Auto"],
-                ["#687488", "7AI PLAID Elite"],
+                [ui.steel, "AISOC Auto"],
+                ["#687488", "AISOC PLAID Elite"],
                 ["#283446", "Analysts"],
               ].map(([c, t]) => (
                 <HStack key={t}>
@@ -523,7 +549,7 @@ function QueueDashboard({ setView }) {
           <Stack mt="15px" spacing="12px">
             {[
               [
-                "7AI Threat Intelligence",
+                "AISOC Threat Intelligence",
                 "CRXfiltrate — Remote-Controlled Manifest V3 Browser Extensions",
                 "MALICIOUS",
                 "TIR-001",
@@ -544,7 +570,7 @@ function QueueDashboard({ setView }) {
               <Box key={title} cursor="pointer" onClick={() => setView("threatIntelDetail", reportId)}>
                 <HStack>
                   <Badge bg="#20232d" color="white">
-                    7AI
+                    AISOC
                   </Badge>
                   <Text fontSize="8px">{source}</Text>
                 </HStack>
@@ -699,7 +725,7 @@ function Donut({ workload = false }) {
 
 function InvestigationsDashboard({ setView }) {
   const sources = [
-    ["7AI", 947],
+    ["AISOC", 947],
     ["AWS", 198],
     ["CrowdStrike", 851],
     ["Microsoft Defender", 1780],
@@ -844,7 +870,7 @@ function InvestigationsDashboard({ setView }) {
               </Flex>
             </Box>
             <Stack spacing="5px" fontSize="7px">
-              {[["Microsoft Defender", "1,780", "29.1%", "#2563eb"], ["SentinelOne", "1,285", "21%", "#7c3aed"], ["7AI", "947", "15.5%", "#111827"], ["CrowdStrike", "851", "13.9%", ui.red], ["Microsoft Sentinel", "726", "11.9%", "#0ea5e9"], ["Remaining sources", "530", "8.7%", ui.steel]].map(([name, count, pct, color]) => (
+              {[["Microsoft Defender", "1,780", "29.1%", "#2563eb"], ["SentinelOne", "1,285", "21%", "#7c3aed"], ["AISOC", "947", "15.5%", "#111827"], ["CrowdStrike", "851", "13.9%", ui.red], ["Microsoft Sentinel", "726", "11.9%", "#0ea5e9"], ["Remaining sources", "530", "8.7%", ui.steel]].map(([name, count, pct, color]) => (
                 <HStack key={name}>
                   <Box w="6px" h="6px" rounded="full" bg={color} flexShrink="0" />
                   <Text>{name}</Text>
@@ -882,466 +908,11 @@ function InvestigationsDashboard({ setView }) {
   );
 }
 
-function InvestigationDetail({ id }) {
-  const [tab, setTab] = useState("Summary");
-  const [investigation, setInvestigation] = useState(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [replaying, setReplaying] = useState(false);
-  const toast = useToast();
-  const tabs = ["Summary", "Artifacts", "Transcript", "I/O", "Debug"];
-  useEffect(() => {
-    let active = true;
-    api
-      .investigation(id || "INV-4819")
-      .then((result) => active && setInvestigation(result))
-      .catch(() => active && setLoadFailed(true));
-    return () => {
-      active = false;
-    };
-  }, [id]);
-  const reinvestigate = async () => {
-    setReplaying(true);
-    try {
-      const updated = await api.reinvestigate(id || "INV-4819");
-      setInvestigation((current) => ({ ...current, ...updated }));
-      toast({
-        title: "Reinvestigation started",
-        description: `${updated.id} is back in triage.`,
-        status: "success",
-        duration: 2500,
-      });
-    } catch (error) {
-      toast({
-        title: "Could not reinvestigate",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-      });
-    } finally {
-      setReplaying(false);
-    }
-  };
-  return (
-    <Box className="page-enter">
-      {loadFailed && (
-        <Box px="15px" pt="8px">
-          <SampleDataNotice show />
-        </Box>
-      )}
-      <Flex px="15px" py="8px" bg="#f5f6f9" align="center">
-        <InputGroup w="140px">
-          <InputLeftElement>{Icon.search({ size: 13, color: ui.muted })}</InputLeftElement>
-          <Input placeholder="Press F to search" bg="white" />
-        </InputGroup>
-        <HStack ml="auto">
-          <Button variant="outline" leftIcon={Icon.clock({ size: 13 })}>Investigation History</Button>
-          <Button variant="outline" leftIcon={Icon.messageSquare({ size: 13 })}>Add Feedback {Icon.chevronDown({ size: 10 })}</Button>
-          <Button
-            variant="outline"
-            leftIcon={Icon.refresh({ size: 13 })}
-            isLoading={replaying}
-            onClick={reinvestigate}
-          >
-            Reinvestigate
-          </Button>
-          <Button variant="outline" leftIcon={Icon.target({ size: 13 })}>{investigation?.status || "Open"}</Button>
-        </HStack>
-      </Flex>
-      <Flex
-        px="15px"
-        h="28px"
-        bg="white"
-        borderY="1px solid"
-        borderColor={ui.line}
-      >
-        {tabs.map((t) => (
-          <Button
-            key={t}
-            variant="unstyled"
-            h="28px"
-            px="8px"
-            borderRadius="0"
-            borderBottom="2px solid"
-            borderColor={tab === t ? ui.ink : "transparent"}
-            fontSize="8px"
-            onClick={() => setTab(t)}
-          >
-            {t}
-          </Button>
-        ))}
-        <Button ml="auto" variant="unstyled" fontSize="8px">
-          {Icon.messageSquare({ size: 11 })} Open Chat {Icon.chevronDown({ size: 9 })}
-        </Button>
-      </Flex>
-      {tab === "Summary" ? (
-        <SummaryView investigation={investigation} />
-      ) : tab === "Transcript" ? (
-        <TranscriptView />
-      ) : (
-        <ArtifactView tab={tab} investigation={investigation} />
-      )}
-    </Box>
-  );
-}
-function SummaryView({ investigation }) {
-  return (
-    <Grid
-      templateColumns={{ base: "1fr", lg: "245px 1fr" }}
-      maxW="820px"
-      mx="auto"
-      mt="26px"
-      gap="20px"
-    >
-      <Box borderRight="1px solid" borderColor={ui.line} pr="15px">
-        <Text fontSize="8px">◷ Oct 21, 2026 at 7:52:30 PM EDT</Text>
-        <HStack mt="14px">
-          <Badge bg="#111827" color="white">
-            7AI
-          </Badge>
-          <Text fontSize="8px">High</Text>
-        </HStack>
-        <Badge mt="8px" variant="outline" color={ui.violet}>
-          IDENTITY
-        </Badge>
-        <Text mt="8px" fontSize="9px" fontWeight="600" lineHeight="1.45">
-          maya.santos@okami-ai.com signed in from an anonymized Astana, KZ
-          address 27 minutes after a normal Quezon City, PH sign-in.
-        </Text>
-        <Stack mt="70px" spacing="8px">
-          <Label>Compromised account</Label>
-          <Text color={ui.violet} fontSize="8px">
-            maya.santos@okami-ai.com
-          </Text>
-          <Label>Adversary sign-in IP</Label>
-          <Text color={ui.violet} fontSize="8px">
-            192.0.2.160 (Astana, KZ)
-          </Text>
-          <Label>Baseline sign-in location</Label>
-          <Text color={ui.violet} fontSize="8px">
-            198.51.100.54 (Quezon City, PH)
-          </Text>
-        </Stack>
-      </Box>
-      <Box>
-        <Flex align="start">
-          <Flex
-            w="38px"
-            h="38px"
-            rounded="full"
-            bg={ui.red}
-            color="white"
-            align="center"
-            justify="center"
-          >
-            {Icon.shield({ size: 20, color: ui.violet })}
-          </Flex>
-          <Box ml="12px">
-            <Heading fontSize="14px">
-              {investigation?.title ||
-                "Risk-Backed Impossible Travel - Entra ID"}
-            </Heading>
-            <Text color={ui.muted} fontSize="8px" mt="5px">
-              {investigation?.summary ||
-                "Impossible-travel sign-ins for maya.santos@okami-ai.com from Philippines and Kazakhstan."}
-            </Text>
-          </Box>
-          <Badge ml="auto" bg={ui.red} color="white">
-            MALICIOUS
-          </Badge>
-        </Flex>
-        <Text mt="20px" fontSize="9px" lineHeight="1.55">
-          maya.santos@okami-ai.com signed in successfully from 198.51.100.54
-          (Quezon City, PH) at 2026-08-07 08:47:21 UTC on a managed Windows 11
-          device, then again from 192.0.2.160 (Astana, KZ) 20 minutes later on
-          an unmanaged, non-compliant device.
-        </Text>
-        <Box mt="12px" p="9px" bg="#e7eef4" fontSize="8px" fontWeight="600">
-          Malicious: treat as identity compromise. Revoke sessions and tokens,
-          reset credentials, and scope all Kazakhstan-session activity
-          immediately.
-        </Box>
-        <Stack mt="28px" spacing="15px">
-          {[
-            [
-              "8c03d86a-e487-41b0-8866-b249599a6c38",
-              "Unmanaged, non-compliant device; distinct correlation",
-            ],
-            [
-              "singleFactorAuthentication",
-              "Two fresh resultType 50158 challenge failures",
-            ],
-            ["Astana, KZ", "OfficeHomeChrome 152.0 versus Outlook Web"],
-          ].map(([t, d]) => (
-            <HStack key={t}>
-              <Flex
-                w="27px"
-                h="27px"
-                rounded="full"
-                bg={ui.red}
-                color="white"
-                align="center"
-                justify="center"
-              >
-                ◇
-              </Flex>
-              <Box>
-                <Text color="#bd3946" fontSize="8px">
-                  {t}
-                </Text>
-                <Text fontSize="8px" mt="3px">
-                  ♡ {d}
-                </Text>
-              </Box>
-            </HStack>
-          ))}
-        </Stack>
-      </Box>
-    </Grid>
-  );
-}
-function TranscriptView() {
-  const [expanded, setExpanded] = useState({ 0: true });
-  const toggleStep = (i) => setExpanded((c) => ({ ...c, [i]: !c[i] }));
-  const steps = [
-    {
-      title: "Determine whether Setu.exe is benign or malicious by correlating reputation, signing, process, credential-access, network-transfer, containment, and fleet-prevalence evidence.",
-      thought: "I will not treat zero antivirus detections or a trusted signature as proof of safety. I will first establish what reputation knows, then pivot to process-scoped behavior and verify whether credential access was followed by an outbound transfer.",
-      queries: [
-        { text: "Check the Setu.exe SHA-256 in VirusTotal", rows: "1 row", time: "0.35s", ok: true },
-        { text: "Check the Setu.exe SHA-1 in VirusTotal", rows: "1 row", time: "0.38s", ok: true },
-        { text: "Search public sources for the exact SHA-256", rows: "1 row", time: "0.29s", ok: true },
-      ],
-      conclusion: "Reputation was unknown, but process-scoped endpoint evidence proved Setu.exe accessed browser credential stores totaling 180,224 bytes and then sent 184,320 bytes to a malicious domain.",
-    },
-    {
-      title: "Correlate the alert with process execution, network activity, and infrastructure reputation.",
-      thought: "I need to verify the outbound connection target and check if releases.cloudgateway.cc is a known C2 domain. Cross-referencing with threat intelligence feeds.",
-      queries: [
-        { text: "Query network connections from Setu.exe PID 4812", rows: "3 rows", time: "0.42s", ok: true },
-        { text: "Check releases.cloudgateway.cc in threat intel databases", rows: "1 row", time: "0.31s", ok: true },
-      ],
-      badges: ["log", "alert"],
-    },
-    {
-      title: "Confirm browser credential access, compare file and outbound byte counts, and verify endpoint containment.",
-      thought: "The file-read byte count (180,224) and outbound transfer (184,320) are close enough to confirm credential exfiltration. The 4,096 byte difference accounts for HTTP/TLS overhead.",
-      queries: [
-        { text: "Enumerate file reads by Setu.exe on credential stores", rows: "6 rows", time: "0.55s", ok: true },
-        { text: "Verify endpoint isolation status for OKAMI-FIN-074", rows: "1 row", time: "0.19s", ok: true },
-      ],
-      badges: ["query"],
-    },
-    {
-      title: "Resolve the Python packaging lead, determine fleet prevalence, and check certificate reuse.",
-      thought: "Checking if the Setu.exe binary has appeared elsewhere on the fleet and verifying the signing certificate's validity period and issuer chain.",
-      queries: [
-        { text: "Search for Setu.exe hash across fleet endpoints", rows: "1 row", time: "0.67s", ok: true },
-        { text: "Extract and validate the signing certificate chain", rows: "1 row", time: "0.28s", ok: true },
-      ],
-      badges: ["query"],
-    },
-  ];
-  return (
-    <Box maxW="520px" mx="auto" mt="25px" pb="40px">
-      <Flex justify="end" mb="4px">
-        <Text fontSize="7px" color={ui.muted} mr="8px" mt="6px">:</Text>
-        <Button variant="outline" onClick={() => setExpanded(steps.reduce((a, _, i) => ({ ...a, [i]: true }), {}))}>Expand all</Button>
-      </Flex>
-      <Stack mt="14px" spacing="0">
-        {steps.map((step, i) => (
-          <Box key={i} borderLeft="2px solid" borderColor={i === 0 ? ui.violet : ui.ink} pl="16px" pb="18px" position="relative">
-            <Box position="absolute" left="-5px" top="0" w="8px" h="8px" rounded="full" bg={i === 0 ? ui.violet : ui.ink} />
-            <Flex align="center" cursor="pointer" onClick={() => toggleStep(i)}>
-              <Text fontSize="9px" fontWeight="600" flex="1" lineHeight="1.45">{step.title}</Text>
-              <HStack ml="8px" flexShrink={0} spacing="4px">
-                {step.badges && step.badges.map((b, bi) => <Badge key={bi} bg={ui.violet} color="white" fontSize="7px">{b}</Badge>)}
-                <Badge variant="outline" fontSize="7px">Query {step.queries.length}</Badge>
-                {expanded[i] ? Icon.chevronDown({ size: 12, color: ui.muted }) : Icon.chevronRight({ size: 12, color: ui.muted })}
-              </HStack>
-            </Flex>
-            {expanded[i] && (
-              <Box mt="10px">
-                <Text fontSize="7px" color={ui.muted} fontWeight="600" letterSpacing=".04em">THOUGHT</Text>
-                <Text mt="5px" fontSize="9px" color="#495064" fontStyle="italic" lineHeight="1.5">{step.thought}</Text>
-                <Stack mt="10px" spacing="6px">
-                  {step.queries.map((q, n) => (
-                    <Panel key={n} p="10px" bg="#fafbfc" borderColor={ui.line}>
-                      <Flex align="center" justify="space-between">
-                        <HStack spacing="6px">
-                          <Badge bg={ui.violet} color="white" fontSize="7px" w="18px" textAlign="center">{n + 1}</Badge>
-                          <Text fontSize="9px">Query {n + 1}: {q.text}</Text>
-                        </HStack>
-                        <HStack spacing="8px" flexShrink={0}>
-                          <Text fontSize="8px" color={ui.muted}>{q.rows}</Text>
-                          <Text fontSize="8px" color={ui.muted}>{q.time}</Text>
-                          {q.ok && <Text color={ui.green} fontSize="10px">✓</Text>}
-                          <Text fontSize="9px" color={ui.muted}>›</Text>
-                        </HStack>
-                      </Flex>
-                    </Panel>
-                  ))}
-                </Stack>
-                {step.conclusion && (
-                  <>
-                    <Text mt="14px" fontSize="7px" color={ui.muted} fontWeight="600" letterSpacing=".04em">CONCLUSION</Text>
-                    <Text mt="5px" fontSize="9px" lineHeight="1.5">{step.conclusion}</Text>
-                  </>
-                )}
-              </Box>
-            )}
-          </Box>
-        ))}
-      </Stack>
-      <Panel mt="18px" p="14px" borderColor="#8d939d" borderWidth="1px">
-        <Flex justify="space-between" align="start">
-          <Box>
-            <Text fontSize="8px" fontWeight="700" letterSpacing=".04em" color={ui.muted}>VERDICT</Text>
-            <Text mt="8px" fontSize="10px" lineHeight="1.5">
-              Malicious: Setu.exe accessed browser credential stores totaling 180,224 bytes, then sent 184,320 bytes.
-            </Text>
-            <Text mt="6px" fontSize="9px" color={ui.muted}>Confidence: high</Text>
-            <Text mt="6px" fontSize="9px" color={ui.violet} cursor="pointer">Show more</Text>
-          </Box>
-          <Badge bg={ui.red} color="white" flexShrink={0}>MALICIOUS</Badge>
-        </Flex>
-      </Panel>
-    </Box>
-  );
-}
-function ArtifactView({ tab, investigation }) {
-  const toast = useToast();
-  const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState([
-    { role: "assistant", title: "Recommended containment order", body: "1. Revoke Nadia Solis's active sessions.\n2. Reset the corporate password and rotate credentials saved in Chrome, Edge, and Firefox.\n3. Keep OKAMI-FIN-074 isolated, quarantine the Setu.exe hash, and remove the extraction directory.\n4. Block releases.cloudgateway.cc in DNS, proxy, and endpoint controls.\n5. Report and monitor the short-lived signing certificate." },
-    { role: "user", body: "Why not clean the file first or block the domain?" },
-    { role: "assistant", body: "File cleanup cannot invalidate credentials or sessions that may already be exposed, so identity containment comes first.\n\nBlock releases.cloudgateway.cc only after you confirm 104.21.79.237. The IP is behind shared Cloudflare infrastructure; blocking it could disrupt unrelated services. Keep the endpoint isolated until credential rotation and malware cleanup are complete." },
-  ]);
-  const [showChat, setShowChat] = useState(true);
-  const remediationActions = investigation?.remediations?.length ? investigation.remediations : [
-    { id: "REM-001", title: "Revoke all active sessions for nadia.solis@okami-ai.com", description: "Setu.exe read Nadia Solis's Chrome, Edge, and Firefox credential stores and successfully exfiltrated data. Revoke active sessions immediately to terminate access obtained with stolen session material.", connector: "Microsoft Defender", status: "pending", primary_entity: "nadia.solis@okami-ai.com" },
-    { id: "REM-002", title: "Quarantine Setu.exe on OKAMI-FIN-074", description: "Setu.exe read browser credential stores and exfiltrated data from OKAMI-FIN-074. Quarantine SHA-256 bc1563c1a977c92... while the host remains isolated.", connector: "Microsoft Defender", status: "pending", primary_entity: "OKAMI-FIN-074" },
-    { id: "REM-003", title: "Reset the corporate password for nadia.solis@okami-ai.com", description: "Setu.exe accessed and exfiltrated browser credential stores belonging to Nadia Solis. Force a corporate password reset after session revocation to invalidate the exposed credential.", connector: "Microsoft Defender", status: "pending", primary_entity: "nadia.solis@okami-ai.com" },
-    { id: "REM-004", title: "Block the malicious domain releases.cloudgateway.cc", description: "Setu.exe successfully exfiltrated data to releases.cloudgateway.cc. Block the malicious domain without blocking its benign shared Cloudflare IP 104.21.79.237.", connector: "Microsoft Defender", status: "pending", primary_entity: "releases.cloudgateway.cc" },
-  ];
-  const [actionStatuses, setActionStatuses] = useState({});
-  const [executing, setExecuting] = useState(null);
-
-  const executeAction = async (action) => {
-    setExecuting(action.id);
-    try {
-      if (!action.id.startsWith("REM-0")) await api.executeRemediation(action.id);
-      setActionStatuses((cur) => ({ ...cur, [action.id]: "completed" }));
-      toast({ title: "Action executed", description: action.title, status: "success", duration: 2500 });
-    } catch (error) {
-      toast({ title: "Execution failed", description: error.message, status: "error", duration: 3000 });
-    } finally {
-      setExecuting(null);
-    }
-  };
-  const executeAll = async () => {
-    for (const action of remediationActions.filter((a) => (actionStatuses[a.id] || a.status) === "pending")) {
-      await executeAction(action);
-    }
-  };
-  const pendingCount = remediationActions.filter((a) => (actionStatuses[a.id] || a.status) === "pending").length;
-
-  const handleChat = () => {
-    if (!chatInput.trim()) return;
-    setChatMessages((cur) => [...cur, { role: "user", body: chatInput.trim() }, { role: "assistant", body: "I'm reviewing the investigation evidence and will provide a response shortly. In the meantime, you can proceed with the recommended containment order above." }]);
-    setChatInput("");
-  };
-
-  return (
-    <Grid templateColumns={{ base: "1fr", lg: showChat ? "1fr 290px" : "1fr" }} minH="500px">
-      <Box p="18px 30px">
-        <Flex align="center" justify="space-between" mb="14px">
-          <Box>
-            <Heading fontSize="13px">{tab === "Artifacts" ? "Remediation" : tab} actions</Heading>
-            <Text color={ui.muted} mt="3px">Credential-store access and outbound transfer on OKAMI-FIN-074</Text>
-          </Box>
-          <HStack>
-            <Button variant="outline" onClick={() => toast({ title: "Audit log", description: "Audit trail for all actions", status: "info", duration: 2000 })}>◎ Audit Log</Button>
-            <Button isDisabled={!pendingCount} onClick={executeAll} leftIcon={Icon.zap({ size: 13 })}>Execute {pendingCount} Action{pendingCount !== 1 ? "s" : ""}</Button>
-          </HStack>
-        </Flex>
-
-        <TableContainer className="thin-scroll">
-          <Table size="sm">
-            <Thead>
-              <Tr>
-                {["Action", "Description", "Connector", "Status", ""].map((h) => (
-                  <Th key={h} fontSize="7px" color={ui.muted}>{h}</Th>
-                ))}
-              </Tr>
-            </Thead>
-            <Tbody>
-              {remediationActions.map((action) => {
-                const status = actionStatuses[action.id] || action.status;
-                return (
-                  <Tr key={action.id} className="response-row">
-                    <Td py="12px" borderColor={ui.line} maxW="240px">
-                      <Text fontWeight="700" fontSize="8px">{action.title}</Text>
-                      {action.primary_entity && <Text color={ui.violet} mt="2px" fontSize="7px">{action.primary_entity}</Text>}
-                    </Td>
-                    <Td py="12px" borderColor={ui.line} maxW="280px">
-                      <Text color={ui.muted} fontSize="8px">{action.description}</Text>
-                    </Td>
-                    <Td py="12px" borderColor={ui.line}>
-                      <Badge variant="outline">{action.connector || "7AI"}</Badge>
-                    </Td>
-                    <Td py="12px" borderColor={ui.line}>
-                      <Text fontWeight="600" fontSize="7px" color={status === "completed" ? ui.green : ui.muted} textTransform="uppercase">{status}</Text>
-                    </Td>
-                    <Td py="12px" borderColor={ui.line}>
-                      {status === "pending" ? (
-                        <Button size="sm" isLoading={executing === action.id} onClick={() => executeAction(action)}>Execute</Button>
-                      ) : (
-                        <Text color={ui.green} fontWeight="700" fontSize="9px">✓</Text>
-                      )}
-                    </Td>
-                  </Tr>
-                );
-              })}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      </Box>
-
-      {showChat && (
-        <Flex direction="column" bg="white" borderLeft="1px solid" borderColor={ui.line} position="relative" maxH="calc(100vh - 140px)">
-          <Flex p="12px" borderBottom="1px solid" borderColor={ui.line} align="center" justify="space-between">
-            <Text fontWeight="600">Chat</Text>
-            <Button variant="ghost" size="xs" onClick={() => setShowChat(false)}>×</Button>
-          </Flex>
-          <Box flex="1" overflowY="auto" className="thin-scroll" p="12px">
-            <Stack spacing="14px">
-              {chatMessages.map((msg, i) => (
-                <Box key={i} ml={msg.role === "user" ? "25px" : 0} p="12px" bg={msg.role === "user" ? "#f5f6f9" : "#e8e6ff"} borderRadius="6px" fontSize="8px">
-                  {msg.title && <Text fontWeight="700" mb="5px">{msg.title}</Text>}
-                  {msg.body.split("\n").map((line, j) => <Text key={j} mt={j ? "3px" : 0}>{line}</Text>)}
-                  {msg.role === "assistant" && <Text color={ui.quiet} mt="6px" fontSize="7px">{i === 0 ? "Jul 5, 7:59 PM EDT" : ""}</Text>}
-                </Box>
-              ))}
-            </Stack>
-          </Box>
-          <Flex p="10px" borderTop="1px solid" borderColor={ui.line} gap="6px">
-            <Input size="sm" placeholder="Type your question here…" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleChat()} />
-            <Button size="sm" onClick={handleChat}>↑</Button>
-          </Flex>
-        </Flex>
-      )}
-      {!showChat && (
-        <Button position="fixed" bottom="20px" right="20px" onClick={() => setShowChat(true)} borderRadius="full" w="44px" h="44px">💬</Button>
-      )}
-    </Grid>
-  );
-}
-
 const rules = [
   [
-    "7AI - CRXfiltrate Browser Domain and Path Match",
+    "AISOC - CRXfiltrate Browser Domain and Path Match",
     "2 techniques",
-    "Scheduled · 7AI SIEM",
+    "Scheduled · AISOC SIEM",
     "837",
     "193",
     "26%",
@@ -1350,9 +921,9 @@ const rules = [
     "Last alert today",
   ],
   [
-    "7AI - Impossible Travel",
+    "AISOC - Impossible Travel",
     "5 techniques",
-    "Scheduled · 7AI SIEM",
+    "Scheduled · AISOC SIEM",
     "200",
     "170",
     "45%",
@@ -1361,9 +932,9 @@ const rules = [
     "Last alert 3 days ago",
   ],
   [
-    "7AI - Suspicious PowerShell EncodedCommand",
+    "AISOC - Suspicious PowerShell EncodedCommand",
     "T1059.001 (PowerShell)",
-    "Scheduled · 7AI SIEM",
+    "Scheduled · AISOC SIEM",
     "190",
     "153",
     "10%",
@@ -1394,9 +965,9 @@ const rules = [
     "Last alert today",
   ],
   [
-    "7AI - Remote Logon → LOLBin Execution",
+    "AISOC - Remote Logon → LOLBin Execution",
     "5 techniques",
-    "Realtime · 7AI SIEM",
+    "Realtime · AISOC SIEM",
     "140",
     "119",
     "17%",
@@ -1416,9 +987,9 @@ const rules = [
     "Last alert 3 days ago",
   ],
   [
-    "7AI - Auth From Endpoint With Active Finding",
+    "AISOC - Auth From Endpoint With Active Finding",
     "3 techniques",
-    "Realtime · 7AI SIEM",
+    "Realtime · AISOC SIEM",
     "127",
     "108",
     "28%",
@@ -1455,15 +1026,15 @@ const mitreTactics = [
   { id: "TA0040", name: "Impact", techniques: 14, covered: 11 },
 ];
 const catalogRules = [
-  { id: "CAT-001", name: "Kerberoasting via SPN Request", tactics: ["Credential Access"], techniques: ["T1558.003"], source: "7AI", severity: "high", description: "Detects service ticket requests for SPNs indicating Kerberoasting attempts." },
-  { id: "CAT-002", name: "DCSync Attack Detection", tactics: ["Credential Access"], techniques: ["T1003.006"], source: "7AI", severity: "critical", description: "Identifies directory replication requests from non-DC sources." },
-  { id: "CAT-003", name: "Scheduled Task Creation via CLI", tactics: ["Persistence", "Execution"], techniques: ["T1053.005"], source: "7AI", severity: "medium", description: "Detects scheduled tasks created via schtasks.exe or at.exe command line." },
-  { id: "CAT-004", name: "LSASS Memory Dump Detection", tactics: ["Credential Access"], techniques: ["T1003.001"], source: "7AI", severity: "critical", description: "Identifies attempts to dump LSASS process memory for credential harvesting." },
-  { id: "CAT-005", name: "DNS Tunneling Detection", tactics: ["Command and Control", "Exfiltration"], techniques: ["T1071.004"], source: "7AI", severity: "high", description: "Detects high-entropy DNS queries indicating possible data exfiltration via DNS." },
-  { id: "CAT-006", name: "Cloud Storage Exfiltration", tactics: ["Exfiltration"], techniques: ["T1567.002"], source: "7AI", severity: "medium", description: "Monitors unusual uploads to cloud storage services outside approved providers." },
+  { id: "CAT-001", name: "Kerberoasting via SPN Request", tactics: ["Credential Access"], techniques: ["T1558.003"], source: "AISOC", severity: "high", description: "Detects service ticket requests for SPNs indicating Kerberoasting attempts." },
+  { id: "CAT-002", name: "DCSync Attack Detection", tactics: ["Credential Access"], techniques: ["T1003.006"], source: "AISOC", severity: "critical", description: "Identifies directory replication requests from non-DC sources." },
+  { id: "CAT-003", name: "Scheduled Task Creation via CLI", tactics: ["Persistence", "Execution"], techniques: ["T1053.005"], source: "AISOC", severity: "medium", description: "Detects scheduled tasks created via schtasks.exe or at.exe command line." },
+  { id: "CAT-004", name: "LSASS Memory Dump Detection", tactics: ["Credential Access"], techniques: ["T1003.001"], source: "AISOC", severity: "critical", description: "Identifies attempts to dump LSASS process memory for credential harvesting." },
+  { id: "CAT-005", name: "DNS Tunneling Detection", tactics: ["Command and Control", "Exfiltration"], techniques: ["T1071.004"], source: "AISOC", severity: "high", description: "Detects high-entropy DNS queries indicating possible data exfiltration via DNS." },
+  { id: "CAT-006", name: "Cloud Storage Exfiltration", tactics: ["Exfiltration"], techniques: ["T1567.002"], source: "AISOC", severity: "medium", description: "Monitors unusual uploads to cloud storage services outside approved providers." },
   { id: "CAT-007", name: "WMI Lateral Movement", tactics: ["Lateral Movement", "Execution"], techniques: ["T1047"], source: "Community", severity: "high", description: "Detects WMI process creation on remote hosts indicative of lateral movement." },
   { id: "CAT-008", name: "Registry Run Key Persistence", tactics: ["Persistence"], techniques: ["T1547.001"], source: "Community", severity: "medium", description: "Monitors modifications to registry run keys for auto-start persistence." },
-  { id: "CAT-009", name: "Token Impersonation Detection", tactics: ["Privilege Escalation", "Defense Evasion"], techniques: ["T1134.001"], source: "7AI", severity: "high", description: "Detects access token manipulation and impersonation attempts." },
+  { id: "CAT-009", name: "Token Impersonation Detection", tactics: ["Privilege Escalation", "Defense Evasion"], techniques: ["T1134.001"], source: "AISOC", severity: "high", description: "Detects access token manipulation and impersonation attempts." },
   { id: "CAT-010", name: "Suspicious Office Macro Execution", tactics: ["Execution"], techniques: ["T1204.002"], source: "Community", severity: "medium", description: "Identifies Office applications spawning suspicious child processes." },
 ];
 const tuningRecommendations = [
@@ -1568,6 +1139,10 @@ function MitreMatrix({ onClose }) {
   );
 }
 function DetectionRules({ setView }) {
+  const [severityFilter, setSeverityFilter] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [deploying, setDeploying] = useState(null);
+  const [catalogQuery, setCatalogQuery] = useState("");
   const [query, setQuery] = useState("");
   const [remoteRules, setRemoteRules] = useState(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -1585,10 +1160,10 @@ function DetectionRules({ setView }) {
   const tableRows = remoteRules
     ? remoteRules.map((rule) => ({
         id: rule.id,
-        cells: [rule.name, rule.mitre_techniques?.join(", ") || "No techniques", `${rule.execution_mode || "scheduled"} · 7AI SIEM`, rule.enabled ? "Enabled" : "Disabled", String(rule.detections || 0), String(rule.investigations || 0), `${rule.false_positive_rate || 0}%`, rule.recommendation_status?.replaceAll("_", " ") || "Not analyzed", String(rule.severity || "medium").toUpperCase(), rule.last_activity_at ? new Date(rule.last_activity_at).toLocaleDateString() : "No activity"],
+        cells: [rule.name, rule.mitre_techniques?.join(", ") || "No techniques", `${rule.execution_mode || "scheduled"} · AISOC SIEM`, rule.enabled ? "Enabled" : "Disabled", String(rule.detections || 0), String(rule.investigations || 0), `${rule.false_positive_rate || 0}%`, rule.recommendation_status?.replaceAll("_", " ") || "Not analyzed", String(rule.severity || "medium").toUpperCase(), rule.last_activity_at ? new Date(rule.last_activity_at).toLocaleDateString() : "No activity"],
       }))
-    : rules.map((cells, index) => ({ id: `fixture-${index}`, cells: [cells[0], cells[1], cells[2], "Enabled", ...cells.slice(3)] }));
-  const filtered = tableRows.filter((rule) => rule.cells.join(" ").toLowerCase().includes(query.toLowerCase()));
+    : [];
+  const filtered = tableRows.filter((rule) => rule.cells.join(" ").toLowerCase().includes(query.toLowerCase()) && (!severityFilter || rule.cells[8] === severityFilter));
   const toggleRule = async (rule) => {
     if (rule.id.startsWith("fixture-")) return;
     setToggling(rule.id);
@@ -1598,8 +1173,25 @@ function DetectionRules({ setView }) {
     } catch (error) { toast({ title: "Could not change rule status", description: error.message, status: "error", duration: 3000 }); }
     finally { setToggling(null); }
   };
-  const totalRules = remoteRules ? remoteRules.length : 200;
-  const totalDetections = remoteRules ? remoteRules.reduce((s, r) => s + (r.detections || 0), 0) : 7534;
+  const totalRules = remoteRules ? remoteRules.length : 0;
+  const deployRule = async (rule) => {
+    setDeploying(rule.id);
+    try {
+      const created = await api.create("detection-rules", { name: rule.name, description: rule.description, severity: rule.severity, mitre_techniques: rule.techniques, enabled: false });
+      setRemoteRules(current => [created, ...(current || [])]);
+      toast({ title: "Template added to registry", description: "Add query logic before enabling this rule. No external engine is connected.", status: "success", duration: 4000 });
+    } catch (error) { toast({ title: "Could not add rule", description: error.message, status: "error" }); }
+    finally { setDeploying(null); }
+  };
+  const saveRouting = async (routing) => {
+    try {
+      const updated = await api.update("detection-rules", routingRule.id, { routing });
+      setRemoteRules(current => current.map(item => item.id === updated.id ? updated : item));
+      setRoutingRule(null);
+      toast({ title: "Routing preference saved", description: "Stored locally; no detection engine is connected.", status: "success" });
+    } catch (error) { toast({ title: "Could not save routing", description: error.message, status: "error" }); }
+  };
+  const totalDetections = remoteRules ? remoteRules.reduce((s, r) => s + (r.detections || 0), 0) : 0;
   const noisyCount = tuningRecommendations.length;
   return (
     <Flex className="page-enter">
@@ -1613,7 +1205,8 @@ function DetectionRules({ setView }) {
         <Text fontSize="8px" color={ui.quiet} fontWeight="600" letterSpacing=".06em" textTransform="uppercase">Detection Assistant</Text>
       </Box>
       <Box flex="1">
-        <SampleDataNotice show={loadFailed} />
+        {loadFailed && <Alert status="error"><AlertIcon />Could not load rules. Check the API and reload this page.</Alert>}
+        {!loadFailed && !remoteRules && <Text p="15px" role="status">Loading detection rules…</Text>}
         <HStack px="15px" mb="12px" spacing="8px">
           <Panel w="135px" p="15px" textAlign="center" cursor="pointer" _hover={{ borderColor: ui.violet }} onClick={() => {}}>
             <Text fontSize="8px">Registry Rules</Text>
@@ -1624,13 +1217,13 @@ function DetectionRules({ setView }) {
             <Text className="metric-number" fontSize="31px" whiteSpace="nowrap">{totalDetections.toLocaleString()}</Text>
           </Panel>
           <Panel w="135px" p="15px" textAlign="center" cursor="pointer" _hover={{ borderColor: ui.violet }} onClick={() => setShowMitre(true)}>
-            <Text fontSize="8px">MITRE Coverage</Text>
+            <Text fontSize="8px">MITRE Coverage · Demo</Text>
             <Text className="metric-number" fontSize="31px" whiteSpace="nowrap">78%</Text>
           </Panel>
           {noisyCount > 0 && (
             <Panel w="200px" p="15px" bg="#fff8f0" borderColor={ui.amber} cursor="pointer" _hover={{ bg: "#fff3e0" }} onClick={() => setShowTuning(true)}>
               <Text fontSize="8px" color={ui.amber} fontWeight="600">⚠ Tuning Recommendations</Text>
-              <Text fontSize="11px" mt="4px">{noisyCount} detection tuning recommendations to improve ATT&CK coverage are ready for review</Text>
+              <Text fontSize="11px" mt="4px">{noisyCount} example recommendations · Demo analysis</Text>
             </Panel>
           )}
         </HStack>
@@ -1668,9 +1261,8 @@ function DetectionRules({ setView }) {
                     <Text fontSize="8px" mt="4px" color={ui.green} fontWeight="600">{rec.impact}</Text>
                   </Box>
                   <Flex mt="10px" gap="8px" justify="end">
-                    <Button variant="outline" size="xs">Dismiss</Button>
-                    <Button size="xs" onClick={() => { toast({ title: "Tuning applied", description: `${rec.ruleName} exclusion added — requires human approval`, status: "success", duration: 3000 }); }}>
-                      Apply recommendation
+                    <Button size="xs" isDisabled>
+                      Demo only · Engine not connected
                     </Button>
                   </Flex>
                 </Panel>
@@ -1684,11 +1276,11 @@ function DetectionRules({ setView }) {
                 <InputLeftElement>{Icon.search({ size: 13, color: ui.muted })}</InputLeftElement>
                 <Input bg="white" placeholder="Search detection rules" value={query} onChange={(e) => setQuery(e.target.value)} />
               </InputGroup>
-              <Button variant="ghost" ml="8px" leftIcon={Icon.filter({ size: 13 })}>Filters</Button>
+              <Select ml="8px" w="140px" aria-label="Filter by severity" bg="white" value={severityFilter} onChange={e => setSeverityFilter(e.target.value)}><option value="">All severities</option>{["LOW", "MEDIUM", "HIGH", "CRITICAL"].map(value => <option key={value}>{value}</option>)}</Select>
               <HStack ml="auto" spacing="6px">
                 <Button variant="outline" onClick={() => setShowMitre(true)}>MITRE Coverage</Button>
                 <Button variant="outline" onClick={() => setShowTuning(true)}>Tuning ({noisyCount})</Button>
-                <Button>Create new Detection Rule</Button>
+                <Button onClick={() => setCreating(true)}>Create new Detection Rule</Button>
               </HStack>
             </Flex>
             <Box bg="white">
@@ -1748,19 +1340,18 @@ function DetectionRules({ setView }) {
                             <Td py="14px" fontSize="8px" borderColor={ui.line}>
                               <Badge bg={rule.cells[8] === "HIGH" || rule.cells[8] === "CRITICAL" ? ui.red : rule.cells[8] === "MEDIUM" ? ui.amber : ui.green} color="white">{rule.cells[8]}</Badge>
                             </Td>
-                            <Td py="14px" fontSize="8px" borderColor={ui.line} color={ui.muted}>{rule.cells[9]}</Td>
+                            <Td py="14px" fontSize="8px" borderColor={ui.line} color={ui.muted}>{rule.cells[9]}<Button display="block" variant="ghost" size="xs" aria-label={`Route ${rule.cells[0]}`} onClick={() => setRoutingRule(rule)}>Route</Button></Td>
                           </Tr>
                         ))}
                       </Tbody>
                     </Table>
                   </TableContainer>
                   <Flex px="18px" py="10px" bg={ui.ink} borderTop="1px solid" borderColor={ui.line} align="center" justify="space-between">
-                    <Text fontSize="8px" color="#ccc">Showing 1 – {filtered.length} of {totalRules} Detection Rules</Text>
+                    <Text fontSize="8px" color="#ccc">Showing {filtered.length ? 1 : 0} – {filtered.length} of {totalRules} Detection Rules</Text>
                     <HStack spacing="4px">
                       <Button variant="ghost" size="xs" color="#ccc" isDisabled>‹</Button>
                       <Button size="xs" w="24px" h="24px" p="0" bg={ui.violet} color="white">1</Button>
-                      {totalRules > filtered.length && <Button variant="ghost" size="xs" w="24px" h="24px" p="0" color="#ccc">2</Button>}
-                      <Button variant="ghost" size="xs" color="#ccc">›</Button>
+                      <Button variant="ghost" size="xs" color="#ccc" isDisabled>›</Button>
                     </HStack>
                   </Flex>
                 </>
@@ -1769,15 +1360,15 @@ function DetectionRules({ setView }) {
                   <Flex mb="12px" justify="space-between" align="center">
                     <Box>
                       <Text fontWeight="600">Detection Rule Catalog</Text>
-                      <Text fontSize="9px" color={ui.muted}>{catalogRules.length} rules available to deploy · Maintained by 7AI and community contributors</Text>
+                      <Text fontSize="9px" color={ui.muted}>{catalogRules.length} rules available to deploy · Maintained by AISOC and community contributors</Text>
                     </Box>
                     <InputGroup w="200px">
                       <InputLeftElement>{Icon.search({ size: 13, color: ui.muted })}</InputLeftElement>
-                      <Input bg="white" placeholder="Search catalog..." />
+                      <Input bg="white" placeholder="Search catalog..." value={catalogQuery} onChange={e => setCatalogQuery(e.target.value)} />
                     </InputGroup>
                   </Flex>
                   <Stack spacing="0">
-                    {catalogRules.map((cr) => (
+                    {catalogRules.filter(cr => `${cr.name} ${cr.description}`.toLowerCase().includes(catalogQuery.toLowerCase())).map((cr) => (
                       <Flex key={cr.id} p="12px" borderBottom="1px solid" borderColor={ui.line} _hover={{ bg: ui.soft }} align="center">
                         <Box flex="1">
                           <Flex align="center" gap="8px">
@@ -1791,8 +1382,8 @@ function DetectionRules({ setView }) {
                             {cr.tactics.map((t) => <Text key={t} fontSize="7px" color={ui.quiet}>· {t}</Text>)}
                           </HStack>
                         </Box>
-                        <Button size="xs" variant="outline" onClick={() => toast({ title: `${cr.name} deployed`, description: "Rule added to registry and enabled", status: "success", duration: 2500 })}>
-                          Deploy
+                        <Button size="xs" variant="outline" isLoading={deploying === cr.id} isDisabled={!!deploying || remoteRules?.some(rule => rule.name === cr.name)} onClick={() => deployRule(cr)}>
+                          {remoteRules?.some(rule => rule.name === cr.name) ? "Added" : "Add template"}
                         </Button>
                       </Flex>
                     ))}
@@ -1803,17 +1394,19 @@ function DetectionRules({ setView }) {
           </>
         )}
 
+        {creating && <CreateDetectionRule onClose={() => setCreating(false)} onCreated={rule => setRemoteRules(current => [rule, ...(current || [])])} />}
         {routingRule && (
           <Box position="fixed" top="0" left="0" right="0" bottom="0" bg="blackAlpha.500" zIndex="1000" onClick={() => setRoutingRule(null)}>
-            <Box position="absolute" right="0" top="0" bottom="0" w="420px" bg="white" p="20px" overflowY="auto" onClick={(e) => e.stopPropagation()}>
+            <Box position="absolute" right="0" top="0" bottom="0" w="min(420px, 100vw)" bg="white" p="20px" overflowY="auto" onClick={(e) => e.stopPropagation()}>
               <Heading fontSize="14px" mb="12px">Detection Routing</Heading>
+              <Button variant="ghost" onClick={() => setRoutingRule(null)}>Close</Button>
               <Text fontSize="9px" color={ui.muted}>Configure how detections from this rule are routed.</Text>
               <Stack mt="16px" spacing="10px">
                 {["Investigate", "Sample (10%)", "Suppress", "Escalate"].map((action) => (
-                  <Panel key={action} p="10px" cursor="pointer" _hover={{ borderColor: ui.violet }}>
+                  <Panel as="button" type="button" key={action} p="10px" cursor="pointer" onClick={() => saveRouting(action)} _hover={{ borderColor: ui.violet }}>
                     <Flex align="center" justify="space-between">
                       <Text fontSize="11px" fontWeight="500">{action}</Text>
-                      <Box w="14px" h="14px" rounded="full" border="2px solid" borderColor={action === "Investigate" ? ui.violet : ui.line} bg={action === "Investigate" ? ui.violet : "transparent"} />
+                      <Box w="14px" h="14px" rounded="full" border="2px solid" borderColor={action === remoteRules?.find(item => item.id === routingRule.id)?.routing ? ui.violet : ui.line} bg={action === remoteRules?.find(item => item.id === routingRule.id)?.routing ? ui.violet : "transparent"} />
                     </Flex>
                   </Panel>
                 ))}
@@ -1827,13 +1420,15 @@ function DetectionRules({ setView }) {
 }
 
 const fallbackRuleDetails = {
-  "fixture-0": { id: "RULE-001", name: "7AI - CRXfiltrate Browser Domain and Path Match", description: "Detects outbound HTTP requests to known CRXfiltrate command-and-control domains with URI paths matching the exfiltration pattern used by malicious Chrome extensions. This rule correlates DNS resolution, TLS SNI, and HTTP path segments to identify active data theft from compromised browser extensions.", mitre_techniques: ["T1567.002", "T1185"], execution_mode: "Scheduled", source: "7AI SIEM", enabled: true, severity: "high", detections: 837, investigations: 193, false_positive_rate: 26, recommendation_status: "Validated", confidence: "High", last_activity_at: "2026-10-27T09:15:00Z", query: 'event.category:"network" AND destination.domain:("crxfiltrate.com" OR "ext-relay.crxfiltrate.com") AND url.path:/^\\/upload\\/[a-f0-9]{32}/', schedule: "Every 5 minutes", lookback_window: "15 minutes", created_by: "7AI Detection Engineering", created_at: "2026-03-12T10:00:00Z", updated_at: "2026-10-25T14:30:00Z", tags: ["browser-extension", "exfiltration", "C2"] },
-  "fixture-1": { id: "RULE-002", name: "7AI - Impossible Travel", description: "Identifies user authentication events from geographically distant locations within a timeframe that makes physical travel impossible. Compares successive sign-in coordinates, factors in VPN usage, and checks device compliance to reduce false positives from legitimate remote access.", mitre_techniques: ["T1078", "T1078.004", "T1550.001", "T1538", "T1087"], execution_mode: "Scheduled", source: "7AI SIEM", enabled: true, severity: "medium", detections: 200, investigations: 170, false_positive_rate: 45, recommendation_status: "Not analyzed", confidence: "Medium", last_activity_at: "2026-10-24T16:42:00Z", query: 'event.category:"authentication" AND event.outcome:"success" | geoip(source.ip) | consecutive_logins_distance > 500km AND time_delta < 2h', schedule: "Every 15 minutes", lookback_window: "2 hours", created_by: "7AI Detection Engineering", created_at: "2026-01-08T09:00:00Z", updated_at: "2026-10-20T11:15:00Z", tags: ["identity", "travel", "account-compromise"] },
-  "fixture-2": { id: "RULE-003", name: "7AI - Suspicious PowerShell EncodedCommand", description: "Detects PowerShell processes launched with -EncodedCommand or -enc parameters that decode to suspicious patterns including download cradles, reflection loading, AMSI bypasses, and credential access commands. Applies entropy analysis to the decoded payload.", mitre_techniques: ["T1059.001"], execution_mode: "Scheduled", source: "7AI SIEM", enabled: true, severity: "high", detections: 190, investigations: 153, false_positive_rate: 10, recommendation_status: "Validated", confidence: "High", last_activity_at: "2026-10-20T08:30:00Z", query: 'process.name:"powershell.exe" AND process.command_line:(/\\-[eE][nN][cC]/ OR "-EncodedCommand") | base64_decode(encoded_payload) | match_patterns(["IEX","Invoke-Expression","Net.WebClient","Reflection.Assembly"])', schedule: "Every 5 minutes", lookback_window: "10 minutes", created_by: "7AI Detection Engineering", created_at: "2026-02-15T14:00:00Z", updated_at: "2026-10-18T09:45:00Z", tags: ["powershell", "execution", "obfuscation"] },
+  "fixture-0": { id: "RULE-001", name: "AISOC - CRXfiltrate Browser Domain and Path Match", description: "Detects outbound HTTP requests to known CRXfiltrate command-and-control domains with URI paths matching the exfiltration pattern used by malicious Chrome extensions. This rule correlates DNS resolution, TLS SNI, and HTTP path segments to identify active data theft from compromised browser extensions.", mitre_techniques: ["T1567.002", "T1185"], execution_mode: "Scheduled", source: "AISOC SIEM", enabled: true, severity: "high", detections: 837, investigations: 193, false_positive_rate: 26, recommendation_status: "Validated", confidence: "High", last_activity_at: "2026-10-27T09:15:00Z", query: 'event.category:"network" AND destination.domain:("crxfiltrate.com" OR "ext-relay.crxfiltrate.com") AND url.path:/^\\/upload\\/[a-f0-9]{32}/', schedule: "Every 5 minutes", lookback_window: "15 minutes", created_by: "AISOC Detection Engineering", created_at: "2026-03-12T10:00:00Z", updated_at: "2026-10-25T14:30:00Z", tags: ["browser-extension", "exfiltration", "C2"] },
+  "fixture-1": { id: "RULE-002", name: "AISOC - Impossible Travel", description: "Identifies user authentication events from geographically distant locations within a timeframe that makes physical travel impossible. Compares successive sign-in coordinates, factors in VPN usage, and checks device compliance to reduce false positives from legitimate remote access.", mitre_techniques: ["T1078", "T1078.004", "T1550.001", "T1538", "T1087"], execution_mode: "Scheduled", source: "AISOC SIEM", enabled: true, severity: "medium", detections: 200, investigations: 170, false_positive_rate: 45, recommendation_status: "Not analyzed", confidence: "Medium", last_activity_at: "2026-10-24T16:42:00Z", query: 'event.category:"authentication" AND event.outcome:"success" | geoip(source.ip) | consecutive_logins_distance > 500km AND time_delta < 2h', schedule: "Every 15 minutes", lookback_window: "2 hours", created_by: "AISOC Detection Engineering", created_at: "2026-01-08T09:00:00Z", updated_at: "2026-10-20T11:15:00Z", tags: ["identity", "travel", "account-compromise"] },
+  "fixture-2": { id: "RULE-003", name: "AISOC - Suspicious PowerShell EncodedCommand", description: "Detects PowerShell processes launched with -EncodedCommand or -enc parameters that decode to suspicious patterns including download cradles, reflection loading, AMSI bypasses, and credential access commands. Applies entropy analysis to the decoded payload.", mitre_techniques: ["T1059.001"], execution_mode: "Scheduled", source: "AISOC SIEM", enabled: true, severity: "high", detections: 190, investigations: 153, false_positive_rate: 10, recommendation_status: "Validated", confidence: "High", last_activity_at: "2026-10-20T08:30:00Z", query: 'process.name:"powershell.exe" AND process.command_line:(/\\-[eE][nN][cC]/ OR "-EncodedCommand") | base64_decode(encoded_payload) | match_patterns(["IEX","Invoke-Expression","Net.WebClient","Reflection.Assembly"])', schedule: "Every 5 minutes", lookback_window: "10 minutes", created_by: "AISOC Detection Engineering", created_at: "2026-02-15T14:00:00Z", updated_at: "2026-10-18T09:45:00Z", tags: ["powershell", "execution", "obfuscation"] },
   "fixture-3": { id: "RULE-004", name: "File Integrity Violations", description: "Monitors critical system files and registry keys for unauthorized modifications. Compares file hashes against known-good baselines and alerts on changes outside of approved maintenance windows.", mitre_techniques: ["T1565.001", "T1112"], execution_mode: "Scheduled", source: "Microsoft Defender", enabled: true, severity: "low", detections: 152, investigations: 129, false_positive_rate: 62, recommendation_status: "2 recommendations", confidence: "Medium", last_activity_at: "2026-10-21T07:00:00Z", query: 'event.category:"file" AND event.action:"modification" AND file.path:("C:\\\\Windows\\\\System32\\\\*" OR "C:\\\\Windows\\\\SysWOW64\\\\*") AND NOT process.name:("TrustedInstaller.exe" OR "msiexec.exe")', schedule: "Every 30 minutes", lookback_window: "1 hour", created_by: "SOC Team", created_at: "2026-04-01T10:00:00Z", updated_at: "2026-10-22T16:00:00Z", tags: ["integrity", "system-files", "persistence"] },
 };
 
 function DetectionRuleDetail({ id, setView }) {
+  const [savedRule, setSavedRule] = useState(null);
+  const [history, setHistory] = useState([]);
   const toast = useToast();
   const [rule, setRule] = useState(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -1844,19 +1439,27 @@ function DetectionRuleDetail({ id, setView }) {
     let active = true;
     if (id && !id.startsWith("fixture-")) {
       api.get("detection-rules", id)
-        .then((result) => active && setRule(result))
+        .then((result) => { if (active) { setRule(result); setSavedRule(result); } })
         .catch(() => active && setLoadFailed(true));
     } else {
       setRule(fallbackRuleDetails[id] || fallbackRuleDetails["fixture-0"]);
     }
     return () => { active = false; };
   }, [id]);
+  useEffect(() => {
+    let active = true;
+    if (activeTab === "history" && id && !id.startsWith("fixture-")) {
+      api.request(`/detection-rules/${encodeURIComponent(id)}/history`).then(result => { if (active) setHistory(result.items); }).catch(e => { if (active) toast({ title: "Could not load history", description: e.message, status: "error" }); });
+    }
+    return () => { active = false; };
+  }, [activeTab, id, toast]);
   const toggleEnabled = async () => {
     if (!rule) return;
     if (id && !id.startsWith("fixture-")) {
       try {
         const updated = await api.toggleDetectionRule(id);
         setRule((c) => ({ ...c, ...updated }));
+        setSavedRule(updated);
       } catch (e) { toast({ title: "Could not toggle rule", description: e.message, status: "error", duration: 3000 }); }
     } else {
       setRule((c) => ({ ...c, enabled: !c.enabled }));
@@ -1866,15 +1469,17 @@ function DetectionRuleDetail({ id, setView }) {
     setSaving(true);
     try {
       if (id && !id.startsWith("fixture-")) {
-        const updated = await api.update("detection-rules", id, rule);
+        const fields = ["name", "description", "severity", "mitre_techniques", "execution_mode", "enabled", "query", "schedule", "lookback_window", "routing"];
+        const updated = await api.update("detection-rules", id, Object.fromEntries(fields.filter(key => rule[key] !== undefined).map(key => [key, rule[key]])));
         setRule((c) => ({ ...c, ...updated }));
+        setSavedRule(updated);
       }
       toast({ title: "Rule saved", status: "success", duration: 2000 });
       setEditing(false);
     } catch (e) { toast({ title: "Could not save", description: e.message, status: "error", duration: 3000 }); }
     finally { setSaving(false); }
   };
-  if (!rule) return <Box p="40px" textAlign="center"><Text color={ui.muted}>Loading rule...</Text></Box>;
+  if (!rule) return <Box p="40px" textAlign="center"><Text color={ui.muted}>{loadFailed ? "Could not load this rule. Check the API and return to the registry." : "Loading rule..."}</Text><Button variant="ghost" onClick={() => setView("detect")}>Back to rules</Button></Box>;
   const sevColor = rule.severity === "high" || rule.severity === "critical" ? ui.red : rule.severity === "medium" ? ui.amber : ui.green;
   return (
     <Box className="page-enter">
@@ -1887,10 +1492,10 @@ function DetectionRuleDetail({ id, setView }) {
           <Badge bg={rule.enabled ? ui.green : ui.muted} color="white">{rule.enabled ? "Enabled" : "Disabled"}</Badge>
         </HStack>
         <HStack>
-          <Button variant="outline" onClick={toggleEnabled}>{rule.enabled ? "Disable" : "Enable"}</Button>
+          <Button variant="outline" isDisabled={editing} onClick={toggleEnabled}>{rule.enabled ? "Disable" : "Enable"}</Button>
           {editing ? (
             <>
-              <Button variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setRule(savedRule || rule); setEditing(false); }}>Cancel</Button>
               <Button isLoading={saving} onClick={saveRule}>Save changes</Button>
             </>
           ) : (
@@ -1928,8 +1533,8 @@ function DetectionRuleDetail({ id, setView }) {
                   <FormLabel fontSize="8px" color={ui.muted}>Execution mode</FormLabel>
                   {editing ? (
                     <Select value={rule.execution_mode} onChange={(e) => setRule((c) => ({ ...c, execution_mode: e.target.value }))}>
-                      <option value="Scheduled">Scheduled</option>
-                      <option value="Realtime">Realtime</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="realtime">Realtime</option>
                     </Select>
                   ) : <Text fontSize="11px">{rule.execution_mode}</Text>}
                 </FormControl>
@@ -1939,12 +1544,13 @@ function DetectionRuleDetail({ id, setView }) {
                 </FormControl>
                 <FormControl>
                   <FormLabel fontSize="8px" color={ui.muted}>Schedule</FormLabel>
-                  <Text fontSize="11px">{rule.schedule || "Every 5 minutes"}</Text>
+                  {editing ? <Input aria-label="Schedule" value={rule.schedule || ""} onChange={e => setRule({ ...rule, schedule: e.target.value })} /> : <Text fontSize="11px">{rule.schedule || "Every 5 minutes"}</Text>}
                 </FormControl>
                 <FormControl>
                   <FormLabel fontSize="8px" color={ui.muted}>Lookback window</FormLabel>
-                  <Text fontSize="11px">{rule.lookback_window || "15 minutes"}</Text>
+                  {editing ? <Input aria-label="Lookback window" value={rule.lookback_window || ""} onChange={e => setRule({ ...rule, lookback_window: e.target.value })} /> : <Text fontSize="11px">{rule.lookback_window || "15 minutes"}</Text>}
                 </FormControl>
+                <FormControl><FormLabel>Routing</FormLabel>{editing ? <Select aria-label="Routing" value={rule.routing || "Investigate"} onChange={e => setRule({ ...rule, routing: e.target.value })}>{["Investigate", "Sample (10%)", "Suppress", "Escalate"].map(value => <option key={value}>{value}</option>)}</Select> : <Text>{rule.routing || "Investigate"}</Text>}</FormControl>
               </Grid>
             </Panel>
             <Panel p="16px">
@@ -2017,7 +1623,7 @@ function DetectionRuleDetail({ id, setView }) {
               <Badge bg={ui.ink} color="white">{rule.source}</Badge>
             </Flex>
             <Box mt="12px" p="14px" bg="#0d1117" borderRadius="6px" fontFamily="mono" fontSize="11px" color="#e6edf3" lineHeight="1.7" whiteSpace="pre-wrap" overflowX="auto">
-              {rule.query || "No query defined"}
+              {editing ? <Textarea aria-label="Detection query" rows={8} fontFamily="mono" value={rule.query || ""} onChange={e => setRule({ ...rule, query: e.target.value })} /> : rule.query || "No query defined"}
             </Box>
           </Panel>
           <Panel mt="12px" p="16px">
@@ -2034,14 +1640,8 @@ function DetectionRuleDetail({ id, setView }) {
           <Panel p="16px">
             <Label>Detection Activity</Label>
             <Stack mt="12px" spacing="0">
-              {[
-                { date: "Oct 27, 2026", event: "Alert triggered", detail: "Matched 3 events from endpoint OKAMI-WS-142", severity: "high" },
-                { date: "Oct 25, 2026", event: "Rule updated", detail: "Tuning: added exclusion for internal staging domains", severity: "info" },
-                { date: "Oct 23, 2026", event: "Alert triggered", detail: "Matched 7 events from endpoint PLAID-DC-001", severity: "high" },
-                { date: "Oct 20, 2026", event: "AI validation", detail: "Rule logic validated — no false-positive tuning recommended", severity: "success" },
-                { date: "Oct 18, 2026", event: "Alert triggered", detail: "Matched 2 events from endpoint OKAMI-FIN-074", severity: "medium" },
-                { date: "Oct 12, 2026", event: "Rule created", detail: `Initial deployment by ${rule.created_by}`, severity: "info" },
-              ].map((entry, i) => (
+              {!history.length && <Text color={ui.muted}>No recorded changes yet.</Text>}
+              {history.map(event => ({ date: new Date(event.created_at).toLocaleString(), event: event.action, detail: event.details.fields?.join(", ") || "Registry change recorded", severity: "info" })).map((entry, i) => (
                 <Flex key={i} py="10px" borderBottom="1px solid" borderColor={ui.line} align="start">
                   <Box w="8px" h="8px" mt="4px" rounded="full" bg={entry.severity === "high" ? ui.red : entry.severity === "medium" ? ui.amber : entry.severity === "success" ? ui.green : ui.steel} mr="12px" flexShrink={0} />
                   <Box flex="1">
@@ -2094,6 +1694,7 @@ function DetectionRuleDetail({ id, setView }) {
 function HuntDashboard({ setView }) {
   const toast = useToast();
   const [huntQuery, setHuntQuery] = useState("");
+  const [huntContext, setHuntContext] = useState("");
   const [hunts, setHunts] = useState([]);
   const [runningHunt, setRunningHunt] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -2101,11 +1702,11 @@ function HuntDashboard({ setView }) {
   const [lifecycleFilter, setLifecycleFilter] = useState("all");
   const fallbackHunts = [
     { id: "HUNT-001", name: "TH for CVE-2026-42897 — Exchange Server XSS", query: "CVE-2026-42897", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 3, author: "Robert Kim", updated_at: "2026-05-18T14:22:00Z" },
-    { id: "HUNT-002", name: "Lumma Stealer C2 beacon detection", query: "lumma stealer", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 5, author: "7AI Engine", updated_at: "2026-05-17T09:15:00Z" },
+    { id: "HUNT-002", name: "Lumma Stealer C2 beacon detection", query: "lumma stealer", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 5, author: "AISOC Engine", updated_at: "2026-05-17T09:15:00Z" },
     { id: "HUNT-003", name: "APT42 phishing infrastructure overlap", query: "APT42 phishing", source: "threat_intel", status: "completed", verdict: "no_findings", findings_count: 0, author: "Maria Santos", updated_at: "2026-05-16T11:40:00Z" },
     { id: "HUNT-004", name: "Black Basta lateral movement patterns", query: "Black Basta", source: "ad_hoc", status: "completed", verdict: "review_required", findings_count: 2, author: "James Chen", updated_at: "2026-05-15T16:30:00Z" },
     { id: "HUNT-005", name: "Cobalt Strike malleable C2 profiles", query: "cobalt strike C2", source: "ad_hoc", status: "completed", verdict: "no_findings", findings_count: 0, author: "Robert Kim", updated_at: "2026-05-14T08:55:00Z" },
-    { id: "HUNT-006", name: "UNC1549 MINIBIKE/MINIBUS backdoor hunt", query: "UNC1549", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 1, author: "7AI Engine", updated_at: "2026-05-13T13:20:00Z" },
+    { id: "HUNT-006", name: "UNC1549 MINIBIKE/MINIBUS backdoor hunt", query: "UNC1549", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 1, author: "AISOC Engine", updated_at: "2026-05-13T13:20:00Z" },
   ];
   useEffect(() => {
     let active = true;
@@ -2118,11 +1719,13 @@ function HuntDashboard({ setView }) {
     if (!huntQuery.trim()) { toast({ title: "Enter a hunt question", status: "warning", duration: 2000 }); return; }
     setRunningHunt(true);
     try {
-      const created = await api.create("hunts", { name: huntQuery.trim().slice(0, 90), query: huntQuery.trim(), source: "ad_hoc" });
+      const created = await api.create("hunts", { name: huntQuery.trim().slice(0, 90), query: huntQuery.trim(), source: "ad_hoc", insight_refs: huntContext.split(",").map(value => value.trim()).filter(Boolean) });
       const completed = await api.runHunt(created.id);
       setHunts((current) => [completed, ...current]);
       setHuntQuery("");
-      toast({ title: "Hunt completed", description: `${completed.findings_count} findings require review.`, status: "success", duration: 2500 });
+      setHuntContext("");
+      const applied = completed.applied_skills || [];
+      toast({ title: "Hunt completed", description: `${completed.findings_count} findings require review.${applied.length ? ` ${applied.length} skill${applied.length === 1 ? "" : "s"} attached: ${applied.map(skill => `${skill.name} v${skill.version}`).join(", ")}.` : " No enabled skills matched this hunt."}`, status: "success", duration: 4500 });
     } catch (error) {
       toast({ title: "Hunt failed", description: error.message, status: "error", duration: 3000 });
     } finally { setRunningHunt(false); }
@@ -2181,7 +1784,7 @@ function HuntDashboard({ setView }) {
               <Box as="table" w="100%" fontSize="11px">
                 <Box as="thead">
                   <Box as="tr" borderBottom="1px solid" borderColor={ui.line}>
-                    {["Name", "Author", "Last Updated", "Findings", "Verdict"].map((h) => (
+                    {["Name", "Author", "Last Updated", "Findings", "Verdict", "Skills"].map((h) => (
                       <Box as="th" key={h} p="8px 12px" textAlign="left" fontSize="9px" color={ui.muted} fontWeight="600" textTransform="uppercase" letterSpacing=".04em">{h}</Box>
                     ))}
                   </Box>
@@ -2194,6 +1797,7 @@ function HuntDashboard({ setView }) {
                       <Box as="td" p="8px 12px" color={ui.muted}>{h.updated_at ? new Date(h.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</Box>
                       <Box as="td" p="8px 12px" fontWeight="600">{h.findings_count ?? 0}</Box>
                       <Box as="td" p="8px 12px"><Badge bg={verdictColor(h.verdict)} color="white" fontSize="8px">{verdictLabel(h.verdict)}</Badge></Box>
+                      <Box as="td" p="8px 12px"><Badge colorScheme="purple" fontSize="8px">{h.applied_skills?.length || 0}</Badge></Box>
                     </Box>
                   ))}
                 </Box>
@@ -2227,6 +1831,7 @@ function HuntDashboard({ setView }) {
               />
               <Button isLoading={runningHunt} onClick={runHunt}>Run</Button>
             </HStack>
+            <Input mt="8px" aria-label="Enterprise context references" placeholder="Enterprise context IDs (optional, comma separated)" value={huntContext} onChange={event => setHuntContext(event.target.value)} />
             <Text mt="12px" fontSize="7px" color={ui.muted}>MOST RECENT</Text>
             <Stack mt="5px" spacing="4px">
               {displayHunts.slice(0, 3).map((h) => (
@@ -2246,7 +1851,7 @@ function HuntDashboard({ setView }) {
             <Box mt="7px" w="100%" h="4px" bg="#e7e8ed"><Box w="17%" h="full" bg={ui.violet} /></Box>
           </Panel>
           <Panel p="12px">
-            <Label>7AI activity</Label>
+            <Label>AISOC activity</Label>
             <Text mt="15px" fontSize="8px"><b>17 threat reports</b> ingested and reviewed</Text>
             <Text mt="12px" color={ui.violet} fontSize="8px">2 emerging threats identified in your environment</Text>
             <Text mt="12px" fontSize="8px"><b>218 IOCs</b> checked across 4 connectors</Text>
@@ -2262,9 +1867,9 @@ function HuntDashboard({ setView }) {
               </Box>
             </HStack>
             <HStack mt="12px">
-              <Badge bg="#111827" color="white">7AI</Badge>
+              <Badge bg="#111827" color="white">AISOC</Badge>
               <Box>
-                <Text fontSize="8px" fontWeight="600">7AI Threat Intelligence</Text>
+                <Text fontSize="8px" fontWeight="600">AISOC Threat Intelligence</Text>
                 <Text fontSize="7px" color={ui.muted}>9 reports · 9 hunts</Text>
               </Box>
             </HStack>
@@ -2559,7 +2164,7 @@ function RespondCenter({ setView }) {
                   justifySelf={{ base: "start", md: "auto" }}
                   variant="outline"
                 >
-                  {item.connector || "7AI"}
+                  {item.connector || "AISOC"}
                 </Badge>
                 {item.status === "completed" ? (
                   <Badge
@@ -2653,7 +2258,7 @@ function RespondCenter({ setView }) {
             </AlertDialogHeader>
             <AlertDialogBody fontSize="13px">
               {confirmItem?.title} will run on{" "}
-              {confirmItem?.connector || "7AI"}. Identity and endpoint changes
+              {confirmItem?.connector || "AISOC"}. Identity and endpoint changes
               take effect immediately.
             </AlertDialogBody>
             <AlertDialogFooter>
@@ -3001,11 +2606,11 @@ function MemoryCenter({ setView }) {
 /* ─── Threat Intel ──────────────────────────────────────────────── */
 
 const fallbackReports = [
-  { id: "TIR-001", title: "CRXfiltrate — Remote-Controlled Manifest V3 Browser Extensions", source: "7AI Threat Intelligence", report_type: "threat_report", severity: "critical", status: "actionable", ioc_count: 12, hunt_status: "completed", hunts_launched: 2, findings_count: 3, tags: ["browser", "extension", "exfiltration"], published_at: "2026-10-22T14:30:00Z" },
-  { id: "TIR-002", title: "APT42 — Gov Phishing Wave", source: "7AI Threat Intelligence", report_type: "advisory", severity: "high", status: "actionable", ioc_count: 8, hunt_status: "completed", hunts_launched: 1, findings_count: 1, tags: ["apt", "phishing", "government"], published_at: "2026-10-21T09:15:00Z" },
+  { id: "TIR-001", title: "CRXfiltrate — Remote-Controlled Manifest V3 Browser Extensions", source: "AISOC Threat Intelligence", report_type: "threat_report", severity: "critical", status: "actionable", ioc_count: 12, hunt_status: "completed", hunts_launched: 2, findings_count: 3, tags: ["browser", "extension", "exfiltration"], published_at: "2026-10-22T14:30:00Z" },
+  { id: "TIR-002", title: "APT42 — Gov Phishing Wave", source: "AISOC Threat Intelligence", report_type: "advisory", severity: "high", status: "actionable", ioc_count: 8, hunt_status: "completed", hunts_launched: 1, findings_count: 1, tags: ["apt", "phishing", "government"], published_at: "2026-10-21T09:15:00Z" },
   { id: "TIR-003", title: "Click, Install, Compromise: The New Wave of Zoom-Themed Attacks", source: "Google Threat Intelligence", report_type: "threat_report", severity: "high", status: "reviewing", ioc_count: 6, hunt_status: "hunting", hunts_launched: 1, findings_count: 0, tags: ["social-engineering", "zoom", "malware"], published_at: "2026-10-20T16:45:00Z" },
   { id: "TIR-004", title: "UNC1549 — Aerospace Harvest", source: "Google Threat Intelligence", report_type: "advisory", severity: "medium", status: "archived", ioc_count: 4, hunt_status: "completed", hunts_launched: 1, findings_count: 0, tags: ["apt", "aerospace", "espionage"], published_at: "2026-10-18T11:00:00Z" },
-  { id: "TIR-005", title: "Lumma Stealer C2 Infrastructure Update", source: "7AI Threat Intelligence", report_type: "ioc_feed", severity: "critical", status: "actionable", ioc_count: 15, hunt_status: "completed", hunts_launched: 3, findings_count: 2, tags: ["stealer", "c2", "infrastructure"], published_at: "2026-10-17T08:20:00Z" },
+  { id: "TIR-005", title: "Lumma Stealer C2 Infrastructure Update", source: "AISOC Threat Intelligence", report_type: "ioc_feed", severity: "critical", status: "actionable", ioc_count: 15, hunt_status: "completed", hunts_launched: 3, findings_count: 2, tags: ["stealer", "c2", "infrastructure"], published_at: "2026-10-17T08:20:00Z" },
   { id: "TIR-006", title: "CVE-2026-42897 — Microsoft Exchange Server XSS / Spoofing Vulnerability", source: "NIST NVD", report_type: "advisory", severity: "high", status: "new", ioc_count: 3, hunt_status: "not_started", hunts_launched: 0, findings_count: 0, tags: ["cve", "exchange", "xss"], published_at: "2026-10-16T20:00:00Z" },
   { id: "TIR-007", title: "Black Basta Ransomware TTPs — Q4 2026", source: "Mandiant", report_type: "hunt_pack", severity: "critical", status: "reviewing", ioc_count: 9, hunt_status: "hunting", hunts_launched: 2, findings_count: 0, tags: ["ransomware", "black-basta", "ttps"], published_at: "2026-10-15T13:10:00Z" },
   { id: "TIR-008", title: "Cobalt Strike Malleable C2 Profiles", source: "Recorded Future", report_type: "ioc_feed", severity: "high", status: "actionable", ioc_count: 11, hunt_status: "completed", hunts_launched: 2, findings_count: 1, tags: ["cobalt-strike", "c2", "profiles"], published_at: "2026-10-14T06:30:00Z" },
@@ -3169,8 +2774,8 @@ function ThreatIntelDashboard({ setView }) {
             <Stack mt="14px" spacing="12px">
               {Object.entries(sourceCounts).map(([source, count]) => (
                 <HStack key={source}>
-                  <Badge bg={source.includes("7AI") ? "#111827" : source.includes("Google") ? ui.amber : ui.steel} color="white" fontSize="9px">
-                    {source.includes("7AI") ? "7AI" : source.includes("Google") ? "G" : source.slice(0, 2).toUpperCase()}
+                  <Badge bg={source.includes("AISOC") ? "#111827" : source.includes("Google") ? ui.amber : ui.steel} color="white" fontSize="9px">
+                    {source.includes("AISOC") ? "AISOC" : source.includes("Google") ? "G" : source.slice(0, 2).toUpperCase()}
                   </Badge>
                   <Box flex="1">
                     <Text fontWeight="600">{source}</Text>
@@ -3252,9 +2857,9 @@ function ThreatIntelReportDetail({ id, setView }) {
   if (!report) return <Box p="40px" textAlign="center"><Text color={ui.muted}>Loading report…</Text></Box>;
 
   return (
-    <Box className="page-enter">
-      {loadFailed && <Box px="15px" pt="8px"><SampleDataNotice show /></Box>}
-      <Flex px="15px" py="8px" bg="#f5f6f9" align="center" wrap="wrap" gap="8px">
+    <Box className="page-enter threat-intel-detail" minW="0" w="full">
+      {loadFailed && <Box px={{ base: "12px", md: "20px" }} pt="8px"><SampleDataNotice show /></Box>}
+      <Flex px={{ base: "12px", md: "20px" }} py="10px" bg="#f5f6f9" align="center" wrap="wrap" gap="8px">
         <Button variant="ghost" onClick={() => setView("threatIntel")} leftIcon={Icon.arrowLeft({ size: 13 })}>Back to feed</Button>
         <HStack ml="auto">
           <Badge bg={reportTypeBg(report.report_type)} color="white">{reportTypeLabel(report.report_type)}</Badge>
@@ -3265,8 +2870,8 @@ function ThreatIntelReportDetail({ id, setView }) {
         </HStack>
       </Flex>
 
-      <Grid templateColumns={{ base: "1fr", lg: "280px 1fr" }} maxW="1100px" mx="auto" mt="26px" gap="24px" px="15px">
-        <Box borderRight={{ base: "none", lg: "1px solid" }} borderColor={ui.line} pr={{ base: 0, lg: "18px" }}>
+      <Grid className="threat-intel-detail-layout" templateColumns={{ base: "minmax(0, 1fr)", xl: "minmax(260px, 22%) minmax(0, 1fr)" }} w="full" mt={{ base: "12px", md: "18px" }} gap={{ base: "16px", md: "22px" }} px={{ base: "12px", md: "20px" }} alignItems="start">
+        <Box minW="0" borderRight={{ base: "none", xl: "1px solid" }} borderBottom={{ base: "1px solid", xl: "none" }} borderColor={ui.line} pr={{ base: 0, xl: "18px" }} pb={{ base: "14px", xl: 0 }}>
           <Text color={ui.muted}>{report.source}</Text>
           <Text mt="4px" fontSize="8px" color={ui.quiet}>Published {new Date(report.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</Text>
           <Divider my="14px" />
@@ -3283,7 +2888,7 @@ function ThreatIntelReportDetail({ id, setView }) {
           </Flex>
         </Box>
 
-        <Box>
+        <Box minW="0">
           <Heading fontSize="18px">{report.title}</Heading>
           <Text color={ui.muted} mt="8px">{report.summary || "Detailed analysis and indicators for this threat intelligence report."}</Text>
 
@@ -3398,7 +3003,7 @@ function ConnectorSetup() {
         </Panel>
         <Box>
           <Heading fontSize="14px" mb="12px">
-            Step 3: Enter Connection Information in 7AI
+            Step 3: Enter Connection Information in AISOC
           </Heading>
           <Panel
             h="450px"
@@ -3471,7 +3076,7 @@ function ConnectorSetupLive({ setView }) {
   const wizardSteps = [
     { num: 1, title: "Create API Credentials in Cribl", instructions: ["Navigate to your Cribl Cloud workspace Settings.", "Go to API Credentials and click Create Credential.", "Choose Search scope with read access.", "Copy the Client ID and Client Secret."] },
     { num: 2, title: "Enable Search in Cribl", instructions: ["Open Settings → Search in your Cribl workspace.", "Enable the Cribl Search feature if not already active.", "Verify the search group (default_search) is configured.", "Test a sample query to confirm access."] },
-    { num: 3, title: "Enter Connection Information in 7AI", instructions: ["Enter the API Base URL from Step 2.", "Enter the Client ID and Client Secret from Step 1.", "Click Save.", "Once the credentials are accepted, the Cribl connector will appear in the Active Connectors section. After 5–10 minutes, a heartcheck will run automatically. If successful, the connector tile will display as Operational, confirming the installation was successful."] },
+    { num: 3, title: "Enter Connection Information in AISOC", instructions: ["Enter the API Base URL from Step 2.", "Enter the Client ID and Client Secret from Step 1.", "Click Save.", "Once the credentials are accepted, the Cribl connector will appear in the Active Connectors section. After 5–10 minutes, a heartcheck will run automatically. If successful, the connector tile will display as Operational, confirming the installation was successful."] },
     { num: 4, title: "Verify Connection", instructions: ["Check that the connector status shows Operational.", "Run a test search to verify data is flowing.", "Configure any search filters or log routing rules.", "The connector is now ready for investigations."] },
   ];
   const currentStep = wizardSteps.find((s) => s.num === setupStep) || wizardSteps[2];
@@ -3589,34 +3194,44 @@ function App() {
       path = `/threat-intel/${encodeURIComponent(detailId || "TIR-001")}`;
     else if (view === "detectionRuleDetail")
       path = `/detect/rules/${encodeURIComponent(detailId || "RULE-001")}`;
+    else if (view === "skillDetail") path = `/skills/${encodeURIComponent(detailId)}`;
     else path = pathForView[view] || "/";
     if (window.location.pathname !== path)
       window.history.pushState({}, "", path);
     setRoute(routeFromPath(path));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const { view, investigationId, reportId, ruleId } = route;
+  const { view, investigationId, reportId, ruleId, skillId } = route;
   const pages = {
     queue: <QueueDashboard setView={setView} />,
-    investigations: <InvestigationsDashboard setView={setView} />,
-    investigationDetail: <InvestigationDetail id={investigationId} />,
-    detect: <DetectionRules setView={setView} />,
-    detectionRuleDetail: <DetectionRuleDetail id={ruleId} setView={setView} />,
+    investigations: <InvestigationQueue setView={setView} />,
+    investigationDetail: <InvestigationCase key={investigationId} id={investigationId} />,
+    detect: <DetectionRegistry setView={setView} templates={catalogRules} />,
+    detectionIntelligence: <DetectionIntelligence setView={setView} />,
+    detectionRuleDetail: <Box p={{ base: "12px", md: "20px" }}><RuleWorkspace key={ruleId} id={ruleId} standalone onClose={() => setView("detect")} onChanged={() => {}} onSelect={id => setView("detectionRuleDetail", id)} /></Box>,
     respond: <RespondCenter setView={setView} />,
     hunt: <HuntDashboard setView={setView} />,
     threatIntel: <ThreatIntelDashboard setView={setView} />,
     threatIntelDetail: <ThreatIntelReportDetail id={reportId} setView={setView} />,
     memory: <MemoryCenter setView={setView} />,
     connector: <ConnectorSetupLive setView={setView} />,
+    apiSources: <ApiSources setView={setView} />,
+    skills: <SkillsLibrary setView={setView} />,
+    skillTemplates: <SkillsLibrary setView={setView} templatesView />,
+    skillSuggestions: <SkillsLibrary setView={setView} suggestions />,
+    skillOutcomes: <SkillsOutcomes setView={setView} />,
+    skillCreate: <SkillEditor setView={setView} />,
+    skillDetail: <SkillEditor key={skillId} id={skillId} setView={setView} />,
   };
   const crumbs = {
     queue: ["Respond", "Operations Queue"],
     investigations: ["Investigate", "Investigations Dashboard"],
     investigationDetail: [
       "Investigate",
-      "Credential-store access and outbound transfer",
+      "Investigation detail",
     ],
     detect: ["Detect", "Detection Rules"],
+    detectionIntelligence: ["Detect", "Detection Intelligence"],
     detectionRuleDetail: ["Detect", "Detection Rule Detail"],
     respond: ["Respond", "Response Center"],
     hunt: ["Hunt", "Hunt Dashboard"],
@@ -3624,6 +3239,8 @@ function App() {
     threatIntelDetail: ["Threat Intel", "Report Detail"],
     memory: ["Memory", "Investigation Memory"],
     connector: ["Configuration", "Log Connectors › Cribl"],
+    apiSources: ["Build", "API Sources"],
+    skills: ["Skills", "Library"], skillTemplates: ["Skills", "Starter templates"], skillSuggestions: ["Skills", "Environment suggestions"], skillOutcomes: ["Skills", "Outcomes"], skillCreate: ["Skills", "Create skill"], skillDetail: ["Skills", "Skill details"],
   };
   return (
     <Shell view={view} setView={setView} breadcrumb={crumbs[view]}>
@@ -3632,8 +3249,10 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")).render(
+const reactRoot = import.meta.hot?.data.reactRoot || createRoot(document.getElementById("root"));
+if (import.meta.hot) import.meta.hot.dispose(data => { data.reactRoot = reactRoot; });
+reactRoot.render(
   <ChakraProvider theme={theme}>
-    <App />
+    <AuthGate><App /></AuthGate>
   </ChakraProvider>,
 );

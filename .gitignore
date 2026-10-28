@@ -29,6 +29,8 @@ coverage/
 
 # Logs and browser test artifacts
 *.log
+.run/
+output/
 .playwright-cli/
 playwright-report/
 test-results/

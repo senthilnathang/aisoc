@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { migratePipeline } from "./pipeline-schema.js";
 
 export function openDatabase(path: string): DatabaseSync {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -8,7 +9,23 @@ export function openDatabase(path: string): DatabaseSync {
   db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;");
   migrate(db);
   seed(db);
+  seedEvidence(db);
+  migratePipeline(db);
+  migrateBrand(db);
   return db;
+}
+
+function migrateBrand(db: DatabaseSync): void {
+  if (db.prepare("SELECT version FROM schema_migrations WHERE version = 7").get()) return;
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.exec(`UPDATE investigations SET owner = 'AISOC Agent' WHERE owner = '7AI Agent';
+      UPDATE detection_rules SET name = replace(name, '7AI', 'AISOC') WHERE name LIKE '7AI%';
+      UPDATE threat_intel_reports SET source = 'AISOC Threat Intelligence' WHERE source = '7AI Threat Intelligence';`);
+    db.prepare("UPDATE detection_rule_versions SET snapshot_json = json_set(snapshot_json, '$.name', replace(json_extract(snapshot_json, '$.name'), '7AI', 'AISOC')) WHERE json_extract(snapshot_json, '$.name') LIKE '7AI%'").run();
+    db.prepare("INSERT INTO schema_migrations(version, applied_at) VALUES (7, datetime('now'))").run();
+    db.exec("COMMIT");
+  } catch (error) { db.exec("ROLLBACK"); throw error; }
 }
 
 function migrate(db: DatabaseSync): void {
@@ -29,7 +46,7 @@ function migrate(db: DatabaseSync): void {
       status TEXT NOT NULL CHECK (status IN ('open','investigating','contained','resolved','closed')),
       determination TEXT NOT NULL CHECK (determination IN ('unknown','benign','suspicious','malicious','mitigated')),
       risk_score INTEGER NOT NULL DEFAULT 0 CHECK (risk_score BETWEEN 0 AND 100),
-      owner TEXT NOT NULL DEFAULT '7AI Agent',
+      owner TEXT NOT NULL DEFAULT 'AISOC Agent',
       primary_entity TEXT NOT NULL DEFAULT '',
       replay_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -123,7 +140,7 @@ function migrate(db: DatabaseSync): void {
       tenant_id TEXT NOT NULL,
       title TEXT NOT NULL,
       summary TEXT NOT NULL DEFAULT '',
-      source TEXT NOT NULL DEFAULT '7AI',
+      source TEXT NOT NULL DEFAULT 'AISOC',
       report_type TEXT NOT NULL DEFAULT 'threat_report' CHECK (report_type IN ('threat_report','advisory','ioc_feed','hunt_pack')),
       severity TEXT NOT NULL CHECK (severity IN ('low','medium','high','critical')),
       status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','reviewing','actionable','archived')),
@@ -163,6 +180,50 @@ function migrate(db: DatabaseSync): void {
   `);
 }
 
+function seedEvidence(db: DatabaseSync): void {
+  if (db.prepare("SELECT version FROM schema_migrations WHERE version = 3").get()) return;
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.exec(`
+      ALTER TABLE detection_rules ADD COLUMN query TEXT NOT NULL DEFAULT '';
+      ALTER TABLE detection_rules ADD COLUMN schedule TEXT NOT NULL DEFAULT 'Every 5 minutes';
+      ALTER TABLE detection_rules ADD COLUMN lookback_window TEXT NOT NULL DEFAULT '15 minutes';
+      ALTER TABLE detection_rules ADD COLUMN routing TEXT NOT NULL DEFAULT 'Investigate';
+      CREATE TABLE investigation_steps (
+        id TEXT NOT NULL, tenant_id TEXT NOT NULL, investigation_id TEXT NOT NULL,
+        title TEXT NOT NULL, conclusion TEXT NOT NULL DEFAULT '', tool TEXT NOT NULL,
+        request_json TEXT NOT NULL DEFAULT '{}', response_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (tenant_id, id),
+        FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE
+      );
+      CREATE TABLE investigation_feedback (
+        id TEXT NOT NULL, tenant_id TEXT NOT NULL, investigation_id TEXT NOT NULL,
+        comment TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        PRIMARY KEY (tenant_id, id),
+        FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE
+      );
+      CREATE TABLE audit_events (
+        id TEXT NOT NULL, tenant_id TEXT NOT NULL, resource TEXT NOT NULL, resource_id TEXT NOT NULL,
+        action TEXT NOT NULL, details_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (tenant_id, id)
+      );
+      CREATE INDEX idx_steps_case ON investigation_steps(tenant_id, investigation_id);
+      CREATE INDEX idx_feedback_case ON investigation_feedback(tenant_id, investigation_id);
+      CREATE INDEX idx_audit_resource ON audit_events(tenant_id, resource, resource_id);
+    `);
+    const now = new Date().toISOString();
+    for (const item of db.prepare("SELECT id, primary_entity, summary, source FROM investigations WHERE tenant_id = 'demo'").all()) {
+      db.prepare(`INSERT INTO artifacts (id, tenant_id, investigation_id, type, value, label, metadata_json, created_at, updated_at)
+        VALUES (?, 'demo', ?, 'entity', ?, 'Primary entity', '{"provenance":"Local demo fixture"}', ?, ?)`)
+        .run(`ART-${item.id}`, String(item.id), String(item.primary_entity), now, now);
+      db.prepare(`INSERT INTO investigation_steps (id, tenant_id, investigation_id, title, conclusion, tool, request_json, response_json, created_at, updated_at)
+        VALUES (?, 'demo', ?, 'Review source alert', ?, 'Demo alert import', ?, ?, ?, ?)`)
+        .run(`STEP-${item.id}`, String(item.id), String(item.summary), JSON.stringify({source: item.source, entity: item.primary_entity}), JSON.stringify({summary: item.summary, provenance: 'Local demo fixture; no external tool executed'}), now, now);
+    }
+    db.exec("INSERT INTO schema_migrations VALUES (3, datetime('now')); COMMIT;");
+  } catch (error) { db.exec("ROLLBACK"); throw error; }
+}
+
 function seed(db: DatabaseSync): void {
   const existing = db.prepare("SELECT COUNT(*) AS count FROM investigations WHERE tenant_id = ?").get("demo") as { count: number };
   if (existing.count > 0) return;
@@ -171,9 +232,9 @@ function seed(db: DatabaseSync): void {
     (id, tenant_id, title, summary, source, category, severity, status, determination, risk_score, owner, primary_entity, replay_count, created_at, updated_at)
     VALUES (?, 'demo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`);
   const investigations = [
-    ["INV-4821", "Suspicious OAuth consent grant", "OAuth app requested mailbox access.", "Microsoft 365", "identity", "critical", "investigating", "malicious", 94, "7AI Agent", "j.park@nova.example"],
+    ["INV-4821", "Suspicious OAuth consent grant", "OAuth app requested mailbox access.", "Microsoft 365", "identity", "critical", "investigating", "malicious", 94, "AISOC Agent", "j.park@nova.example"],
     ["INV-4819", "Risk-Backed Impossible Travel - Entra ID", "Sign-ins from Philippines and Kazakhstan.", "Entra ID", "identity", "high", "contained", "malicious", 87, "Maya Chen", "maya.santos@okami-ai.com"],
-    ["INV-4814", "Encoded PowerShell spawned by Excel", "Credential access followed by outbound transfer.", "CrowdStrike", "endpoint", "high", "investigating", "suspicious", 82, "7AI Agent", "OKAMI-FIN-074"],
+    ["INV-4814", "Encoded PowerShell spawned by Excel", "Credential access followed by outbound transfer.", "CrowdStrike", "endpoint", "high", "investigating", "suspicious", 82, "AISOC Agent", "OKAMI-FIN-074"],
     ["INV-4808", "Unusual S3 bulk object access", "Service account collected an unusual object volume.", "AWS GuardDuty", "cloud", "medium", "open", "unknown", 71, "Noah Reed", "svc-data-export"]
   ];
   for (const row of investigations) insertInvestigation.run(...row, now, now);
@@ -182,9 +243,9 @@ function seed(db: DatabaseSync): void {
     (id, tenant_id, name, description, mitre_techniques_json, execution_mode, enabled, severity, detections, investigations, false_positive_rate, recommendation_status, last_activity_at, created_at, updated_at)
     VALUES (?, 'demo', ?, '', ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const rules = [
-    ["RULE-001", "7AI - CRXfiltrate Browser Domain and Path Match", '["T1567","T1071"]', "scheduled", "high", 837, 193, 26, "validated"],
-    ["RULE-002", "7AI - Impossible Travel", '["T1078"]', "scheduled", "medium", 200, 170, 45, "not_analyzed"],
-    ["RULE-003", "7AI - Suspicious PowerShell EncodedCommand", '["T1059.001"]', "scheduled", "high", 190, 153, 10, "validated"]
+    ["RULE-001", "AISOC - CRXfiltrate Browser Domain and Path Match", '["T1567","T1071"]', "scheduled", "high", 837, 193, 26, "validated"],
+    ["RULE-002", "AISOC - Impossible Travel", '["T1078"]', "scheduled", "medium", 200, 170, 45, "not_analyzed"],
+    ["RULE-003", "AISOC - Suspicious PowerShell EncodedCommand", '["T1059.001"]', "scheduled", "high", 190, 153, 10, "validated"]
   ];
   for (const row of rules) insertRule.run(...row, now, now, now);
 
@@ -209,11 +270,11 @@ function seed(db: DatabaseSync): void {
     (id, tenant_id, title, summary, source, report_type, severity, status, ioc_count, hunt_status, hunts_launched, findings_count, tags_json, published_at, created_at, updated_at)
     VALUES (?, 'demo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const reports: [string, string, string, string, string, string, string, number, string, number, number, string, string][] = [
-    ["TIR-001", "CRXfiltrate — Remote-Controlled Manifest V3 Browser Extensions", "Backdoored Chrome extensions using Manifest V3 exfiltrate browser data through covert update channels.", "7AI Threat Intelligence", "threat_report", "critical", "actionable", 12, "completed", 2, 3, '["browser","extension","exfiltration"]', "2026-10-20T14:00:00Z"],
-    ["TIR-002", "APT42 — Gov Phishing Wave", "Iranian state-sponsored group targeting government contractors with credential-harvesting campaigns.", "7AI Threat Intelligence", "advisory", "high", "actionable", 8, "completed", 1, 1, '["apt42","phishing","government"]', "2026-10-18T09:30:00Z"],
+    ["TIR-001", "CRXfiltrate — Remote-Controlled Manifest V3 Browser Extensions", "Backdoored Chrome extensions using Manifest V3 exfiltrate browser data through covert update channels.", "AISOC Threat Intelligence", "threat_report", "critical", "actionable", 12, "completed", 2, 3, '["browser","extension","exfiltration"]', "2026-10-20T14:00:00Z"],
+    ["TIR-002", "APT42 — Gov Phishing Wave", "Iranian state-sponsored group targeting government contractors with credential-harvesting campaigns.", "AISOC Threat Intelligence", "advisory", "high", "actionable", 8, "completed", 1, 1, '["apt42","phishing","government"]', "2026-10-18T09:30:00Z"],
     ["TIR-003", "Click, Install, Compromise: The New Wave of Zoom-Themed Attacks", "Threat actors distributing trojanized Zoom installers through SEO-poisoned search results.", "Google Threat Intelligence", "threat_report", "high", "reviewing", 6, "hunting", 1, 0, '["zoom","trojan","seo-poisoning"]', "2026-10-22T11:15:00Z"],
     ["TIR-004", "UNC1549 — Aerospace Harvest", "Espionage cluster targeting aerospace and defense supply chain via compromised vendor portals.", "Google Threat Intelligence", "advisory", "medium", "archived", 4, "no_findings", 1, 0, '["unc1549","aerospace","supply-chain"]', "2026-10-10T08:00:00Z"],
-    ["TIR-005", "Lumma Stealer C2 Infrastructure Update", "New Lumma Stealer command-and-control domains and IPs observed rotating across bulletproof hosting.", "7AI Threat Intelligence", "ioc_feed", "critical", "actionable", 15, "completed", 3, 5, '["lumma","stealer","c2"]', "2026-10-21T16:45:00Z"],
+    ["TIR-005", "Lumma Stealer C2 Infrastructure Update", "New Lumma Stealer command-and-control domains and IPs observed rotating across bulletproof hosting.", "AISOC Threat Intelligence", "ioc_feed", "critical", "actionable", 15, "completed", 3, 5, '["lumma","stealer","c2"]', "2026-10-21T16:45:00Z"],
     ["TIR-006", "CVE-2026-42897 — Microsoft Exchange Server XSS / Spoofing Vulnerability", "Unauthenticated cross-site scripting allowing session hijack on OWA; public exploit available.", "NIST NVD", "advisory", "high", "new", 3, "not_started", 0, 0, '["cve","exchange","xss"]', "2026-10-23T12:00:00Z"],
     ["TIR-007", "Black Basta Ransomware TTPs — Q4 2026", "Updated playbook covering Black Basta initial access via QakBot, lateral movement, and double extortion.", "Mandiant", "hunt_pack", "critical", "reviewing", 9, "hunting", 2, 0, '["black-basta","ransomware","qakbot"]', "2026-10-19T10:00:00Z"],
     ["TIR-008", "Cobalt Strike Malleable C2 Profiles", "Newly observed Cobalt Strike profiles mimicking CDN and cloud API traffic patterns.", "Recorded Future", "ioc_feed", "high", "actionable", 11, "completed", 2, 2, '["cobalt-strike","c2","malleable"]', "2026-10-15T13:30:00Z"]

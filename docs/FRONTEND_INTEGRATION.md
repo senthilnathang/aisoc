@@ -1,7 +1,8 @@
 # Frontend API Integration
 
 `frontend/src/api.js` is the single transport boundary. It implements resource CRUD,
-domain actions, error normalization, and `X-Tenant-Id` propagation.
+domain actions, error normalization, local tenant propagation, and auth/session
+handling. In token mode the backend binds tenant identity to the credential.
 
 During development, Vite proxies `/api` and `/health` to `http://localhost:3002`.
 Deployments can set `VITE_API_URL` to an absolute BFF URL.
@@ -15,14 +16,22 @@ The application uses clean client-side routes. Production web servers must serve
 | Route | Screen | Status |
 |---|---|---|
 | `/` | Operations queue dashboard | Live |
-| `/detect/rules` | Detection rules (MITRE matrix, catalog, tuning, routing) | Live |
-| `/detect/rules/:id` | Detection rule detail (4-tab view with edit mode) | Live |
-| `/investigations` | Investigation dashboard | Live |
-| `/investigations/:id` | Investigation detail (5 tabs, transcript, verdict) | Live |
+| `/detect/rules` | Full-width, searchable detection registry and inspector | Live |
+| `/detect/rules/:id` | Rule detail, logic, versions and audit history | Live |
+| `/detect/intelligence` | Alert volume and disposition trends | Live |
+| `/investigations` | Investigation queue and alert intake | Live |
+| `/investigations/:id` | Case evidence, transcript, feedback and history | Live |
 | `/respond` | Response center (bulk execute, confirmation modal) | Live |
 | `/hunt` | Hunt dashboard (ad-hoc hunts, mode toggle) | Live |
 | `/threat-intel` | Threat intel feed with summary metrics | Live |
 | `/threat-intel/:id` | Threat intel report detail with IOC table | Live |
+| `/skills` | Searchable Skills library | Live |
+| `/skills/new` | Skill authoring and reference materials | Live |
+| `/skills/:id` | Skill editor, scopes, materials and audit history | Live |
+| `/skills/templates` | Starter strategies | Live |
+| `/skills/suggestions` | Reviewable environment patterns | Live |
+| `/skills/outcomes` | Applications, ratings and labeled case counts | Live |
+| `/build/api-sources` | Scoped API source management | Live |
 | `/memory` | Organizational memory / knowledge base | Live |
 | `/build/connectors/cribl` | Cribl connector setup (4-step wizard) | Live |
 
@@ -34,11 +43,11 @@ accepts `size` (px), `color`, and spread props. No external icon library is requ
 
 ## Key Frontend Features
 
-- **MITRE ATT&CK Matrix**: Interactive coverage visualization with technique drill-down
-- **Detection Catalog**: 10 deployable rules from 7AI and community contributors
-- **Tuning Recommendations**: FPR analysis with specific remediation suggestions
-- **Alert Routing**: Modal for mapping rules to connector destinations
-- **Transcript View**: Expandable investigation steps with query timing and verdict panel
+- **Detection registry**: Tenant-scoped filters, pagination, source metrics, rule versions and audit history
+- **Investigation pipeline**: Normalized intake, duplicate protection, routing and durable local worker progress
+- **Skills**: Versioned guidance, scope matching, references, analyst feedback and sample-count outcomes
+- **Transcript view**: Persisted investigation steps, supplied evidence and review history
+- **Responsive workspaces**: Skills and Threat Intel detail use the available page width and collapse for mobile
 - **Connector Wizard**: 4-step carousel (Select → Configure → Verify → Complete)
 - **Responsive Layout**: Tablet (1024px) and mobile (760px) breakpoints
 

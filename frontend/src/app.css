@@ -115,6 +115,70 @@ select {
     )
     center/100% 100% no-repeat;
 }
+.investigation-queue .queue-table table {
+  width: 100%;
+  table-layout: fixed;
+}
+.investigation-queue .queue-table th:first-child { width: 34%; }
+.investigation-queue .queue-table th:last-child { width: 110px; }
+.investigation-queue .queue-table td { white-space: normal; overflow-wrap: anywhere; }
+.investigation-case [role="tablist"] { max-width: 100%; }
+.registry-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.6fr) minmax(70px, .8fr) minmax(70px, .7fr) minmax(70px, .8fr) minmax(90px, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-top: 1px solid #e3e6ec;
+}
+.registry-row > * { min-width: 0; overflow-wrap: anywhere; }
+.registry-head { font-size: 10px; color: #677182; background: #f8f9fb; text-transform: uppercase; }
+.rule-workspace { position: sticky; top: 60px; max-height: calc(100vh - 76px); overflow-y: auto; }
+@media (max-width: 1199px) {
+  .rule-workspace { position: static; max-height: none; }
+}
+@media (max-width: 767px) {
+  .registry-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .registry-row > :first-child { grid-column: 1 / -1; }
+  .registry-head { display: none; }
+  .registry-row [data-label]::before { content: attr(data-label); display: block; color: #677182; font-size: 10px; margin-bottom: 4px; }
+}
+.intel-alert-row { min-width: 0; }
+.intel-day:hover { filter: brightness(.9); }
+@media (max-width: 1100px) {
+  .account-nav { gap: 10px !important; }
+  .account-nav > button:first-child, .account-nav .hide-mobile { display: none; }
+}
+@media (max-width: 767px) {
+  .investigation-case.page-enter { padding: 0 !important; }
+  .investigation-case .case-header > button { flex: 1 1 auto; }
+  .investigation-case [role="tablist"] { padding-inline: 10px; }
+  .investigation-queue .queue-toolbar > input { flex-basis: 100%; }
+  .investigation-queue .queue-table { overflow: visible; white-space: normal; }
+  .investigation-queue .queue-table table,
+  .investigation-queue .queue-table tbody { display: block; }
+  .investigation-queue .queue-table thead { display: none; }
+  .investigation-queue .queue-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px;
+    gap: 10px 12px;
+    border-top: 1px solid #e3e6ec;
+  }
+  .investigation-queue .queue-table td { display: block; padding: 0; border: 0; min-width: 0; }
+  .investigation-queue .queue-table td:first-child,
+  .investigation-queue .queue-table td:last-child { grid-column: 1 / -1; max-width: none; }
+  .investigation-queue .queue-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: #677182;
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+  .investigation-queue .queue-table td:first-child::before,
+  .investigation-queue .queue-table td:last-child::before { display: none; }
+  .investigation-queue .queue-table td:last-child button { width: 100%; }
+}
 @media (max-width: 1024px) {
   .tool-rail {
     width: 32px !important;
@@ -152,5 +216,64 @@ select {
   }
   .chakra-table__container {
     overflow-x: auto;
+  }
+}
+
+/* Skills workspace density and responsive behavior */
+.skills-page,
+.skills-editor-layout > *,
+.skills-editor-layout .chakra-stack > * {
+  min-width: 0;
+}
+.skills-subnav {
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd0d9 transparent;
+}
+.skills-editor-aside {
+  min-width: 0;
+}
+@media (min-width: 1200px) {
+  .skills-editor-aside {
+    position: sticky;
+    top: 60px;
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
+    padding-right: 3px;
+    scrollbar-width: thin;
+  }
+}
+@media (max-width: 1199px) {
+  .skills-editor-aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+@media (max-width: 767px) {
+  .skills-page {
+    padding: 12px !important;
+  }
+  .skills-page-header {
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+  .skills-page .skills-subnav {
+    margin-bottom: 12px !important;
+  }
+  .skills-editor-actions {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+  .skills-editor-actions > button {
+    flex: 1 1 auto;
+  }
+  .skills-editor-main textarea {
+    min-height: 72px !important;
+  }
+  .skills-editor-main .chakra-form__label,
+  .skills-editor-aside .chakra-form__label {
+    margin-bottom: 3px !important;
   }
 }

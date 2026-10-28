@@ -1,11 +1,11 @@
 "use strict";
 
 const incidents = [
-  { id: "INV-4821", title: "Suspicious OAuth consent grant", source: "Microsoft 365", severity: "critical", status: "Investigating", owner: "7AI Agent", age: "4m", entity: "j.park@nova.example", score: 94 },
+  { id: "INV-4821", title: "Suspicious OAuth consent grant", source: "Microsoft 365", severity: "critical", status: "Investigating", owner: "AISOC Agent", age: "4m", entity: "j.park@nova.example", score: 94 },
   { id: "INV-4819", title: "Impossible travel with token reuse", source: "Okta", severity: "high", status: "Contained", owner: "Maya Chen", age: "18m", entity: "a.santos@nova.example", score: 87 },
-  { id: "INV-4814", title: "Encoded PowerShell spawned by Excel", source: "CrowdStrike", severity: "high", status: "Investigating", owner: "7AI Agent", age: "43m", entity: "FIN-LT-044", score: 82 },
+  { id: "INV-4814", title: "Encoded PowerShell spawned by Excel", source: "CrowdStrike", severity: "high", status: "Investigating", owner: "AISOC Agent", age: "43m", entity: "FIN-LT-044", score: 82 },
   { id: "INV-4808", title: "Unusual S3 bulk object access", source: "AWS GuardDuty", severity: "medium", status: "Triage", owner: "Noah Reed", age: "1h", entity: "svc-data-export", score: 71 },
-  { id: "INV-4797", title: "Domain contacted after phishing click", source: "Zscaler", severity: "medium", status: "Contained", owner: "7AI Agent", age: "3h", entity: "mkting-22", score: 66 },
+  { id: "INV-4797", title: "Domain contacted after phishing click", source: "Zscaler", severity: "medium", status: "Contained", owner: "AISOC Agent", age: "3h", entity: "mkting-22", score: 66 },
   { id: "INV-4788", title: "Privileged role assigned outside change window", source: "Azure AD", severity: "low", status: "Resolved", owner: "Priya Shah", age: "6h", entity: "cloud-admin-temp", score: 41 }
 ];
 
@@ -49,7 +49,7 @@ function renderDashboard() {
     <section class="dashboard-grid">
       <article class="panel">
         <div class="panel-head"><div><h2 class="panel-title">Alert operations</h2><div class="panel-kicker">Created vs. autonomously resolved</div></div><select class="panel-select" aria-label="Chart range"><option>Last 7 days</option><option>Last 30 days</option></select></div>
-        <div class="chart-wrap"><div class="chart">${chart}</div><div class="chart-legend"><span><i></i>Alerts created</span><span><i></i>Resolved by 7AI</span></div></div>
+        <div class="chart-wrap"><div class="chart">${chart}</div><div class="chart-legend"><span><i></i>Alerts created</span><span><i></i>Resolved by AISOC</span></div></div>
       </article>
       <article class="panel">
         <div class="panel-head"><div><h2 class="panel-title">Exposure radar</h2><div class="panel-kicker">Risk concentration by entity</div></div><span class="severity critical">3 critical</span></div>
@@ -153,7 +153,7 @@ function bindHunt() {
 function openIncident(id) {
   const item = incidents.find(incident => incident.id === id);
   if (!item) return;
-  document.querySelector("#modalContent").innerHTML = `<p class="eyebrow">${item.id} · ${item.source}</p><h2 id="modalTitle">${item.title}</h2><p>7AI correlated identity, endpoint, and cloud telemetry to assemble this mock investigation. No backend request was made.</p><div class="detail-grid"><div class="detail"><small>Risk score</small><strong>${item.score} / 100</strong></div><div class="detail"><small>Primary entity</small><strong>${item.entity}</strong></div><div class="detail"><small>Owner</small><strong>${item.owner}</strong></div><div class="detail"><small>Status</small><strong>${item.status}</strong></div></div><div class="timeline"><div class="timeline-item"><strong>Signal correlated</strong><small>Four alerts joined by identity and device · ${item.age} ago</small></div><div class="timeline-item"><strong>Agent investigation completed</strong><small>Authentication, process, and network evidence analyzed</small></div><div class="timeline-item"><strong>Recommended action ready</strong><small>Revoke sessions and isolate affected entity</small></div></div><div class="head-actions"><button class="button primary" data-modal-action="Containment simulated">Approve containment</button><button class="button" data-modal-action="Case created locally">Create case</button></div>`;
+  document.querySelector("#modalContent").innerHTML = `<p class="eyebrow">${item.id} · ${item.source}</p><h2 id="modalTitle">${item.title}</h2><p>AISOC correlated identity, endpoint, and cloud telemetry to assemble this mock investigation. No backend request was made.</p><div class="detail-grid"><div class="detail"><small>Risk score</small><strong>${item.score} / 100</strong></div><div class="detail"><small>Primary entity</small><strong>${item.entity}</strong></div><div class="detail"><small>Owner</small><strong>${item.owner}</strong></div><div class="detail"><small>Status</small><strong>${item.status}</strong></div></div><div class="timeline"><div class="timeline-item"><strong>Signal correlated</strong><small>Four alerts joined by identity and device · ${item.age} ago</small></div><div class="timeline-item"><strong>Agent investigation completed</strong><small>Authentication, process, and network evidence analyzed</small></div><div class="timeline-item"><strong>Recommended action ready</strong><small>Revoke sessions and isolate affected entity</small></div></div><div class="head-actions"><button class="button primary" data-modal-action="Containment simulated">Approve containment</button><button class="button" data-modal-action="Case created locally">Create case</button></div>`;
   modal.hidden = false;
   document.querySelectorAll("[data-modal-action]").forEach(button => button.addEventListener("click", () => { showToast(button.dataset.modalAction); closeModal(); }));
 }

@@ -93,7 +93,7 @@ test("detection rule toggle flips enabled state", async () => {
 
   const toggled = await app.inject({ method: "POST", url: `/api/v1/detection-rules/${id}/toggle` });
   assert.equal(toggled.statusCode, 200);
-  assert.equal(toggled.json().enabled, initial ? 0 : 1);
+  assert.equal(toggled.json().enabled, !initial);
   await app.close();
 });
 

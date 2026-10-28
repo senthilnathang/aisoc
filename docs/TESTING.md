@@ -1,5 +1,106 @@
 # Testing Strategy
 
+## Current workflow coverage
+
+Latest local run: **27 tests passed, 0 failed**. Backend typecheck, launcher syntax,
+and `git diff --check` passed. The frontend production build passed with Vite's
+existing chunk-size advisory.
+
+The suite uses Node's built-in test runner, Fastify `inject()`, and in-memory
+SQLite. Run `npm --prefix backend test`; use the typecheck, frontend build, launcher
+syntax and whitespace checks in the [developer guide](DEVELOPMENT.md) as well.
+
+`backend/test/skills.test.ts` covers scoped skill creation and filtering, tenant
+isolation, publish state and audit history, material version snapshots and
+archive behavior, HTTPS-only references, supported file types, and the 128 KiB
+content limit. Other test files cover the normalized intake/auth pipeline,
+detection registry, investigation persistence and the core resource API.
+
+Browser screenshots and Playwright artifacts in `output/` are local verification
+artifacts and are excluded from source control. Browser coverage is manual; this
+repository does not currently have an installed automated frontend E2E suite.
+
+## Detection registry step 1
+
+The earlier detection-registry verification recorded **24 passing tests**. New detection-registry
+tests cover tenant-scoped filters/source choices, stable pagination, literal
+search, live metrics with duplicate/suppressed alerts, immutable version snapshots,
+stale-write rejection, restart persistence, disabled cloning, and deletion guards.
+Backend type checking and the frontend build pass (existing large-chunk advisory).
+
+Browser verification created, edited, cloned, enabled, and deleted temporary
+rules; checked version snapshots and saved-query reload persistence; paged through
+11 test rules; and filtered by a bound provider. Temporary records were removed.
+Registry and detail pages were checked at 1920, 1024, 768, and 390px without
+document overflow. Mobile navigation and all four rule tabs passed. Screenshots:
+`output/playwright/detection-step1-desktop.png`, `detection-step1-versions.png`,
+and `detection-step1-{registry,detail}-{width}.png`.
+
+## Authenticated hybrid intake verification
+
+The earlier auth/intake verification recorded **21 passing backend tests**. `auth-intake.test.ts`
+covers fail-closed token mode, credential-bound tenants, session CSRF/origin checks,
+logout and expiry, source scope, one-time key responses, rotation, and revocation.
+Type checking and the frontend production build also pass; Vite retains its
+large-chunk advisory. The older counts below describe earlier milestones.
+
+`output/playwright/verify-auth.mjs` is a standalone local browser verification
+script. Set `PLAYWRIGHT_PACKAGE` to an installed Playwright package.json path.
+It reads the private operator token from disk without logging credentials or
+recording traces, creates a labeled demo source, submits an alert, rotates and
+revokes its key, and checks session reload and sign-out. It retains the revoked
+source and resulting investigation for review. Screenshots are `auth-01-sign-in.png`
+through `auth-04-investigations.png` in `output/playwright/`.
+
+## Alert pipeline verification
+
+The earlier pipeline verification recorded 17 backend tests. `backend/test/alert-pipeline.test.ts`
+covers duplicate submissions, conflicting retries, invalid/disabled/foreign rules,
+retained suppression, stable sampling, restart recovery, phase rollback and
+explicit retry, tenant-isolated local indicator matching, active-run outcome
+protection, and the enabled background worker's lifecycle. A low-severity no-match
+case stays unknown rather than being mislabeled benign.
+
+Browser verification submitted an example through the alert form, observed live
+progress to completion, checked the transcript, reloaded the case, and ran it
+again. The second run produced six total steps and retained two distinct artifacts.
+Identical resubmission returned 200, conflicting content returned 409, and a foreign
+tenant read returned 404. The labeled demo case is retained for review:
+`INV-01ed88c4-54ba-4fbb-8257-c91760c48864`. Screenshots are
+`output/playwright/pipeline-01-alert-intake.png` through
+`pipeline-05-history.png`. Local indicator matches depend on the current tenant's
+stored feed; the browser demo had no match and stayed suspicious based on its
+high source severity. The isolated backend test separately verifies a positive match.
+
+Run the existing typecheck, backend test, and frontend build commands below.
+The earlier 10-test receipts describe the previous implementation pass.
+
+## October 27 workflow verification
+
+Commands: `npm --prefix backend run typecheck`, `npm --prefix backend test`,
+`npm --prefix frontend run build`, `bash -n run.sh`, and `git diff --check`.
+
+The earlier implementation pass contained 10 passing tests. Its
+`backend/test/investigation-workflow.test.ts` covers disk-backed restart persistence,
+migration idempotency, rule configuration validation, tenant-scoped history,
+case evidence/feedback, case deletion, and reinvestigation preserving evidence.
+
+Playwright browser checks exercised creation and saving of a detection rule,
+query/schedule/routing edits, reload persistence, enable/disable, and audit history.
+Case checks exercised artifact attachment, feedback, reload persistence,
+determination changes, reinvestigation, and history. Temporary test records were
+deleted after verification. These are manual browser verification receipts, not
+an installed automated end-to-end test suite.
+
+Browser checks found and fixed a shared client bug: empty-body POST actions must
+not send `Content-Type: application/json`. Detection and investigation screens now
+show loading/error states instead of silently presenting fallback case/rule data.
+The production build passes with Vite's existing large-chunk advisory.
+
+Screenshots live under `output/playwright/`; `reference-*` captures the public
+product images, `after-*` captures local pages, and `verified-*` captures persisted
+workflow results. The remaining sections describe the earlier test strategy.
+
 ## Overview
 
 The project uses Node.js built-in test runner (`node:test`) with `node:assert/strict`

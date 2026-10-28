@@ -5,14 +5,24 @@ class ApiClient {
   constructor(baseUrl = API_BASE, tenantId = TENANT_ID) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
     this.tenantId = tenantId;
+    this.csrfToken = null;
+    this.authMode = "local";
+  }
+
+  setSession(session) {
+    this.authMode = session?.mode || "token";
+    this.csrfToken = session?.csrf_token || null;
+    if (session?.tenant_id) this.tenantId = session.tenant_id;
   }
 
   async request(path, options = {}) {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...options,
+      credentials: "same-origin",
       headers: {
-        "Content-Type": "application/json",
-        "X-Tenant-Id": this.tenantId,
+        ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(this.authMode === "local" && !path.startsWith("/auth/") ? { "X-Tenant-Id": this.tenantId } : {}),
+        ...(this.csrfToken ? { "X-CSRF-Token": this.csrfToken } : {}),
         ...options.headers
       },
       body: options.body && typeof options.body !== "string" ? JSON.stringify(options.body) : options.body
@@ -23,6 +33,8 @@ class ApiClient {
       const error = new Error(payload.error?.message || `API request failed (${response.status})`);
       error.code = payload.error?.code;
       error.details = payload.error?.details;
+      error.status = response.status;
+      if (response.status === 401 && !path.startsWith("/auth/")) window.dispatchEvent(new Event("aisoc:unauthenticated"));
       throw error;
     }
     return payload;

@@ -71,6 +71,27 @@ All mutable tables include `tenant_id`, `created_at`, and `updated_at`.
 - `status`: active, mitigated, expired, false_positive
 - `hits` integer (environment match count)
 
+### Skills and related records (additive migrations)
+
+- `skills`: tenant, name/type, plain-language guidance, scope arrays, origin,
+  draft/published state, enabled flag, version and author timestamps.
+- `skill_materials`: tenant and skill IDs, name/kind/file type, HTTPS URL or text
+  content, version and archive timestamp. Active materials are limited to 10 per
+  skill; content files are limited to 128 KiB.
+- `skill_material_versions`: immutable JSON snapshots of material metadata and
+  content, keyed by tenant, material and version.
+- `skill_suggestions`: deterministic source/category patterns from at least two
+  closed/resolved analyst-determined cases, sample case IDs, generated draft and
+  pending/accepted/dismissed state.
+- `skill_applications`: applied skill ID/version and guidance snapshot, target
+  case/hunt, match rationale, and tenant scope.
+- `skill_application_feedback`: operator rating and optional comment per
+  application; ratings may be revised by the same operator.
+- `audit_events`: skill/material lifecycle mutations and actor metadata.
+
+Case transcript entries and hunt run records preserve application snapshots so a
+later edit does not rewrite past guidance. These relationships are tenant-scoped.
+
 ## Migration Notes
 
 - JSON text columns become PostgreSQL `jsonb`.
