@@ -9,9 +9,9 @@ const templates = [
   { id: "email", name: "Review suspicious email attachments", type: "strategy", description: "Assess attachment delivery, detonation results, recipient exposure, and related activity.", apply_when: "When an email alert includes an attachment, suspicious URL, or reported phishing message.", modules: ["investigations", "hunting"], connectors: ["Microsoft 365"], alert_types: ["Malicious attachment", "Phishing"], tags: ["email", "phishing"], content_markdown: "## Investigation steps\n1. Record sender, recipients, subject, message identifiers, and attachment hashes.\n2. Check reputation and sandbox results where available.\n3. Search for other recipients and follow-on clicks or execution.\n4. Recommend message removal or endpoint action with evidence and analyst approval." },
 ];
 const modules = ["investigations", "detection", "hunting", "response", "enterprise_insights"];
-const split = value => value.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+const split = value => (Array.isArray(value) ? value : typeof value === "string" ? value.split(/[,\n]/) : []).map(x => String(x).trim()).filter(Boolean);
 const join = value => Array.isArray(value) ? value.join(", ") : "";
-const emptyForm = { name: "", skill_type: "strategy", description: "", apply_when: "", content_markdown: "", modules: [], connectors: [], alert_types: [], alert_categories: [], source_entities: [], runtime_entities: [], insight_refs: [], tags: [] };
+const emptyForm = { name: "", skill_type: "strategy", description: "", apply_when: "", content_markdown: "", modules: [], connectors: "", alert_types: "", alert_categories: "", source_entities: "", runtime_entities: "", insight_refs: "", tags: "" };
 const Panel = ({ children, ...props }) => <Box bg="white" border="1px solid" borderColor={ui.line} borderRadius="6px" {...props}>{children}</Box>;
 
 function SkillNav({ page, setView }) {
