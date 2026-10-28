@@ -1,18 +1,22 @@
 # AI SOC Feature Roadmap
 
 This roadmap translates the supplied 7AI capability list into incremental work
-for this application. It extends existing routes and data models; implementation
-should preserve current URLs, workflows, responsive behavior, and local login-free
-development. Each phase should add to the current UI rather than replace it.
+for AISOC. It extends existing routes and data models while preserving current
+workflows and responsive behavior. Local development remains login-free by
+default; optional token authentication is available for validating secured flows.
+Each phase adds to the current UI rather than replacing it.
 
 ## Current foundation
 
-- **Cases and investigations:** case detail, evidence, feedback, history, durable
-  alert-to-case processing, and a queue exist. Processing is currently local and
-  deterministic, without external investigation tools or autonomous reasoning.
+- **Cases and investigations:** case detail, evidence, free-form analyst comments,
+  history, durable alert-to-case processing, and a queue exist. Processing is
+  local and deterministic, without external investigation tools or autonomous
+  reasoning. Structured true-positive/false-positive labels are still planned.
 - **Detection:** a searchable, paginated rule registry, versioned edits, alert
-  metrics, and a detection intelligence dashboard exist. Stored rule queries do
-  not run against external systems; ATT&CK coverage and tuning need real data.
+  metrics, and a detection intelligence dashboard exist. Counts reflect stored
+  ingested alerts; false-positive rate remains unassessed without explicit labels.
+  Stored rule queries do not run against external systems; ATT&CK coverage and
+  evidence-based tuning need real data.
 - **Response:** local response/remediation flows exist, but do not perform actions
   against endpoint, identity, cloud, or network products.
 - **Hunting and intelligence:** hunt definitions, local simulations, threat
@@ -20,6 +24,40 @@ development. Each phase should add to the current UI rather than replace it.
   IOC extraction need integrations and a query layer.
 - **Provider intake:** generic normalized-alert API sources exist. Native event
   mapping, provider polling, and action APIs remain future work.
+- **Skills:** tenant-scoped strategy/content library, drafts and publishing,
+  relevance scopes, linked/versioned materials, deterministic case-pattern
+  suggestions, case/hunt application snapshots, analyst ratings, and sample-count
+  outcomes exist. Matching records advisory guidance; it does not execute it.
+- **Identity and tenancy:** local mode and token mode are implemented. Operator
+  browser sessions are memory-backed; enterprise SSO, granular roles, managed
+  secrets, and customer identity lifecycle are not implemented.
+
+## Delivery status and next work
+
+The local prototype foundation is implemented: cases, evidence and history;
+detection registry and alert intelligence; normalized alert intake, source-key
+lifecycle and durable local processing; and Skills authoring, materials, matching,
+suggestions and outcomes. `docs/TESTING.md` lists the specific automated API
+coverage. The current suite does not yet have automated UI or end-to-end tests.
+
+Next work, in dependency order:
+
+1. Add configurable native-event mappings and a validation/preview step to the
+   existing API source flow. Keep the normalized alert contract and current
+   direct JSON intake working.
+2. Implement one real, read-only provider adapter after a test tenant and API
+   credentials are available. Record connector health, freshness, errors and
+   source provenance; exercise tenant isolation before enabling sync.
+3. Add source-backed read-only case tools and evidence citations to the existing
+   transcript. Preserve the deterministic worker as a fallback and keep plans
+   observable for analysts.
+4. Add explicit analyst true-positive/false-positive labels, then use those
+   labeled samples for detection tuning and Skills outcome comparisons.
+5. Replace simulated response actions only after provider action previews,
+   authorization, confirmation, audit, retry and recovery behavior are defined.
+
+Do not count stored rule queries, local indicator checks, seed fixtures, or
+vendor-reported claims as provider execution or measured product results.
 
 The [AppSecSanta 7AI review](https://appsecsanta.com/7ai) adds details about
 parallel specialist agents, dynamic strategy selection, unified alert-to-case
@@ -30,7 +68,7 @@ claims.
 
 ## Phased delivery
 
-### 1. Data foundation and provider connectors
+### 1. Data foundation and provider connectors — foundation shipped; adapters planned
 
 - Define provider-neutral schemas for alerts, entities, evidence, cases, actions,
   query results, and connector health. Keep the normalized alert contract stable.
@@ -47,7 +85,7 @@ claims.
 to the common schema, show freshness and errors, and link the events to existing
 investigations. Secrets never appear in responses, logs, or screenshots.
 
-### 2. Evidence-backed investigations and human feedback
+### 2. Evidence-backed investigations and human feedback — local workflows shipped; provider tools planned
 
 - Extend the current investigation worker with pluggable read-only tools: search
   alerts, query a connected provider, inspect entities, and retrieve related cases.
@@ -70,7 +108,7 @@ investigations. Secrets never appear in responses, logs, or screenshots.
 is tied to evidence, analyst corrections persist, and new analysis never erases
 prior transcript or feedback.
 
-### 3. Detection coverage and tuning
+### 3. Detection coverage and tuning — registry/intelligence shipped; labeled tuning planned
 
 - Replace demo ATT&CK counts with a versioned technique catalog and mappings from
   active rules. Distinguish mapped coverage from tested effectiveness and show
@@ -88,7 +126,7 @@ prior transcript or feedback.
 its rule, mapped technique, observation window, and source evidence; no rule is
 changed without explicit approval.
 
-### 4. Dynamic reasoning and specialized agent capabilities
+### 4. Dynamic reasoning and specialized agent capabilities — planned
 
 - Define a common agent contract: scoped inputs, allowed tools, outputs, evidence
   references, budgets, timeout, retry policy, and human-approval requirements.
@@ -109,7 +147,7 @@ changed without explicit approval.
 **Done when:** each agent is independently testable, tenant-scoped, bounded,
 observable, and unable to perform unapproved response actions.
 
-### 5. Human-approved response actions
+### 5. Human-approved response actions — local simulation exists; provider actions planned
 
 - Replace simulated connector actions with explicit provider capabilities for
   endpoint isolation, account disablement, and IP blocking, where supported.
@@ -124,7 +162,7 @@ observable, and unable to perform unapproved response actions.
 audited, and failed/uncertain provider responses are visible without reporting
 success prematurely.
 
-### 6. Cross-system threat hunting and IOC extraction
+### 6. Cross-system threat hunting and IOC extraction — local simulation exists; federation planned
 
 - Build a federated query interface over connected sources, beginning with a
   bounded set of query types and a common result schema.
@@ -139,7 +177,7 @@ success prematurely.
 **Done when:** analysts can run and replay a scoped hunt across at least two
 connected sources and trace every finding to its source event.
 
-### 7. Enterprise context, dashboards, and reporting
+### 7. Enterprise context, dashboards, and reporting — partial local context exists; enterprise data planned
 
 - Add an entity graph for people, accounts, hosts, applications, indicators, and
   cases with tenant-scoped relationships and source provenance.
@@ -157,7 +195,7 @@ connected sources and trace every finding to its source event.
 **Done when:** dashboard totals reconcile with underlying records, exports use
 the same filters as the screen, and each metric includes its definition and period.
 
-### 8. Cloud deployment and scale
+### 8. Cloud deployment and scale — planned
 
 - Add production identity and role-based access, tenant provisioning, managed
   secret storage, HTTPS, rate limiting, database backups, and restore procedures.

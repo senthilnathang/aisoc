@@ -1,6 +1,9 @@
 # Data Model
 
-All mutable tables include `tenant_id`, `created_at`, and `updated_at`.
+Operational records are tenant-scoped. Mutable resource tables generally carry
+`created_at` and `updated_at`; immutable version/application snapshots use their
+creation timestamp only. Operator credentials are file-backed and browser
+sessions are held in backend memory, not in SQLite.
 
 ## Entities
 
@@ -15,6 +18,7 @@ All mutable tables include `tenant_id`, `created_at`, and `updated_at`.
 - `risk_score` integer 0–100
 - `owner`, `primary_entity`
 - `replay_count` integer
+- `insight_refs_json`: supplied organization-context references
 
 ### artifacts
 
@@ -28,12 +32,19 @@ All mutable tables include `tenant_id`, `created_at`, and `updated_at`.
 - `enabled`, `severity`
 - `detections`, `investigations`, `false_positive_rate`
 - `recommendation_status`, `last_activity_at`
+- `query`, `schedule`, `lookback_window`, `routing` (added by migration)
+
+### detection_rule_versions
+
+- tenant and rule IDs, monotonically increasing `version`, immutable
+  `snapshot_json`, and `created_at`
 
 ### hunts
 
 - `id`, `tenant_id`, `name`, `query`, `source`
 - `status`: draft, running, completed, failed
 - `verdict`, `findings_count`, `last_run_at`
+- `insight_refs_json`: supplied organization-context references
 
 ### connectors
 
@@ -71,9 +82,33 @@ All mutable tables include `tenant_id`, `created_at`, and `updated_at`.
 - `status`: active, mitigated, expired, false_positive
 - `hits` integer (environment match count)
 
+### Investigation evidence and audit
+
+- `investigation_steps`: tenant/case IDs, title, conclusion, tool, request and
+  response JSON, timestamps. Pipeline and Skills steps record local processing
+  and applied guidance; they are not evidence of an external tool call.
+- `investigation_feedback`: tenant/case IDs, analyst comment and timestamps.
+- `audit_events`: tenant, resource/resource ID, action, details JSON, timestamps.
+  This records workflow changes; it is not a complete audit export.
+
+### Alert intake and processing
+
+- `alerts`: tenant, source, provider-side `external_id`, rule and optional case
+  IDs, title/severity, routing/disposition, normalized payload JSON and SHA-256
+  payload hash, timestamps. `(tenant_id, source, external_id)` is unique. An
+  identical retry is idempotent; changed content with the same key conflicts.
+- `investigation_jobs`: tenant/case/alert IDs, queued/running/completed/failed
+  status, durable phase number, error/result JSON, timestamps. A partial unique
+  index permits one active job per case. Processing is local and deterministic.
+- `api_sources`: tenant, name/provider, bound detection rule, hashed source key,
+  expiration/revocation, timestamps. Plain keys are returned once during create
+  or rotation and are not stored in readable form.
+
 ### Skills and related records (additive migrations)
 
-- `skills`: tenant, name/type, plain-language guidance, scope arrays, origin,
+- `skills`: tenant, name/type, description, apply conditions and Markdown
+  guidance; JSON arrays for modules, connectors, alert types/categories, source
+  and runtime entities, Enterprise Insights references and tags; origin,
   draft/published state, enabled flag, version and author timestamps.
 - `skill_materials`: tenant and skill IDs, name/kind/file type, HTTPS URL or text
   content, version and archive timestamp. Active materials are limited to 10 per
@@ -83,14 +118,25 @@ All mutable tables include `tenant_id`, `created_at`, and `updated_at`.
 - `skill_suggestions`: deterministic source/category patterns from at least two
   closed/resolved analyst-determined cases, sample case IDs, generated draft and
   pending/accepted/dismissed state.
-- `skill_applications`: applied skill ID/version and guidance snapshot, target
-  case/hunt, match rationale, and tenant scope.
+- `skill_applications`: applied skill ID/version and guidance/material snapshot,
+  target case/hunt, match rationale, and tenant scope. Matching requires an
+  enabled published skill and every configured scope dimension to match.
 - `skill_application_feedback`: operator rating and optional comment per
   application; ratings may be revised by the same operator.
 - `audit_events`: skill/material lifecycle mutations and actor metadata.
 
 Case transcript entries and hunt run records preserve application snapshots so a
 later edit does not rewrite past guidance. These relationships are tenant-scoped.
+
+## Seed and sample data
+
+`demo` contains seeded cases, rules, connectors, remediations, threat reports,
+indicators, artifacts, and investigation steps for local UI review. These are
+examples, not live customer telemetry or validated performance metrics. New
+Skills are tenant-created; starter templates are frontend drafts until saved.
+Environment suggestions require at least two closed/resolved cases with analyst
+determinations from the same observed source and category. Suggestions are
+pattern-based drafts, not AI findings.
 
 ## Migration Notes
 

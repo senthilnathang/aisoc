@@ -4,8 +4,11 @@ Current implementation and remaining platform work are tracked in
 [AI SOC Feature Roadmap](FEATURE_ROADMAP.md). Skills library/authoring, material
 versions, environment suggestions, runtime matching, outcomes, detection registry
 and intelligence, hybrid intake, auth modes, and the local alert pipeline are
-implemented and covered by API tests. Detection queries and external security
-actions remain local configuration/simulations until real provider adapters ship.
+implemented. API tests cover the core Skills CRUD, publish, tenant-scope, material
+version/archive, type, and size paths; Skills suggestion/runtime/feedback/outcome
+end-to-end combinations still need dedicated coverage. Detection queries and
+external security actions remain local configuration/simulations until provider
+adapters ship.
 
 The longer-term AI SOC capability plan, implementation order, metrics provenance,
 and UI/compatibility guardrails are in [AI SOC Feature Roadmap](FEATURE_ROADMAP.md).
@@ -20,6 +23,11 @@ and UI/compatibility guardrails are in [AI SOC Feature Roadmap](FEATURE_ROADMAP.
 - [x] Material type and size limits, archive behavior, and per-material snapshots.
 - [x] Runtime matching for cases and hunts with matched version/rationale recorded.
 - [x] Context-reference matching, analyst helpfulness ratings, and labeled-case outcomes.
+
+Coverage follow-up: add focused tests for generated-suggestion eligibility and
+accept/dismiss behavior; matching a published skill to case and hunt context;
+feedback updates; and consistency of per-skill outcome totals. These features
+are implemented, but are not covered by the current `skills.test.ts` cases.
 
 ## Detection step 1 — registry and rule workspace
 
