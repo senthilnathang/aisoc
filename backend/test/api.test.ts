@@ -26,13 +26,24 @@ test("investigation CRUD and actions are tenant scoped", async () => {
   await app.close();
 });
 
-test("connector test and remediation execution update state", async () => {
+test("connector test does not claim health without a live provider adapter", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   const connector = await app.inject({ method: "POST", url: "/api/v1/connectors", payload: { type: "cribl", name: "Cribl", description: "Test", workspace_url: "https://example.cribl.cloud", client_id: "client", secret: "local" } });
   const tested = await app.inject({ method: "POST", url: `/api/v1/connectors/${connector.json().id}/test` });
-  assert.equal(tested.json().status, "operational");
+  assert.equal(tested.json().status, "untested");
+  assert.equal(tested.json().test_result.status, "unsupported");
+  assert.match(tested.json().test_result.message, /No provider request was made/);
   const executed = await app.inject({ method: "POST", url: "/api/v1/remediations/REM-001/execute" });
   assert.equal(executed.json().status, "completed");
+  await app.close();
+});
+
+test("CrowdStrike connector test reports that credentials and a live adapter are pending", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  const connector = await app.inject({ method: "POST", url: "/api/v1/connectors", payload: { type: "crowdstrike", name: "Falcon" } });
+  const tested = await app.inject({ method: "POST", url: `/api/v1/connectors/${connector.json().id}/test` });
+  assert.equal(tested.json().status, "untested");
+  assert.equal(tested.json().test_result.status, "not_configured");
   await app.close();
 });
 

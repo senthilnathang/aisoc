@@ -133,11 +133,17 @@ export class PlatformService {
     return hunt ? { ...hunt, skill_applications: this.skills?.applications(tenantId, "hunt", id) || [] } : undefined;
   }
 
-  testConnector(tenantId: string, id: string): ResourceRecord | undefined {
+  testConnector(tenantId: string, id: string): (ResourceRecord & { test_result: { status: string; message: string } }) | undefined {
     const connector = this.get("connectors", tenantId, id);
     if (!connector) return undefined;
-    const operational = Boolean(connector.name) && (connector.type !== "cribl" || Boolean(connector.workspace_url && connector.client_id));
-    return this.update("connectors", tenantId, id, { status: operational ? "operational" : "error", last_tested_at: new Date().toISOString() });
+    // A connector is healthy only after a provider adapter has made a real,
+    // authenticated request. These integrations are not wired yet; field checks
+    // alone must never make a connector appear operational.
+    const result = connector.type === "crowdstrike"
+      ? { status: "not_configured", message: "CrowdStrike read-only adapter is not configured yet. No provider request was made." }
+      : { status: "unsupported", message: `No live test adapter is installed for ${String(connector.type)}. No provider request was made.` };
+    const unchanged = this.update("connectors", tenantId, id, { status: "untested" });
+    return unchanged ? { ...unchanged, test_result: result } : undefined;
   }
 
   executeRemediation(tenantId: string, id: string): ResourceRecord | undefined {

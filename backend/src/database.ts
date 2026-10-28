@@ -253,8 +253,8 @@ function seed(db: DatabaseSync): void {
     (id, tenant_id, type, name, description, workspace_url, client_id, secret_ciphertext, config_json, status, last_tested_at, created_at, updated_at)
     VALUES (?, 'demo', ?, ?, ?, ?, ?, '', '{}', ?, ?, ?, ?)`);
   for (const row of [
-    ["CON-001", "crowdstrike", "CrowdStrike Falcon", "Endpoint detection", "", "", "operational"],
-    ["CON-002", "microsoft_sentinel", "Microsoft Sentinel", "SIEM and analytics", "", "", "operational"],
+    ["CON-001", "crowdstrike", "CrowdStrike Falcon", "Endpoint detection", "", "", "untested"],
+    ["CON-002", "microsoft_sentinel", "Microsoft Sentinel", "SIEM and analytics", "", "", "untested"],
     ["CON-003", "cribl", "Production Cribl", "Log routing", "https://example.cribl.cloud", "local-client", "untested"]
   ]) insertConnector.run(...row, row[6] === "operational" ? now : null, now, now);
 

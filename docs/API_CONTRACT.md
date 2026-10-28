@@ -200,7 +200,7 @@ removes their snapshots; references from alerts/API sources prevent deletion.
 |---|---|---|
 | GET/POST | `/connectors` | List/create configured connectors |
 | GET/PATCH/DELETE | `/connectors/:id` | Read/update/delete |
-| POST | `/connectors/:id/test` | Validate required config and update health |
+| POST | `/connectors/:id/test` | Run a live provider check when an adapter is available; otherwise retain `untested` and return a `test_result` explaining `unsupported` or `not_configured` |
 
 Secrets are accepted for local testing but are never returned by list/detail endpoints.
 

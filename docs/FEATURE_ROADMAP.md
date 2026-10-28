@@ -43,9 +43,12 @@ coverage. The current suite does not yet have automated UI or end-to-end tests.
 
 Next work, in dependency order:
 
-1. Implement one real, read-only provider adapter after a test tenant and API
-   credentials are available. Record connector health, freshness, errors and
-   source provenance; exercise tenant isolation before enabling sync.
+1. Complete one real, read-only provider adapter after a test tenant and API
+   credentials are available. Connector health now stays `untested` unless a
+   live adapter verifies it; seeded integrations no longer claim to be
+   operational. The next slice is secure credential storage and a CrowdStrike
+   OAuth/read-only alerts adapter, followed by bounded alert sync, freshness,
+   provenance and tenant-isolation validation.
 2. Add source-backed read-only case tools and evidence citations to the existing
    transcript. Preserve the deterministic worker as a fallback and keep plans
    observable for analysts.

@@ -139,7 +139,7 @@ zero-teardown execution. Each test creates its own app instance.
 |---|---|
 | Health and seeded dashboard | `/health` returns 200 with `database: "sqlite"`; `/dashboard` returns seeded investigation count > 0 |
 | Investigation CRUD + tenant isolation | POST creates with tenant-a; GET from tenant-b returns 404; reinvestigate increments `replay_count` |
-| Connector test + remediation execution | POST connector with config; `/test` returns `operational`; `/execute` transitions remediation to `completed` |
+| Connector test + remediation execution | `/test` leaves connectors `untested` and reports `unsupported`/`not_configured` until a live provider adapter succeeds; `/execute` transitions remediation to `completed` |
 | Validation and secret redaction | POST with missing fields returns 400 + `VALIDATION_ERROR`; connector secrets are never returned in responses |
 | Search across all resources | GET with `?search=test` returns 200 for all 5 original resource types |
 | Threat intel report CRUD + launch hunt | POST creates report; GET detail includes empty indicators array; `/launch-hunt` sets `hunt_status: "hunting"` |

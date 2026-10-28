@@ -3093,7 +3093,7 @@ function ConnectorSetupLive({ setView }) {
         config: { searchGroup: form.search_group, tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean) },
       });
       const tested = await api.testConnector(connector.id);
-      toast({ title: "Cribl connector added", description: `Connection status: ${tested.status}`, status: tested.status === "operational" ? "success" : "error", duration: 3000 });
+      toast({ title: "Connector saved", description: tested.test_result?.message || `Connection status: ${tested.status}`, status: tested.test_result?.status === "operational" ? "success" : "info", duration: 5000 });
     } catch (error) {
       toast({ title: "Could not add connector", description: error.message, status: "error", duration: 3500 });
     } finally { setSaving(false); }
