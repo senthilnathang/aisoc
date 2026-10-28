@@ -21,7 +21,12 @@ The application uses clean client-side routes. Production web servers must serve
 | `/detect/intelligence` | Alert volume and disposition trends | Live |
 | `/investigations` | Investigation queue and alert intake | Live |
 | `/investigations/:id` | Case evidence, transcript, feedback and history | Live |
-| `/respond` | Response center (bulk execute, confirmation modal) | Live |
+| `/respond` | Response overview with local simulation guardrails | Live |
+| `/respond/actions` | Response action queue; provider execution is not connected | Live |
+| `/respond/approvals` | Pending action review queue | Live |
+| `/respond/workflows` | Workflow design examples | Live |
+| `/respond/runbooks` | Analyst procedure references | Live |
+| `/respond/activity` | Completed local simulation history | Live |
 | `/hunt` | Hunt dashboard (ad-hoc hunts, mode toggle) | Live |
 | `/threat-intel` | Threat intel feed with summary metrics | Live |
 | `/threat-intel/:id` | Threat intel report detail with IOC table | Live |

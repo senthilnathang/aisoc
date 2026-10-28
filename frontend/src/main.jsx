@@ -102,6 +102,7 @@ const viewForNav = {
 const navIsActive = (item, view) =>
   view === viewForNav[item] ||
   (item === "Respond" && view === "queue") ||
+  (item === "Respond" && view.startsWith("response")) ||
   (item === "Build" && view === "connector") ||
   (item === "Detect" && view === "detectionRuleDetail") ||
   (item === "Detect" && view === "detectionIntelligence") ||
@@ -114,6 +115,11 @@ const pathForView = {
   detectionIntelligence: "/detect/intelligence",
   investigations: "/investigations",
   respond: "/respond",
+  responseActions: "/respond/actions",
+  responseApprovals: "/respond/approvals",
+  responseWorkflows: "/respond/workflows",
+  responseRunbooks: "/respond/runbooks",
+  responseActivity: "/respond/activity",
   hunt: "/hunt",
   threatIntel: "/threat-intel",
   memory: "/memory",
@@ -127,6 +133,8 @@ const pathForView = {
 };
 
 function routeFromPath(pathname) {
+  const responseView = Object.entries(pathForView).find(([view, path]) => view.startsWith("response") && path === pathname);
+  if (responseView) return { view: responseView[0], investigationId: null, reportId: null, ruleId: null };
   if (pathname === "/skills/new") return { view: "skillCreate", skillId: null };
   if (pathname === "/skills/templates") return { view: "skillTemplates", skillId: null };
   if (pathname === "/skills/suggestions") return { view: "skillSuggestions", skillId: null };
@@ -314,9 +322,17 @@ function Breadcrumb({ section, title }) {
 }
 
 function Shell({ view, setView, children, breadcrumb }) {
+  const responseViews = ["respond", "responseActions", "responseApprovals", "responseWorkflows", "responseRunbooks", "responseActivity"];
+  const responseTabs = [
+    ["respond", "Overview"], ["responseActions", "Actions"], ["responseApprovals", "Approvals"],
+    ["responseWorkflows", "Workflows"], ["responseRunbooks", "Runbooks"], ["responseActivity", "Activity"],
+  ];
   return (
     <Box minH="100vh" bg={ui.page}>
       <TopNav view={view} setView={setView} />
+      {responseViews.includes(view) && <Flex className="response-subnav" px={{ base: "12px", md: "24px" }} gap={{ base: "2px", md: "8px" }} overflowX="auto" bg="white" borderBottom="1px solid" borderColor={ui.line}>
+        {responseTabs.map(([target, label]) => <Button key={target} variant="unstyled" flexShrink="0" h="42px" px={{ base: "10px", md: "14px" }} borderBottom="2px solid" borderColor={view === target ? ui.ink : "transparent"} color={view === target ? ui.ink : ui.muted} fontSize="11px" fontWeight={view === target ? "700" : "500"} onClick={() => setView(target)}>{label}</Button>)}
+      </Flex>}
       <ToolRail />
       <Box className="main-content" ml="40px">
         <Breadcrumb
@@ -1995,7 +2011,7 @@ const fallbackRemediations = [
   },
 ];
 
-function RespondCenter({ setView }) {
+function RespondCenter({ setView, mode = "respond" }) {
   const toast = useToast();
   const [items, setItems] = useState(fallbackRemediations);
   const [filter, setFilter] = useState("all");
@@ -2022,12 +2038,7 @@ function RespondCenter({ setView }) {
       setItems((current) =>
         current.map((entry) => (entry.id === item.id ? updated : entry)),
       );
-      toast({
-        title: "Response action completed",
-        description: item.title,
-        status: "success",
-        duration: 2500,
-      });
+      toast({ title: "Simulation recorded", description: `${item.title}. No provider action was sent.`, status: "info", duration: 3500 });
     } catch (error) {
       toast({
         title: "Action could not be completed",
@@ -2040,8 +2051,8 @@ function RespondCenter({ setView }) {
     }
   };
 
-  const visible =
-    filter === "all" ? items : items.filter((item) => item.status === filter);
+  const modeFilter = mode === "responseApprovals" ? "pending" : mode === "responseActivity" ? "completed" : filter;
+  const visible = modeFilter === "all" ? items : items.filter((item) => item.status === modeFilter);
   const pending = items.filter((item) => item.status === "pending").length;
   const completed = items.filter((item) => item.status === "completed").length;
 
@@ -2056,11 +2067,10 @@ function RespondCenter({ setView }) {
       >
         <Box>
           <Heading fontSize={{ base: "22px", md: "28px" }} fontWeight="500">
-            Response Center
+            {mode === "responseApprovals" ? "Approval queue" : mode === "responseActivity" ? "Response activity" : mode === "responseActions" ? "Response actions" : "Response center"}
           </Heading>
           <Text color={ui.muted} mt="3px">
-            Review, approve, and execute containment actions from active
-            investigations.
+            Review proposed containment actions and keep every decision tied to its investigation.
           </Text>
         </Box>
         <HStack ml={{ base: 0, md: "auto" }}>
@@ -2070,7 +2080,7 @@ function RespondCenter({ setView }) {
           >
             View investigation
           </Button>
-          <Button isDisabled={!pending} onClick={() => setConfirmItem({ id: "__bulk__", title: `all ${pending} pending actions`, connector: "multiple connectors" })} leftIcon={Icon.zap({ size: 13 })}>Execute {pending} Action{pending !== 1 ? "s" : ""}</Button>
+          <Button isDisabled={!pending} onClick={() => setConfirmItem({ id: "__bulk__", title: `all ${pending} pending action simulations`, connector: "local simulation" })} leftIcon={Icon.zap({ size: 13 })}>Review {pending} pending</Button>
         </HStack>
       </Flex>
 
@@ -2078,8 +2088,8 @@ function RespondCenter({ setView }) {
         {[
           [pending, "Awaiting action", ui.red],
           [completed, "Completed", ui.green],
-          ["4m 12s", "Median response", ui.ink],
-          ["96%", "Automation rate", ui.violet],
+          [items.length, "Tracked actions", ui.ink],
+          ["0", "Live provider actions", ui.violet],
         ].map(([value, label, color]) => (
           <Panel
             key={label}
@@ -2112,11 +2122,11 @@ function RespondCenter({ setView }) {
             <Box>
               <Label>Remediation queue</Label>
               <Text color={ui.muted} mt="2px">
-                Actions are ordered by incident risk and containment dependency.
+                Local demo actions only. Provider integrations are not connected.
               </Text>
             </Box>
             <HStack ml={{ base: 0, md: "auto" }}>
-              {["all", "pending", "completed"].map((value) => (
+              {(mode === "respond" || mode === "responseActions") && ["all", "pending", "completed"].map((value) => (
                 <Button
                   key={value}
                   variant={filter === value ? "solid" : "ghost"}
@@ -2129,7 +2139,7 @@ function RespondCenter({ setView }) {
             </HStack>
           </Flex>
           <Stack spacing="0" divider={<Divider />}>
-            {visible.map((item) => (
+              {visible.map((item) => (
               <Grid
                 className="response-row"
                 key={item.id}
@@ -2180,7 +2190,7 @@ function RespondCenter({ setView }) {
                     isLoading={running === item.id}
                     onClick={() => setConfirmItem(item)}
                   >
-                    Execute
+                    Review
                   </Button>
                 )}
               </Grid>
@@ -2190,13 +2200,13 @@ function RespondCenter({ setView }) {
 
         <Stack spacing="12px">
           <Panel p="16px">
-            <Label>Containment sequence</Label>
+            <Label>Approval guardrails</Label>
             <Stack mt="16px" spacing="14px">
               {[
-                "Revoke active sessions",
-                "Reset exposed credentials",
-                "Isolate affected endpoint",
-                "Block malicious infrastructure",
+                "Confirm the investigation verdict",
+                "Review the target and action scope",
+                "Record analyst approval",
+                "Verify provider response",
               ].map((step, index) => (
                 <HStack key={step} align="start">
                   <Flex
@@ -2239,8 +2249,9 @@ function RespondCenter({ setView }) {
               Human approval stays in the loop
             </Heading>
             <Text mt="8px" color="#b9c0cc">
-              High-impact identity and endpoint actions require analyst
-              confirmation before execution.
+              This demo records local simulation state only. Real identity,
+              endpoint, email, and cloud actions require a connected provider,
+              explicit approval, and an auditable result.
             </Text>
           </Panel>
         </Stack>
@@ -2254,12 +2265,12 @@ function RespondCenter({ setView }) {
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="16px" fontWeight="600">
-              Run this response action?
+              Review this response action
             </AlertDialogHeader>
             <AlertDialogBody fontSize="13px">
-              {confirmItem?.title} will run on{" "}
-              {confirmItem?.connector || "AISOC"}. Identity and endpoint changes
-              take effect immediately.
+              {confirmItem?.title} is a local AISOC demo simulation. No action
+              will be sent to {confirmItem?.connector || "a provider"}; no
+              identity, endpoint, email, or cloud state will change.
             </AlertDialogBody>
             <AlertDialogFooter>
               <Button
@@ -2280,7 +2291,7 @@ function RespondCenter({ setView }) {
                   }
                 }}
               >
-                Execute
+                Record simulation
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -2288,6 +2299,36 @@ function RespondCenter({ setView }) {
       </AlertDialog>
     </Box>
   );
+}
+
+const responseWorkflowCards = [
+  { title: "Contain a compromised identity", trigger: "Malicious identity verdict", steps: ["Revoke active sessions", "Reset credentials", "Review OAuth grants"], tags: ["Identity", "Approval required"] },
+  { title: "Contain endpoint malware", trigger: "Confirmed malicious endpoint alert", steps: ["Isolate device", "Quarantine file", "Collect verification evidence"], tags: ["Endpoint", "Approval required"] },
+  { title: "Respond to malicious email", trigger: "Phishing verdict with recipient evidence", steps: ["Quarantine matching messages", "Block sender and URLs", "Notify affected users"], tags: ["Email", "Draft"] },
+];
+const responseRunbookCards = [
+  { title: "Identity compromise", owner: "Identity response", sections: ["Validate sign-in and device context", "Contain active sessions", "Recover credentials", "Document user confirmation"] },
+  { title: "Endpoint malware", owner: "Endpoint response", sections: ["Confirm file hash and process tree", "Approve host isolation", "Preserve forensic evidence", "Verify cleanup before reconnecting"] },
+  { title: "Cloud credential exposure", owner: "Cloud response", sections: ["Identify affected principal and scope", "Rotate or revoke exposed credentials", "Review audit activity", "Confirm dependent workloads recover"] },
+];
+
+function ResponseLibrary({ kind, setView }) {
+  const workflows = kind === "workflows";
+  const records = workflows ? responseWorkflowCards : responseRunbookCards;
+  return <Box className="page-enter" px={{ base: "12px", md: "24px" }} pb="28px">
+    <Flex align={{ base: "start", md: "center" }} direction={{ base: "column", md: "row" }} gap="12px" mb="18px">
+      <Box><Heading fontSize={{ base: "22px", md: "28px" }} fontWeight="500">{workflows ? "Response workflows" : "Response runbooks"}</Heading><Text color={ui.muted} mt="3px">{workflows ? "Review repeatable response patterns triggered by investigation verdicts." : "Keep analyst procedures next to the cases and actions they guide."}</Text></Box>
+      <Badge ml={{ base: 0, md: "auto" }} colorScheme="gray">{workflows ? "Design library · not executable" : "Reference procedures · local demo"}</Badge>
+    </Flex>
+    <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing="12px">
+      {records.map((record) => <Panel key={record.title} p={{ base: "16px", md: "20px" }} display="flex" flexDirection="column" minH="258px">
+        <Flex justify="space-between" align="start" gap="10px"><Box><Label>{workflows ? record.trigger : record.owner}</Label><Heading mt="8px" fontSize="17px" fontWeight="600">{record.title}</Heading></Box><Badge colorScheme={workflows ? "blue" : "purple"}>{workflows ? "Workflow" : "Runbook"}</Badge></Flex>
+        <Stack mt="18px" spacing="9px" flex="1">{(workflows ? record.steps : record.sections).map((step, index) => <HStack key={step} align="start"><Text color={ui.muted} fontSize="10px" minW="18px">{String(index + 1).padStart(2, "0")}</Text><Text fontSize="12px">{step}</Text></HStack>)}</Stack>
+        <Flex mt="18px" justify="space-between" align="center" gap="8px" wrap="wrap"><HStack>{(record.tags || ["Analyst maintained"]).map((tag) => <Badge key={tag} variant="subtle">{tag}</Badge>)}</HStack><Button size="sm" variant="outline" onClick={() => setView("responseActions")}>View actions</Button></Flex>
+      </Panel>)}
+    </SimpleGrid>
+    <Alert status="info" mt="14px" fontSize="11px"><AlertIcon />These are planning examples. AISOC does not execute workflows or connect to response providers yet.</Alert>
+  </Box>;
 }
 
 const fallbackMemory = [
@@ -3210,6 +3251,11 @@ function App() {
     detectionIntelligence: <DetectionIntelligence setView={setView} />,
     detectionRuleDetail: <Box p={{ base: "12px", md: "20px" }}><RuleWorkspace key={ruleId} id={ruleId} standalone onClose={() => setView("detect")} onChanged={() => {}} onSelect={id => setView("detectionRuleDetail", id)} /></Box>,
     respond: <RespondCenter setView={setView} />,
+    responseActions: <RespondCenter setView={setView} mode="responseActions" />,
+    responseApprovals: <RespondCenter setView={setView} mode="responseApprovals" />,
+    responseActivity: <RespondCenter setView={setView} mode="responseActivity" />,
+    responseWorkflows: <ResponseLibrary kind="workflows" setView={setView} />,
+    responseRunbooks: <ResponseLibrary kind="runbooks" setView={setView} />,
     hunt: <HuntDashboard setView={setView} />,
     threatIntel: <ThreatIntelDashboard setView={setView} />,
     threatIntelDetail: <ThreatIntelReportDetail id={reportId} setView={setView} />,
@@ -3234,6 +3280,11 @@ function App() {
     detectionIntelligence: ["Detect", "Detection Intelligence"],
     detectionRuleDetail: ["Detect", "Detection Rule Detail"],
     respond: ["Respond", "Response Center"],
+    responseActions: ["Respond", "Actions"],
+    responseApprovals: ["Respond", "Approvals"],
+    responseActivity: ["Respond", "Activity"],
+    responseWorkflows: ["Respond", "Workflows"],
+    responseRunbooks: ["Respond", "Runbooks"],
     hunt: ["Hunt", "Hunt Dashboard"],
     threatIntel: ["Threat Intel", "Threat Intelligence"],
     threatIntelDetail: ["Threat Intel", "Report Detail"],

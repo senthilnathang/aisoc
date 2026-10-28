@@ -66,6 +66,13 @@ select {
   background: #fafaff;
   transform: translateX(2px);
 }
+.response-subnav {
+  position: sticky;
+  top: 48px;
+  z-index: 19;
+  scrollbar-width: none;
+}
+.response-subnav::-webkit-scrollbar { display: none; }
 .metric-number {
   font-family: "Review Condensed", "Arial Narrow", sans-serif;
   font-weight: 400;
@@ -204,6 +211,7 @@ select {
   .main-content {
     margin-left: 0 !important;
   }
+  .response-subnav { top: 44px; }
   .tool-rail {
     display: none !important;
   }

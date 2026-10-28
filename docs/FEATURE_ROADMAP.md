@@ -17,8 +17,9 @@ Each phase adds to the current UI rather than replacing it.
   ingested alerts; false-positive rate remains unassessed without explicit labels.
   Stored rule queries do not run against external systems; ATT&CK coverage and
   evidence-based tuning need real data.
-- **Response:** local response/remediation flows exist, but do not perform actions
-  against endpoint, identity, cloud, or network products.
+- **Response:** the UI now has overview, action, approval, workflow, runbook, and
+  activity views. Action completion is explicitly a local simulation; no action
+  runs against endpoint, identity, cloud, email, or network products.
 - **Hunting and intelligence:** hunt definitions, local simulations, threat
   intelligence reports, and indicators exist. Cross-source querying and actual
   IOC extraction need integrations and a query layer.
