@@ -39,7 +39,7 @@ def main():
             subprocess.run([str(arg) for arg in args], cwd=cwd, env=env, input=input,
                            text=True, stdout=log, stderr=log, check=True, timeout=900 if args[0]=='go' else 300)
         def spawn(args, cwd=ROOT, specialist=False):
-            process_env = {key:value for key,value in env.items() if key in ('PATH','LANG','AISOC_WORKER_TOKEN','AISOC_PYTHON_ADDR','AISOC_RUST_ADDR')} if specialist else env
+            process_env = {key:value for key,value in env.items() if key in ('PATH','LANG','AISOC_WORKER_TOKEN','AISOC_PYTHON_ADDR','AISOC_PYTHON_HTTP_ADDR','AISOC_RUST_ADDR')} if specialist else env
             process = subprocess.Popen([str(arg) for arg in args], cwd=cwd, env=process_env, stdout=log, stderr=log)
             children.append(process)
             return process
@@ -64,7 +64,7 @@ def main():
         try:
             password=secrets.token_hex(24)
             pwfile=temp/'password';pwfile.write_text(password);pwfile.chmod(0o600)
-            pgport,apiport,pythonport,rustport=port(),port(),port(),port()
+            pgport,apiport,pythonport,rustport,pythonhttpport=port(),port(),port(),port(),port()
             env.update(PGHOST='127.0.0.1',PGPORT=str(pgport),PGUSER='aisoc',PGPASSWORD=password,PGDATABASE='postgres')
             run([PG/'initdb','-D',temp/'pg','-U','aisoc','--auth-local=trust','--auth-host=scram-sha-256','--pwfile',pwfile])
             run([PG/'pg_ctl','-D',temp/'pg','-l',temp/'pg.log','-o',f'-h 127.0.0.1 -p {pgport} -k {temp}','-w','start'])
@@ -74,6 +74,7 @@ def main():
             url=f'postgres://aisoc:{password}@127.0.0.1:{pgport}/aisoc_go_test?sslmode=disable'
             env.update(AISOC_GO_DATABASE_URL=url,AISOC_GO_TEST_DATABASE_URL=url,
                 AISOC_GO_ADDR=f'127.0.0.1:{apiport}',AISOC_PYTHON_ADDR=f'127.0.0.1:{pythonport}',
+                AISOC_PYTHON_HTTP_ADDR=f'127.0.0.1:{pythonhttpport}',
                 AISOC_RUST_ADDR=f'127.0.0.1:{rustport}',AISOC_WORKER_TOKEN=secrets.token_hex(32))
             env.update(AISOC_GO_CONNECTOR_KEY=secrets.token_hex(32),AISOC_GO_AUTH_MODE='local',AISOC_GO_OPERATORS_FILE='',AISOC_GO_ENV='development',AISOC_GO_SECURE_COOKIES='false',AISOC_GO_SESSION_TTL_MS='28800000')
             for name in ('api','migrate','worker','plugin-probe','investigation-worker'):
@@ -221,6 +222,9 @@ def main():
             py=spawn([python,ROOT/'services/python-worker/worker.py'],specialist=True)
             rust=spawn([ROOT/'services/wasm-worker/target/debug/aisoc-wasm-worker'],specialist=True)
             wait_port(pythonport);wait_port(rustport)
+            wait_port(pythonhttpport)
+            with urllib.request.urlopen(f'http://127.0.0.1:{pythonhttpport}/ready', timeout=5) as response:
+                assert json.load(response)['transport']=='grpc'
             run([ROOT/'backend-go/bin/plugin-probe'])
             sql("BEGIN; INSERT INTO tenants(id) VALUES('framework-e2e'); INSERT INTO jobs(tenant_id,id,plugin_id,plugin_version,input) VALUES ('framework-e2e','00000000-0000-4000-8000-000000000001','python.normalize','1',convert_to('  HELLO   WORLD  ','UTF8')), ('framework-e2e','00000000-0000-4000-8000-000000000002','rust.sha256','1',convert_to('hello','UTF8')), ('framework-e2e','00000000-0000-4000-8000-000000000003','rust.wasm_ascii_upper','1',convert_to('wasm','UTF8')); COMMIT;")
             spawn([ROOT/'backend-go/bin/worker'])
@@ -234,6 +238,7 @@ def main():
             http('/ready',200);http('/health',200)
             checks=['Go race tests and vet','PostgreSQL migration and readiness','response library HTTP parity and restart persistence','manual cases and runbook HTTP parity, concurrency and restart persistence','source intake, mapping, metrics and credential transaction checks','three-phase investigation worker HTTP parity, explicit retry, concurrent workers and SIGKILL rollback/recovery','operator/session/CSRF and tenant HTTP parity including case runbooks','response and case audit failure rollback, foreign keys and cascade','transaction rollback, concurrent claim, lease recovery, stale/cross-tenant/cancelled result rejection','Python and Rust unit tests','Go to Python/Rust RPC outputs and bad credential rejection','durable Go jobs dispatch to both workers','core readiness independent of optional workers']
             checks += ['Skills authoring/material revisions, matching, suggestions, applications, feedback and outcomes', 'all 11 shared functional scenarios', 'bounded WASM transformation and Python subprocess cleanup', 'HTTP error/latency, pool and queue metrics']
+            checks += ['FastAPI lifecycle with authenticated standard gRPC readiness and Go-to-Python execution']
             (report/'report.json').write_text(json.dumps({'passed':True,'checks':checks,'active_backend_modified':False},indent=2)+'\n')
             print('PASS isolated Go + PostgreSQL + Rust + Python framework',flush=True)
             print('Report: '+str(report/'report.json'),flush=True)

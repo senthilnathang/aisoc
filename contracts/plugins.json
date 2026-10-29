@@ -6,6 +6,18 @@
   "max_input_bytes": 65536,
   "max_output_bytes": 65536,
   "rpc_deadline_seconds": 5,
+  "python_service": {
+    "entrypoint": "services/python-worker/worker.py",
+    "http_framework": "FastAPI",
+    "http_address_env": "AISOC_PYTHON_HTTP_ADDR",
+    "http_default_address": "127.0.0.1:8001",
+    "grpc_address_env": "AISOC_PYTHON_ADDR",
+    "grpc_default_address": "127.0.0.1:50051",
+    "grpc_health": "grpc.health.v1.Health/Check",
+    "grpc_health_service": "aisoc.worker.v1.Worker",
+    "max_concurrent_rpcs": 4,
+    "execution_transport": "grpc only; HTTP exposes health, readiness and authenticated capabilities"
+  },
   "plugins": [
     {"id":"rust.sha256","version":"1","runtime":"rust","capabilities":[],"description":"SHA-256 digest of bounded input"},
     {"id":"rust.wasm_ascii_upper","version":"1","runtime":"wasmi 1.1.0","capabilities":[],"max_memory_bytes":65536,"fuel":2000000,"modules":"embedded allowlisted module only","description":"ASCII uppercase transformation; no WASI or host imports"},

@@ -78,6 +78,12 @@ no host imports. Python executes trusted allowlisted code in a bounded child
 process with deadline/cancellation cleanup, not arbitrary uploaded code.
 Ordinary API workflows work with both specialists disabled.
 
+Python includes FastAPI health/readiness and authenticated capability endpoints
+with gRPC execution in the same independent process. Enable with
+`python3 scripts/framework/dev.py start --investigation-worker --python-worker`
+after stopping development services. See the
+[Python guide](../services/python-worker/README.md) for configuration and limits.
+
 For isolated manual specialist testing, set matching `AISOC_WORKER_TOKEN` and
 worker addresses, then run the services and `make worker`/`make probe`.
 Keep optional addresses/token unset for a core-only manual process.

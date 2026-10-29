@@ -20,6 +20,8 @@ Current architecture and local migration status: 2026-10-29.
 | [Performance](migration/PERFORMANCE.md) | Absolute results, optimizations and measurement limits |
 | [ADR 002](adr/002-go-backend-replacement.md) | Accepted backend replacement decision |
 | [ADR 003](adr/003-replacement-contract-decisions.md) | Intentional contract/runtime differences |
+| [ADR 004](adr/004-python-fastapi-grpc-service.md) | Independent Python FastAPI lifecycle and Go gRPC boundary |
+| [Python service](../services/python-worker/README.md) | Startup, health, capabilities and worker contracts |
 
 [Phase-zero notes](migration/PHASE_0_STATUS.md), [Node baseline](migration/NODE_BASELINE.md),
 [ADR 001](adr/001-local-modular-monolith.md) and

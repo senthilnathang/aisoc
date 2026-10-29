@@ -6,6 +6,10 @@ workers. The Node/SQLite backend was replaced on **2026-10-29**. All 97 legacy
 routes are implemented for supported workflows; deliberate differences are in
 [ADR 003](docs/adr/003-replacement-contract-decisions.md).
 
+The development framework includes an independent
+[Python FastAPI/gRPC service](services/python-worker/README.md): FastAPI manages
+service health and lifecycle; Go dispatches bounded work through gRPC.
+
 ## Run the initialized application
 
 ```bash
@@ -31,6 +35,33 @@ The launcher requires initialized `.run/go-runtime/` data, private settings and
 verified binaries, which are intentionally not committed. For a **fresh checkout**,
 follow [development setup](docs/DEVELOPMENT.md) to create an isolated Go database
 and start a frontend against port 3003. Do not rerun historical cutover to start development.
+
+## Start the Go/Python foundation
+
+After installing the [development prerequisites](docs/DEVELOPMENT.md), run:
+
+```bash
+python3 scripts/framework/dev.py start --investigation-worker --python-worker
+python3 scripts/framework/dev.py status
+```
+
+| Foundation component | Address |
+|---|---|
+| Go API/readiness | http://127.0.0.1:3003/ready |
+| Python FastAPI/readiness | http://127.0.0.1:8001/ready |
+| Python authenticated gRPC | 127.0.0.1:50051 |
+| Development PostgreSQL | 127.0.0.1:55435 |
+
+The launcher also starts the Go investigation worker and specialist dispatcher.
+Stop with `python3 scripts/framework/dev.py stop`; data and private settings are
+retained. If a core-only development API is already running, stop it before
+enabling Python. Rust remains optional and is exercised by the framework tests.
+
+This foundation uses a separate development database. The release frontend on
+8080 continues to use API 3002; it does not display development records. To use a
+frontend with the foundation, follow [development setup](docs/DEVELOPMENT.md).
+Only the normalization plugin is currently implemented in Python; QRadar/Sentinel
+adapters and LLM investigation are the next product work, not running capabilities.
 
 ## Implemented workflows
 
@@ -104,7 +135,7 @@ records the earlier anomaly, before/after measurements and resource costs.
 |---|---|
 | `frontend/src/`, `frontend/public/` | React application and editable static assets |
 | `backend-go/` | Active API, workers, domain modules and PostgreSQL migrations |
-| `services/` | Optional Rust/WASM and Python runtimes |
+| `services/` | Optional Rust/WASM and independent Python FastAPI/gRPC service |
 | `backend/` | Retained Node reference for comparisons and rollback |
 | `contracts/` | Route inventory, journey mapping and protobuf/plugin contracts |
 | `scripts/` | Framework checks, migration and runtime management |

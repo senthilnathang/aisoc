@@ -22,14 +22,26 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if c.PythonAddress == "" && c.RustAddress == "" {
+		return fmt.Errorf("no specialist addresses configured")
+	}
 	for _, sample := range []struct{ address, plugin, input, expected string }{
 		{c.RustAddress, "rust.wasm_ascii_upper", "Hello World", "HELLO WORLD"},
 		{c.PythonAddress, "python.normalize", "  Hello   WORLD  ", "hello world"},
 		{c.RustAddress, "rust.sha256", "hello", fmt.Sprintf("%x", sha256.Sum256([]byte("hello")))},
 	} {
+		if sample.address == "" {
+			continue
+		}
 		client, err := plugins.New(sample.address, c.WorkerToken)
 		if err != nil {
 			return err
+		}
+		if sample.plugin == "python.normalize" {
+			if err := client.CheckHealth(context.Background()); err != nil {
+				client.Close()
+				return fmt.Errorf("python gRPC readiness: %w", err)
+			}
 		}
 		request := &pb.ExecuteRequest{TenantId: "framework-probe", JobId: jobs.ID(), AttemptId: jobs.ID(), PluginId: sample.plugin, PluginVersion: "1", Input: []byte(sample.input)}
 		result, err := client.Execute(context.Background(), request)

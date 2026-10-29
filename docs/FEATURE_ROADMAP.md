@@ -49,12 +49,13 @@ scripts exist; comprehensive browser/visual regression automation in CI remains 
 
 Next work, in dependency order:
 
-1. Complete one real, read-only provider adapter after a test tenant and API
-   credentials are available. Connector health now stays `untested` unless a
-   live adapter verifies it; seeded integrations no longer claim to be
-   operational. Tenant-bound encrypted credential storage is implemented. The
-   next slice is a CrowdStrike OAuth/read-only alerts adapter, followed by bounded alert sync, freshness,
-   provenance and tenant-isolation validation.
+1. Build on the independent Python FastAPI/gRPC foundation and existing Go intake
+   with a reusable, capability-based integration framework. Start with mock QRadar
+   SOAR cases and separate SIEM telemetry queries, then a suspicious-login L1
+   sandbox slice with evidence checks, human escalation and mock write-back.
+   Confirm installed versions, permissions and field ownership before live access.
+   Connector health stays `untested` without live verification. Tenant-bound
+   encrypted credentials exist; polling, cursors and conflict-aware sync remain work.
 2. Add source-backed read-only case tools and evidence citations to the existing
    transcript. Preserve the deterministic worker as a fallback and keep plans
    observable for analysts.
@@ -81,10 +82,10 @@ claims.
   query results, and connector health. Keep the normalized alert contract stable.
 - Build a connector framework with typed capabilities, tenant-scoped credentials,
   health checks, rate limits, cursor-based incremental sync, retries, and audit logs.
-- Add integration adapters incrementally: begin with one endpoint security source,
-  one SIEM, one identity source, and one cloud/email source. Prioritize CrowdStrike,
-  Splunk, Okta, AWS, and Microsoft 365 from the supplied list after validating API
-  access and a test tenant. Expand the catalog toward 50+ as adapters are proven.
+- Add distinct QRadar SOAR and SIEM adapters first through mocks, then verified
+  sandbox access. Extend the shared framework to Sentinel, CrowdStrike, Splunk,
+  Okta, AWS and Microsoft 365 as access and contracts are validated. Adapter count
+  is not a substitute for verified capabilities, provenance and failure recovery.
 - Preserve API sources for webhook-based ingestion. Native-to-normalized dot-path
   field mappings and sample preview are implemented; mapped events use a separate
   scoped endpoint while direct normalized intake stays supported.

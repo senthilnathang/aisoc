@@ -1,10 +1,5 @@
 """Trusted, bounded sample plugin worker. No database access or dynamic imports."""
-import concurrent.futures
 import hmac
-import ipaddress
-import os
-import signal
-import threading
 import subprocess
 import sys
 import time
@@ -19,8 +14,8 @@ class Worker(worker_pb2_grpc.WorkerServicer):
         self.credential = 'Bearer ' + token
 
     def Execute(self, request, context):
-        metadata = dict(context.invocation_metadata())
-        if not hmac.compare_digest(metadata.get('authorization', ''), self.credential):
+        credentials = [value for key, value in context.invocation_metadata() if key == 'authorization']
+        if len(credentials) != 1 or not hmac.compare_digest(credentials[0].encode(), self.credential.encode()):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, 'invalid worker credential')
         if any(not value or len(value.encode()) > 120 for value in (request.tenant_id, request.job_id, request.attempt_id)) or len(request.input) > 65536:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'invalid identity or payload size')
@@ -60,26 +55,9 @@ class Worker(worker_pb2_grpc.WorkerServicer):
 
 
 def main():
-    address = os.environ.get('AISOC_PYTHON_ADDR', '127.0.0.1:50051')
-    host, port = address.rsplit(':', 1)
-    if not ipaddress.ip_address(host.strip('[]')).is_loopback or not 0 < int(port) < 65536:
-        raise ValueError('framework RPC must bind loopback')
-    token = os.environ['AISOC_WORKER_TOKEN']
-    if len(token) < 32:
-        raise ValueError('worker token must contain at least 32 characters')
-    stop = threading.Event()
-    for signum in (signal.SIGTERM, signal.SIGINT):
-        signal.signal(signum, lambda *_: stop.set())
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        server = grpc.server(executor, maximum_concurrent_rpcs=4, options=[
-            ('grpc.max_receive_message_length', 70000), ('grpc.max_send_message_length', 70000)])
-        worker_pb2_grpc.add_WorkerServicer_to_server(Worker(token), server)
-        if not server.add_insecure_port(address):
-            raise RuntimeError('worker bind failed')
-        server.start()
-        print('Python sample worker listening on '+address, flush=True)
-        stop.wait()
-        server.stop(grace=5).wait(timeout=6)
+    # Keep the original executable entry point; FastAPI owns both listeners.
+    from service import main as serve
+    serve()
 
 
 if __name__ == '__main__':

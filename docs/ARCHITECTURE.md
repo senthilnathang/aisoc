@@ -10,7 +10,8 @@ flowchart LR
   IW[Go investigation worker] --> PG
   SW[Optional Go specialist dispatcher] --> PG
   SW -->|versioned gRPC| Rust[Rust / embedded Wasmi]
-  SW -->|versioned gRPC| Python[Python / trusted subprocess]
+  SW -->|versioned gRPC| Python[Python service / trusted subprocess]
+  HTTP[FastAPI health and capabilities] -->|shared lifecycle| Python
 ```
 
 Normal investigations use the local domain worker; specialist jobs use separate
@@ -74,6 +75,11 @@ immediate interruption of every underlying operation.
   input/output limits. Remote worker deployment requires a separate TLS design.
 - Rust provides hashing and embedded Wasmi with fuel, one-page memory and no host imports.
 - Python runs trusted allowlisted code in a limited child process, not arbitrary uploaded code.
+- Python includes an independent FastAPI/gRPC service in the development
+  framework. HTTP exposes health/readiness/capabilities; Go dispatches work over
+  gRPC. Enable via `dev.py start --python-worker`; this does not change the release.
+  See [ADR 004](adr/004-python-fastapi-grpc-service.md) and the
+  [Python guide](../services/python-worker/README.md).
 
 ## Frontend
 
@@ -94,6 +100,13 @@ execution. Current browser/mobile limits are recorded in [testing](TESTING.md).
 | Active release | 3002 | 8080 | PostgreSQL 55436, `.run/go-runtime/` |
 | Optional development | 3003 | 8081 when started | PostgreSQL 55435, `.run/go-dev/` |
 | Optional Node comparison | 3004 | 8082 | Separate SQLite in `.run/node-compare/` |
+
+The development foundation starts with
+`python3 scripts/framework/dev.py start --investigation-worker --python-worker`.
+Its Python service listens on HTTP 8001 and gRPC 50051, with the Go specialist
+dispatcher sharing the development database. Python receives no database or
+connector credentials. Rust is not started by this option. The release frontend
+continues to use the release API; development UI setup is separate.
 
 Only the release starts through `run.sh`. Stop preserves data. All 26 legacy
 tables reconciled at cutover. Post-write rollback reverse-exports current Go data

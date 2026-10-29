@@ -3,12 +3,27 @@
 Current as of 2026-10-29. Go/PostgreSQL is the active backend. Node/Fastify/SQLite
 tests remain a legacy reference; they are not the only backend verification.
 
-Latest verification for this update: full framework passed (including Go race/vet
+Migration/documentation baseline: full framework passed (including Go race/vet
 and specialist tests), 34 legacy backend tests, 16 tooling regression tests and
 3 backup lifecycle tests passed. Backend typecheck and frontend build passed.
 The Vite large-chunk advisory remains; browser checks were not rerun for prose-only changes.
 
+FastAPI/gRPC follow-up: the full disposable framework passed again, including Go
+race/vet, Python tests, Go-to-Python/Rust probes and durable queue dispatch.
+The final focused Python run passed eight tests, including overload admission.
+The development launcher was exercised with independent Python HTTP/gRPC listeners.
+No production integration or model-latency benchmark is claimed by these checks.
+
 ## Required checks
+
+Python FastAPI/gRPC boundary tests live in `services/python-worker/test_service.py`:
+HTTP and authenticated gRPC readiness, service restart/channel reconnection,
+credential rejection, duplicate authorization, payload limits and plugin versions.
+Admission tests verify excess concurrent work is rejected and readiness recovers.
+Existing worker tests cover child deadline/cancellation cleanup. Go plugin tests
+cover result identity, deadlines, health status and outgoing credential replacement.
+The full framework check starts the combined service on disposable ports and
+verifies Go dispatch through the durable queue. No live provider actions are used.
 
 ```bash
 python3 scripts/framework/check.py

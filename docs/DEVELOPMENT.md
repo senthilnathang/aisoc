@@ -35,6 +35,13 @@ This creates `.run/go-dev/`, PostgreSQL on 55435, database `aisoc_go_dev`,
 a dedicated non-superuser role and local-auth Go API on 3003. It retains generated
 credentials privately, runs migrations, and refuses occupied ports.
 
+To include Python FastAPI/gRPC and the Go specialist dispatcher, stop development
+services and start with both `--investigation-worker --python-worker`. Python
+listens on HTTP 8001 and gRPC 50051. The launcher generates its service credential
+and passes no database/connector credentials to Python. The option persists across
+restarts. See the [Python guide](../services/python-worker/README.md) for independent
+startup, limits and how this remains separate from the initialized release.
+
 Start the frontend in another terminal:
 
 ```bash

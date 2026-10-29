@@ -38,9 +38,17 @@ not production capacity guarantees. See [completion](migration/RELEASE_STATUS.md
 
 ## Product work in dependency order
 
-1. **Read-only provider adapter:** CrowdStrike after test tenant/credentials are
-   available; bounded sync, cursors, rate limits, freshness, provenance and isolation.
-   Local encrypted credential storage exists; managed rotation is separate.
+The Python FastAPI/gRPC prerequisite is implemented in the development framework:
+independent lifecycle, bounded authenticated execution, standard gRPC health and
+Go dispatcher integration. See [ADR 004](adr/004-python-fastapi-grpc-service.md).
+QRadar/Sentinel adapters and agentic L1 reasoning remain subsequent work.
+
+1. **Reusable integration framework and QRadar sandbox slice:** preserve existing
+   intake and add capability-based adapters, starting with distinct mock SOAR case
+   and SIEM evidence contracts. Verify installed versions/scopes before live access.
+   Add bounded sync, cursors, deduplication, provenance and conflict-aware write-back;
+   keep containment disabled. Sentinel, CrowdStrike and other providers reuse the
+   framework as their adapters are validated. Managed credential rotation is separate.
 2. **Evidence-backed tools:** source events, cited findings, replayable inputs/outputs
    and reviewable alert correlation.
 3. **Structured analyst labels:** audited true/false-positive, benign/inconclusive

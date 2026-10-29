@@ -7,6 +7,7 @@ import (
 	"errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"time"
 )
@@ -33,7 +34,36 @@ func New(address, token string) (*Client, error) {
 	return &Client{conn, pb.NewWorkerClient(conn), token}, nil
 }
 func (c *Client) Close() { _ = c.connection.Close() }
+
+// CheckHealth uses the standard unary gRPC health protocol. It is optional for
+// legacy specialists; Python implements it. Never retry execution automatically:
+// durable job leases own retries and result admission.
+func (c *Client) CheckHealth(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Join(metadataFrom(ctx), metadata.Pairs("authorization", "Bearer "+c.token)))
+	r, err := healthpb.NewHealthClient(c.connection).Check(ctx, &healthpb.HealthCheckRequest{Service: "aisoc.worker.v1.Worker"})
+	if err != nil {
+		return err
+	}
+	if r.Status != healthpb.HealthCheckResponse_SERVING {
+		return errors.New("worker is not serving")
+	}
+	return nil
+}
+
+// Preserve tracing metadata but never forward caller-provided service credentials.
+func metadataFrom(ctx context.Context) metadata.MD {
+	md, _ := metadata.FromOutgoingContext(ctx)
+	md = md.Copy()
+	md.Delete("authorization")
+	return md
+}
+
 func (c *Client) Execute(ctx context.Context, r *pb.ExecuteRequest) ([]byte, error) {
+	if r == nil {
+		return nil, errors.New("missing execution request")
+	}
 	if len(r.Input) > Limit {
 		return nil, errors.New("plugin input exceeds limit")
 	}
@@ -47,7 +77,7 @@ func (c *Client) Execute(ctx context.Context, r *pb.ExecuteRequest) ([]byte, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+c.token)
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Join(metadataFrom(ctx), metadata.Pairs("authorization", "Bearer "+c.token)))
 	response, err := c.rpc.Execute(ctx, r)
 	if err != nil {
 		return nil, err
