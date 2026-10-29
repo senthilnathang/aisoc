@@ -202,3 +202,17 @@ failover, abrupt power-loss durability or sustained production EPS.
 See [measured results](STREAM_PERFORMANCE_REPORT.md), [task tracker](IMPLEMENTATION_TASKS.md)
 and [recovery foundation](STREAMING_RECOVERY.md). S11 uses the user-selected local
 JSON scope; live-provider rollout remains a separate future gate.
+
+## Current payload retention and demo interface
+
+The main UI is `http://localhost:8080/build/stream-operations`; `/build-operations`
+is an alias. Foundation mode routes every API request to Go 3003. Ten demo sources
+contain 1,000 events each; event JSON and case links use that same backend.
+
+Migration 029 extends export beyond completed-work compaction: eligible payloads
+are replaced with verified archive references atomically with audit. API/evidence
+readers verify and resolve original content. Missing/corrupt files fail closed;
+case-referenced evidence is excluded. Hot limits default to 1,000 events, configurable
+to 10,000, with a 16 MiB cap; archived payloads release hot capacity. Durable event
+identity metadata remains capped at 100,000 per source. Preserve archive files
+alongside database backups. See [operational details](NEXT_DELIVERY_TASKS.md).

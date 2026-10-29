@@ -64,3 +64,11 @@ intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archi
 export, startup and measured limits. Earlier task entries are historical checkpoints.
 Live vendor/model validation and privileged response activation are outside this
 user-selected local release.
+
+## Latest local delivery
+
+- [Persistent demo, response sandbox and remaining gates](NEXT_DELIVERY_TASKS.md)
+- [QRadar and inference adapter contracts](INTEGRATION_ADAPTERS.md)
+- [Production preparation](../deploy/production/README.md)
+
+Use the main frontend on 8080 for the showcase; no separate 8082 demo is needed.

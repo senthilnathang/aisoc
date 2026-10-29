@@ -88,3 +88,16 @@ The full check uses disposable PostgreSQL and random listener ports. It verifies
 Go-to-Python outputs, credential rejection and durable dispatch alongside existing
 Rust/domain tests. Provider credentials are not needed.
 See [ADR 004](../../docs/adr/004-python-fastapi-grpc-service.md).
+
+## Optional JSON inference service
+
+`AISOC_INFERENCE_URL`, `AISOC_INFERENCE_MODEL` and optional
+`AISOC_INFERENCE_CREDENTIAL_FILE` configure `model-v1` inference through the existing
+typed gRPC service. Remote endpoints require HTTPS; literal loopback HTTP supports
+fixtures. Responses have strict schemas, evidence citations and bounded deadlines;
+Go QA still requires human review. This is a custom JSON contract, not an assertion
+of compatibility with a particular vendor API. Python has no response credentials.
+
+The showcase durable jobs remain mock-mode. Transport tests include Go-to-Python-to-
+JSON-fixture round trips; a real model and analyst-labelled quality evaluation are
+still required. See [adapter contracts](../../docs/INTEGRATION_ADAPTERS.md).

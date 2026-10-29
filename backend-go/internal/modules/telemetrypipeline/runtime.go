@@ -25,9 +25,13 @@ type Runtime struct {
 	Processor, ConsumerName        string
 	MaxEntries, MaxRecoveryRecords int64
 	MaxAttempts                    int
+	ReadBatchSize                  int
 }
 
 func (r Runtime) validate() error {
+	if r.ReadBatchSize < 0 || r.ReadBatchSize > 100 {
+		return eventstate.ErrInvalid
+	}
 	if _, err := streams.Key(r.Binding); err != nil {
 		return err
 	}
@@ -215,9 +219,46 @@ func (r Runtime) Poll(ctx context.Context, disposition string, effect Effect) er
 	if err := r.Consumer.EnsureGroup(ctx, r.Binding, r.Processor); err != nil {
 		return err
 	}
-	deliveries, err := r.Consumer.Read(ctx, r.Binding, r.Processor, r.ConsumerName, 10, 100*time.Millisecond)
+	count := r.ReadBatchSize
+	if count == 0 {
+		count = 10
+	}
+	deliveries, err := r.Consumer.Read(ctx, r.Binding, r.Processor, r.ConsumerName, count, 100*time.Millisecond)
 	if err != nil {
 		return err
+	}
+	return r.ProcessBatch(ctx, deliveries, disposition, effect)
+}
+
+// ProcessBatch shares the polling commit/ACK boundary with benchmarks and adapters.
+func (r Runtime) ProcessBatch(ctx context.Context, deliveries []streams.Delivery, disposition string, effect Effect) error {
+	if err := r.validate(); err != nil {
+		return err
+	}
+	if len(deliveries) > 100 {
+		return eventstate.ErrInvalid
+	}
+	if len(deliveries) > 1 && effect != nil {
+		input := make([]eventstate.BatchEvent, 0, len(deliveries))
+		ids := make([]string, 0, len(deliveries))
+		for _, d := range deliveries {
+			if d.Err != nil {
+				break
+			}
+			input = append(input, eventstate.BatchEvent{Key: d.Key, Hash: d.ContentHash})
+			ids = append(ids, d.ID)
+		}
+		if len(input) == len(deliveries) {
+			batchCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			applied, _ := r.Store.ApplyFreshBatch(batchCtx, r.Binding, r.Processor, input, disposition, r.MaxAttempts, r.MaxRecoveryRecords, effect)
+			cancel()
+			if applied {
+				_, err := r.Consumer.Ack(ctx, r.Binding, r.Processor, ids...)
+				return err
+			}
+			// A rolled-back batch is isolated through the established per-event
+			// retry/DLQ path. No external side effects are allowed in either path.
+		}
 	}
 	var errs []error
 	for _, d := range deliveries {

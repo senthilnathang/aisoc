@@ -365,3 +365,28 @@ and durability costs. The local UI pipeline is deliberately capped at 1,000
 retained events per source and must not be advertised as this load generator's
 production equivalent. Live model quality, replicated failover and power-loss
 durability remain outside the selected local JSON scope.
+
+## 2026-10-30: batched transactions and bounded query plans
+
+Fresh deliveries share a transaction (up to 100 events); recovery retains the
+leased per-event path. Outbox claims update locked candidate tuples, inbox lookups
+use bounded point queries, status aggregation avoids correlated scans, and idle
+completed scopes skip repeated correlation. Correctness and fault tests passed.
+
+| Measurement | Completed | Drain EPS | Scheduled-to-ACK p95 |
+|---|---:|---:|---:|
+| Earlier 10k overload baseline | 10,000 | 230 | 34.8 s |
+| Optimized 10k burst, 1k base / 3k peak offered | 10,000 | 895 | 3.669 s |
+| Final 10k steady schedule, 1k offered | 10,000 | 641 | 5.409 s |
+
+The final run used two consumers, batch limit 100, one publisher and 20 ms
+empty-claim delay. Accepted-to-ACK p95 was 2.317 s, excluding producer scheduling
+delay. Final pending and unacknowledged counts were zero. These measure synthetic
+delivery, not LLM investigation or ingest-to-finding latency. Host contention and
+different offered schedules prevent a controlled speedup claim. Stable 1,000 EPS
+remains unmet. Checkpoint row locking dominates process-query elapsed time.
+
+Local evidence: `output/backend-framework/final-steady-stream-load.json` and
+`set-snapshot-stream-load.json`. The complete regression suite passed. The running
+sandbox retains its conservative default consumer batch; the benchmark explicitly
+opts into 100. These bounded runs do not establish sustained production capacity.

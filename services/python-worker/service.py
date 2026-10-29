@@ -16,6 +16,7 @@ import uvicorn
 from aisoc.worker.v1 import worker_pb2_grpc
 from worker import Worker
 from investigation import Investigator
+from model_adapter import JSONModel
 from aisoc.worker.v1 import investigation_pb2_grpc
 
 SERVICE = 'aisoc.worker.v1.Worker'
@@ -34,6 +35,9 @@ class Settings:
     rpc_address: str
     http_address: str
     token: str
+    inference_url: str = ''
+    inference_model: str = ''
+    inference_credential_file: str = ''
 
     def __post_init__(self):
         rpc, http = loopback(self.rpc_address), loopback(self.http_address)
@@ -46,7 +50,8 @@ class Settings:
     def environment(cls):
         return cls(os.environ.get('AISOC_PYTHON_ADDR', '127.0.0.1:50051'),
                    os.environ.get('AISOC_PYTHON_HTTP_ADDR', '127.0.0.1:8001'),
-                   os.environ['AISOC_WORKER_TOKEN'])
+                   os.environ['AISOC_WORKER_TOKEN'], os.environ.get('AISOC_INFERENCE_URL', ''),
+                   os.environ.get('AISOC_INFERENCE_MODEL', ''), os.environ.get('AISOC_INFERENCE_CREDENTIAL_FILE', ''))
 
 
 class Health(health_pb2_grpc.HealthServicer):
@@ -74,7 +79,8 @@ class Runtime:
             ('grpc.max_receive_message_length', 70000), ('grpc.max_send_message_length', 70000),
             ('grpc.so_reuseport', 0)])
         worker_pb2_grpc.add_WorkerServicer_to_server(Worker(settings.token), self.server)
-        investigation_pb2_grpc.add_InvestigatorServicer_to_server(Investigator(settings.token), self.server)
+        model = JSONModel(settings.inference_url, settings.inference_model, settings.inference_credential_file or None) if settings.inference_url else None
+        investigation_pb2_grpc.add_InvestigatorServicer_to_server(Investigator(settings.token, model), self.server)
         health_pb2_grpc.add_HealthServicer_to_server(Health(settings.token, self.serving), self.server)
         self.channel = grpc.insecure_channel(settings.rpc_address)
         self.health = health_pb2_grpc.HealthStub(self.channel)

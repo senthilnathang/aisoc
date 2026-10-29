@@ -88,6 +88,14 @@ func run() error {
 			return fmt.Errorf("investigation accepted invalid credential")
 		}
 		fmt.Println("PASS typed Go/Python investigation RPC, QA and credential rejection; mock inconclusive, no actions")
+		if os.Getenv("AISOC_PROBE_MODEL") == "1" {
+			task.Mode = "model-v1"
+			task.DeadlineUnixMs = time.Now().Add(10 * time.Second).UnixMilli()
+			if _, err = client.Investigate(context.Background(), task); err != nil {
+				return err
+			}
+			fmt.Println("PASS Go gRPC to configured JSON inference service and Go QA; model quality not assessed")
+		}
 	}
 	return nil
 }

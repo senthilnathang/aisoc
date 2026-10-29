@@ -63,6 +63,10 @@ func (s Store) AdmitFinding(ctx context.Context, cfg FindingAdmission, f telemet
 		if err != nil {
 			return receipt, err
 		}
+		raw, err = eventstate.ResolveEnvelope(ctx, tx, cfg.Binding, key, raw)
+		if err != nil {
+			return receipt, err
+		}
 		e, err := telemetry.Decode(raw, cfg.Binding)
 		if err != nil {
 			return receipt, err

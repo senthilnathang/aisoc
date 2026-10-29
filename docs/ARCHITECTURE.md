@@ -107,18 +107,21 @@ execution. Current browser/mobile limits are recorded in [testing](TESTING.md).
 
 | Stack | API | Frontend | Database |
 |---|---:|---:|---|
-| Active release | 3002 | 8080 | PostgreSQL 55436, `.run/go-runtime/` |
-| Optional development | 3003 | 8081 when started | PostgreSQL 55435, `.run/go-dev/` |
+| Selected foundation/showcase | 3003 | 8080 | PostgreSQL 55435, `.run/go-dev/` |
+| Preserved release | 3002 | 8080 only when release profile selected | PostgreSQL 55436, `.run/go-runtime/` |
 | Optional Node comparison | 3004 | 8082 | Separate SQLite in `.run/node-compare/` |
 
 The development foundation starts with
 `python3 scripts/framework/dev.py start --investigation-worker --python-worker`.
 Its Python service listens on HTTP 8001 and gRPC 50051, with the Go specialist
 dispatcher sharing the development database. Python receives no database or
-connector credentials. Rust is not started by this option. The release frontend
-continues to use the release API; development UI setup is separate.
+connector credentials. Rust is not started by this option. The main frontend uses
+one API target for every page; the foundation profile exposes the demo on 8080.
 
-Only the release starts through `run.sh`. Stop preserves data. All 26 legacy
+`run.sh` selects `release` or `foundation` through `.run/runtime-profile` or
+`AISOC_RUNTIME_PROFILE`. Foundation mode manages its supervisor. Stop the frontend
+before changing profiles. `/build-operations` aliases `/build/stream-operations`.
+Stop preserves data. All 26 legacy
 tables reconciled at cutover. Post-write rollback reverse-exports current Go data
 into a new SQLite database; restarting the old snapshot loses acknowledged writes.
 

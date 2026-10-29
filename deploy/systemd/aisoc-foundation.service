@@ -1,0 +1,16 @@
+[Unit]
+Description=AISOC local JSON foundation supervisor
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/aisoc
+ExecStart=/usr/bin/python3 /opt/aisoc/scripts/framework/supervise.py
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=120
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

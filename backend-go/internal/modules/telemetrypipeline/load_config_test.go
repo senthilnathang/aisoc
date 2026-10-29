@@ -6,10 +6,17 @@ import (
 	"testing"
 )
 
-type loadConfig struct{ events, eps, pauseSeconds, idlePollMS, burstMultiplier int }
+type loadConfig struct{ events, eps, pauseSeconds, idlePollMS, burstMultiplier, consumerBatch int }
 
 func parseLoadConfig(getenv func(string) string) (loadConfig, error) {
-	c := loadConfig{events: 1000, eps: 1000, idlePollMS: 1, burstMultiplier: 1}
+	c := loadConfig{events: 1000, eps: 1000, idlePollMS: 1, burstMultiplier: 1, consumerBatch: 10}
+	if raw := getenv("AISOC_STREAM_LOAD_CONSUMER_BATCH"); raw != "" {
+		var err error
+		c.consumerBatch, err = strconv.Atoi(raw)
+		if err != nil || c.consumerBatch < 1 || c.consumerBatch > 100 {
+			return c, fmt.Errorf("invalid consumer batch")
+		}
+	}
 	if raw := getenv("AISOC_STREAM_LOAD_BURST_MULTIPLIER"); raw != "" {
 		var err error
 		c.burstMultiplier, err = strconv.Atoi(raw)

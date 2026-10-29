@@ -66,7 +66,7 @@ func run() error {
 		if _, err = pool.Exec(ctx, `INSERT INTO tenants(id) VALUES($1) ON CONFLICT DO NOTHING`, s.TenantID); err != nil {
 			return err
 		}
-		r := telemetrypipeline.Runtime{Store: eventstate.Store{Pool: pool, MaxEvents: 1000, MaxPayloadBytes: 16 << 20}, Binding: telemetry.Binding{TenantID: s.TenantID, ConnectorID: s.ConnectorID, Source: s.Source}, Publisher: pub, Consumer: consumer, Processor: s.Processor, ConsumerName: "sandbox-worker", MaxEntries: 2000, MaxRecoveryRecords: 2000, MaxAttempts: 3}
+		r := telemetrypipeline.Runtime{Store: eventstate.Store{Pool: pool, MaxEvents: s.HotEventLimit(), MaxPayloadBytes: 16 << 20}, Binding: telemetry.Binding{TenantID: s.TenantID, ConnectorID: s.ConnectorID, Source: s.Source}, Publisher: pub, Consumer: consumer, Processor: s.Processor, ConsumerName: "sandbox-worker", MaxEntries: s.HotEventLimit() * 2, MaxRecoveryRecords: 100000, MaxAttempts: 3}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

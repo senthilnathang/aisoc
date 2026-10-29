@@ -1,0 +1,11 @@
+[Unit]
+Description=AISOC verified local archive maintenance for configured scope
+After=aisoc-foundation.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/aisoc
+# Copy one unit per explicitly approved source and replace this scope.
+ExecStart=/usr/bin/python3 /opt/aisoc/scripts/framework/archive.py --scope sandbox-qradar --min-age-days 7 --max-pages 10
+UMask=0077
+NoNewPrivileges=true

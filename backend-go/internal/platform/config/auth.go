@@ -63,6 +63,9 @@ func loadAuth() (Auth, error) {
 }
 func (a Auth) Validate(production bool) error {
 	for _, scope := range a.StreamOperations {
+		if production && scope.AllowSandboxResponse {
+			return errors.New("sandbox responses are disabled in production")
+		}
 		if production && scope.AllowMockImport {
 			return errors.New("mock stream import is disabled in production")
 		}

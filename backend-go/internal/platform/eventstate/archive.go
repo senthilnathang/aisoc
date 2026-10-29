@@ -98,7 +98,7 @@ func (o OperatorRecovery) ArchiveCompleted(ctx context.Context, actor auth.Princ
 	if !validBinding(b) || !idPattern.MatchString(processor) || (after != "" && !hashPattern.MatchString(after)) || minAge < 24*time.Hour || minAge > 365*24*time.Hour {
 		return receipt, ErrInvalid
 	}
-	rows, err := o.Store.Pool.Query(ctx, `SELECT e.event_key,e.content_hash,e.envelope,i.disposition,e.created_at,i.processed_at,w.updated_at FROM stream_events e JOIN stream_inbox i USING(tenant_id,connector_id,source,event_key) LEFT JOIN stream_consumer_work w ON w.tenant_id=e.tenant_id AND w.connector_id=e.connector_id AND w.source=e.source AND w.processor=$4 AND w.work_key='event:'||e.event_key AND w.state='done' WHERE e.tenant_id=$1 AND e.connector_id=$2 AND e.source=$3 AND i.processor=$4 AND e.event_key>$5 AND e.created_at<now()-($6::bigint*interval '1 second') AND i.content_hash=e.content_hash AND NOT EXISTS(SELECT 1 FROM stream_findings f WHERE f.tenant_id=e.tenant_id AND f.connector_id=e.connector_id AND f.source=e.source AND f.document->'event_keys' ? e.event_key) ORDER BY e.event_key LIMIT 100`, b.TenantID, b.ConnectorID, b.Source, processor, after, int64(minAge.Seconds()))
+	rows, err := o.Store.Pool.Query(ctx, `SELECT e.event_key,e.content_hash,e.envelope,i.disposition,e.created_at,i.processed_at,w.updated_at FROM stream_events e JOIN stream_inbox i USING(tenant_id,connector_id,source,event_key) LEFT JOIN stream_consumer_work w ON w.tenant_id=e.tenant_id AND w.connector_id=e.connector_id AND w.source=e.source AND w.processor=$4 AND w.work_key='event:'||e.event_key AND w.state='done' WHERE e.tenant_id=$1 AND e.connector_id=$2 AND e.source=$3 AND i.processor=$4 AND e.event_key>$5 AND NOT EXISTS(SELECT 1 FROM stream_event_archives a WHERE a.tenant_id=e.tenant_id AND a.connector_id=e.connector_id AND a.source=e.source AND a.event_key=e.event_key) AND e.created_at<now()-($6::bigint*interval '1 second') AND i.content_hash=e.content_hash AND NOT EXISTS(SELECT 1 FROM stream_findings f WHERE f.tenant_id=e.tenant_id AND f.connector_id=e.connector_id AND f.source=e.source AND f.document->'event_keys' ? e.event_key) ORDER BY e.event_key LIMIT 100`, b.TenantID, b.ConnectorID, b.Source, processor, after, int64(minAge.Seconds()))
 	if err != nil {
 		return receipt, err
 	}
@@ -185,6 +185,23 @@ func (o OperatorRecovery) ArchiveCompleted(ctx context.Context, actor auth.Princ
 		}
 		if !valid {
 			return receipt, ErrConflict
+		}
+		// Keep source identity in PostgreSQL for revision checks, and retain the
+		// original hash/inbox for replay. Only a verified, fsynced bundle is used.
+		original, err := telemetry.Decode(event.Envelope, b)
+		if err != nil {
+			return receipt, err
+		}
+		pointer, _ := json.Marshal(archivePointer{true, original.SourceEventID, original.SourceRevision})
+		absolute, err := filepath.Abs(path)
+		if err != nil {
+			return receipt, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO stream_event_archives(tenant_id,connector_id,source,event_key,file_path,sha256) VALUES($1,$2,$3,$4,$5,$6)`, b.TenantID, b.ConnectorID, b.Source, event.EventKey, absolute, receipt.SHA256); err != nil {
+			return receipt, err
+		}
+		if _, err = tx.Exec(ctx, `UPDATE stream_events SET envelope=$5 WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=$4`, b.TenantID, b.ConnectorID, b.Source, event.EventKey, pointer); err != nil {
+			return receipt, err
 		}
 		if event.WorkUpdatedAt != nil {
 			tag, err := tx.Exec(ctx, `DELETE FROM stream_consumer_work w WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4 AND work_key=$5 AND state='done' AND updated_at=$6 AND NOT EXISTS(SELECT 1 FROM stream_dead_letters d WHERE d.tenant_id=w.tenant_id AND d.connector_id=w.connector_id AND d.source=w.source AND d.processor=w.processor AND d.work_key=w.work_key)`, b.TenantID, b.ConnectorID, b.Source, processor, "event:"+event.EventKey, *event.WorkUpdatedAt)

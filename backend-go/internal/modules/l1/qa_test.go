@@ -40,6 +40,18 @@ func TestQAVetoesUnsafeOrUnsupportedResults(t *testing.T) {
 	if VerifyResult(task, result, now.Add(11*time.Second)) == nil {
 		t.Fatal("expired result")
 	}
+	modelTask := proto.Clone(task).(*pb.InvestigationTask)
+	modelTask.Mode = ModelMode
+	modelResult := proto.Clone(result).(*pb.InvestigationResult)
+	modelResult.ModelVersion = "json-model:fixture-v1"
+	modelResult.Verdict = "BENIGN"
+	if err := VerifyResult(modelTask, modelResult, now); err != nil {
+		t.Fatal(err)
+	}
+	modelResult.RequiresHumanReview = false
+	if VerifyResult(modelTask, modelResult, now) == nil {
+		t.Fatal("model bypassed human review")
+	}
 	for _, mutate := range []func(*pb.InvestigationTask){func(t *pb.InvestigationTask) { t.Mode = "live" }, func(t *pb.InvestigationTask) { t.Evidence = append(t.Evidence, t.Evidence[0]) }, func(t *pb.InvestigationTask) { t.MaxOutputBytes = 1 }, func(t *pb.InvestigationTask) { t.DeadlineUnixMs = now.Add(time.Hour).UnixMilli() }} {
 		r := proto.Clone(task).(*pb.InvestigationTask)
 		mutate(r)

@@ -3,6 +3,7 @@ package telemetrypipeline
 import (
 	"context"
 	"errors"
+	"net/netip"
 	"time"
 
 	"aisoc/backend/internal/modules/intake"
@@ -17,7 +18,7 @@ import (
 // is capped at 1,000 retained events, so its full mock correlation window is explicit.
 // Python work uses the existing durable specialist dispatcher and typed gRPC.
 func (r Runtime) AdvanceMock(ctx context.Context) error {
-	rows, err := r.Store.Pool.Query(ctx, `SELECT e.envelope FROM stream_events e JOIN stream_inbox i USING(tenant_id,connector_id,source,event_key) WHERE e.tenant_id=$1 AND e.connector_id=$2 AND e.source=$3 AND i.processor=$4 ORDER BY e.created_at,e.event_key LIMIT 1001`, r.Binding.TenantID, r.Binding.ConnectorID, r.Binding.Source, r.Processor)
+	rows, err := r.Store.Pool.Query(ctx, `SELECT e.envelope FROM stream_events e JOIN stream_inbox i USING(tenant_id,connector_id,source,event_key) WHERE e.tenant_id=$1 AND e.connector_id=$2 AND e.source=$3 AND i.processor=$4 AND NOT EXISTS(SELECT 1 FROM stream_event_archives a WHERE a.tenant_id=e.tenant_id AND a.connector_id=e.connector_id AND a.source=e.source AND a.event_key=e.event_key) ORDER BY e.created_at,e.event_key LIMIT $5`, r.Binding.TenantID, r.Binding.ConnectorID, r.Binding.Source, r.Processor, r.Store.MaxEvents+1)
 	if err != nil {
 		return err
 	}
@@ -46,15 +47,36 @@ func (r Runtime) AdvanceMock(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if len(events) > 1000 {
+	if int64(len(events)) > r.Store.MaxEvents {
 		return eventstate.ErrCapacity
 	}
 	if len(events) == 0 {
 		return nil
 	}
-	findings, err := telemetry.SuspiciousLogins(r.Binding, events, watermark.Add(time.Minute))
-	if err != nil {
-		return err
+	// Correlator's 100-event bound applies to an entity window, not the whole
+	// source. Preserve canonical IP grouping and never silently truncate a group.
+	type entity struct{ principal, asset, ip string }
+	groups := map[entity][]telemetry.Event{}
+	revisions := map[string]string{}
+	for _, e := range events {
+		if prior, ok := revisions[e.SourceEventID]; ok && prior != e.Identity() {
+			return telemetry.ErrRevisionAmbiguous
+		}
+		revisions[e.SourceEventID] = e.Identity()
+		ip, _ := netip.ParseAddr(e.Projection.SourceIP)
+		key := entity{e.Projection.PrincipalRef, e.Projection.AssetRef, ip.Unmap().String()}
+		groups[key] = append(groups[key], e)
+	}
+	findings := []telemetry.Finding{}
+	for _, group := range groups {
+		if len(group) > 100 {
+			return eventstate.ErrCapacity
+		}
+		found, err := telemetry.SuspiciousLogins(r.Binding, group, watermark.Add(time.Minute))
+		if err != nil {
+			return err
+		}
+		findings = append(findings, found...)
 	}
 	if len(findings) > 25 {
 		return eventstate.ErrCapacity
@@ -102,8 +124,10 @@ func (r Runtime) RunMock(ctx context.Context) error {
 	noop := func(context.Context, pgx.Tx, telemetry.Event) error { return nil }
 	claimCursor, reconcileCursor := "0-0", ""
 	maintenance := time.Time{}
+	lastVersion := int64(-1)
+	investigationPending := true
 	for ctx.Err() == nil {
-		_, publishErr := r.PublishBatch(ctx, 25)
+		published, publishErr := r.PublishBatch(ctx, 25)
 		pollErr := r.Poll(ctx, "filtered", noop)
 		var maintenanceErr error
 		if time.Since(maintenance) >= time.Second {
@@ -113,7 +137,15 @@ func (r Runtime) RunMock(ctx context.Context) error {
 				reconcileCursor, maintenanceErr = r.Reconcile(ctx, reconcileCursor)
 			}
 			if maintenanceErr == nil {
-				maintenanceErr = r.AdvanceMock(ctx)
+				cp, err := r.Store.Checkpoint(ctx, r.Binding)
+				maintenanceErr = err
+				if err == nil && (cp.Version != lastVersion || investigationPending) {
+					maintenanceErr = r.AdvanceMock(ctx)
+					if maintenanceErr == nil {
+						lastVersion = cp.Version
+						maintenanceErr = r.Store.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM stream_events e WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND NOT EXISTS(SELECT 1 FROM stream_inbox i WHERE i.tenant_id=e.tenant_id AND i.connector_id=e.connector_id AND i.source=e.source AND i.event_key=e.event_key AND i.processor=$4)) OR EXISTS(SELECT 1 FROM stream_findings f WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND NOT EXISTS(SELECT 1 FROM l1_escalations e WHERE e.tenant_id=f.tenant_id AND e.investigation_id=f.investigation_id AND e.state='synced'))`, r.Binding.TenantID, r.Binding.ConnectorID, r.Binding.Source, r.Processor).Scan(&investigationPending)
+					}
+				}
 			}
 			code := ""
 			if errors.Join(publishErr, pollErr, maintenanceErr) != nil {
@@ -125,6 +157,9 @@ func (r Runtime) RunMock(ctx context.Context) error {
 			}
 		}
 		wait := 20 * time.Millisecond
+		if published == 0 && !investigationPending {
+			wait = 200 * time.Millisecond
+		}
 		if errors.Join(publishErr, pollErr, maintenanceErr) != nil {
 			wait = time.Second
 		}

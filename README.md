@@ -12,6 +12,20 @@ service health and lifecycle; Go dispatches bounded work through gRPC.
 
 ## Run the initialized application
 
+The local showcase now uses **one frontend on port 8080**, backed by the Go
+foundation on 3003. Open [Stream operations](http://localhost:8080/build/stream-operations)
+(also available at `/build-operations`) and select `demo-showcase-01` through
+`demo-showcase-10`: each contains 1,000 persisted events and one investigation.
+The extra demo frontend on 8082 has been stopped.
+
+`run.sh` reads `.run/runtime-profile` (`foundation` on this installation). A fresh
+checkout defaults to `release`; select foundation explicitly with
+`AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. Stop the frontend before
+switching profiles so its API proxy is restarted. Foundation startup supervises
+Go, Python and stream workers; stop preserves data. The release database remains
+separate and is never merged or overwritten by switching profiles.
+See [current delivery status](docs/NEXT_DELIVERY_TASKS.md) for implementation limits.
+
 ```bash
 ./run.sh start both
 ./run.sh status both
@@ -22,14 +36,15 @@ service health and lifecycle; Go dispatches bounded work through gRPC.
 | Service | Address |
 |---|---|
 | Frontend | http://localhost:8080 |
-| Go API | http://127.0.0.1:3002 |
-| Readiness | http://127.0.0.1:3002/ready |
-| Release PostgreSQL | 127.0.0.1:55436 |
+| Go API (foundation profile) | http://127.0.0.1:3003 |
+| Readiness (foundation profile) | http://127.0.0.1:3003/ready |
+| Foundation PostgreSQL | 127.0.0.1:55435 |
 
 `run.sh` defaults to Go. A private `.run/backend-mode` override supports explicit
 rollback. Backend startup starts PostgreSQL, the Go API and investigation worker;
 it does not start optional specialists. The optimized API/worker binaries are
-installed in the release. Comparison and development stacks are stopped by default.
+installed in the release. The `release` profile uses API 3002 and PostgreSQL 55436;
+the selected `foundation` profile uses the showcase database and current code.
 
 The launcher requires initialized `.run/go-runtime/` data, private settings and
 verified binaries, which are intentionally not committed. For a **fresh checkout**,
@@ -53,13 +68,14 @@ python3 scripts/framework/dev.py status
 | Development PostgreSQL | 127.0.0.1:55435 |
 
 The launcher also starts the Go investigation worker and specialist dispatcher.
-Stop with `python3 scripts/framework/dev.py stop`; data and private settings are
+When supervised through `run.sh`, stop with `./run.sh stop backend`; otherwise use
+`python3 scripts/framework/dev.py stop`. Data and private settings are
 retained. If a core-only development API is already running, stop it before
 enabling Python. Rust remains optional and is exercised by the framework tests.
 
 This foundation uses a separate development database. The release frontend on
-8080 continues to use API 3002; it does not display development records. To use a
-frontend with the foundation, follow [development setup](docs/DEVELOPMENT.md).
+8080 uses API 3003 when the foundation profile is selected. Switching to the release
+profile points it at API 3002 and its separate records.
 The JSON sandbox supports intake, Redis delivery, Go correlation, typed Python mock
 investigation, Go QA and mock SOAR notes. Open `/build/stream-operations` on the
 foundation frontend. Live vendors and model inference need separate validation.

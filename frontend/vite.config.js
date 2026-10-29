@@ -49,7 +49,7 @@ export default defineConfig({
     proxy: apiProxy,
     headers: {
       "Content-Security-Policy":
-        "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:8080 ws://127.0.0.1:8082 ws://localhost:8082 http://localhost:3002; object-src 'none'; frame-ancestors 'none'",
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:8080 ws://127.0.0.1:8080; object-src 'none'; frame-ancestors 'none'",
       "Referrer-Policy": "no-referrer",
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "DENY",

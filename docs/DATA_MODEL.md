@@ -1,7 +1,7 @@
 # Data Model
 
 PostgreSQL is the active datastore as of 2026-10-29. The authoritative physical
-schema is in `backend-go/migrations/` (27 migrations, 43 tables including the new
+schema is in `backend-go/migrations/` (29 migrations, 47 tables including the new
 streaming state). Foundation startup applies all source migrations. The separate release remains
 on migration 019 with 28 tables. The entity catalog
 below retains legacy JSON-column names to explain the preserved HTTP/recovery
@@ -175,3 +175,12 @@ the SQL migrations for exact types, indexes and deletion rules.
 - Every future unique constraint includes `tenant_id` unless globally scoped.
 - External secret-manager integration is a future extension; Go currently stores
   authenticated encrypted envelopes, with the key outside PostgreSQL.
+
+## Migrations 028–029
+
+Migration 028 adds `sandbox_response_policy`, `sandbox_sessions` and
+`sandbox_session_actions`, scoped by tenant, connector and source. Policy defaults
+to stopped; revocation and audit commit together. These records are simulations.
+Migration 029 adds `stream_event_archives`. Verified files replace eligible hot
+payloads while event identities, hashes and dedup receipts remain durable. Archive
+files must accompany database backups and be restored at their recorded paths.

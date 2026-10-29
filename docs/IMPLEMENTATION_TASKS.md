@@ -240,3 +240,10 @@ intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archi
 export, startup and measured limits. Earlier task entries are historical checkpoints.
 Live vendor/model validation and privileged response activation are outside this
 user-selected local release.
+
+## Follow-on delivery status
+
+The [current delivery tracker](NEXT_DELIVERY_TASKS.md) covers the requested P1–P3
+local work and remaining live gates. Migrations 028–029 add sandbox response state
+and verified archive payload references. Main frontend 8080 now uses the selected
+foundation backend consistently; the separate demo frontend is stopped.

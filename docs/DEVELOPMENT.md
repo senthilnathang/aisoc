@@ -151,3 +151,19 @@ intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archi
 export, startup and measured limits. Earlier task entries are historical checkpoints.
 Live vendor/model validation and privileged response activation are outside this
 user-selected local release.
+
+## Main frontend with the foundation
+
+The local installation selects `foundation` in `.run/runtime-profile`. Use
+`./run.sh start both`, `./run.sh status both`, and `./run.sh stop both` to manage
+the supervised foundation and the sole frontend on 8080. The Go API is 3003,
+PostgreSQL is 55435, Python HTTP/gRPC are 8001/50051, and Redis is 16379.
+On a fresh checkout use `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`.
+Stop the frontend before switching profiles; select `release` explicitly to access
+the separate older database on 55436 through API 3002. No records are merged.
+
+Open `/build/stream-operations` or `/build-operations` on 8080. The ten
+`demo-showcase-*` sources contain 10,000 synthetic events and ten investigations.
+`python3 scripts/framework/demo.py` replays safely. The supervisor owns child
+restarts: use `run.sh stop backend` before manual maintenance. Do not start an
+extra preview on 8082. See [delivery details](NEXT_DELIVERY_TASKS.md).

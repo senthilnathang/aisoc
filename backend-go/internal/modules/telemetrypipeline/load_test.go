@@ -176,7 +176,7 @@ func TestStreamLoadReport(t *testing.T) {
 						return
 					}
 				}
-				ds, err := local.Consumer.Read(ctx, r.Binding, r.Processor, local.ConsumerName, 10, 100*time.Millisecond)
+				ds, err := local.Consumer.Read(ctx, r.Binding, r.Processor, local.ConsumerName, workload.consumerBatch, 100*time.Millisecond)
 				if err != nil {
 					if ctx.Err() == nil {
 						errs <- err
@@ -184,14 +184,14 @@ func TestStreamLoadReport(t *testing.T) {
 					}
 					return
 				}
-				for _, d := range ds {
-					if err = local.Process(ctx, d, "filtered", noop); err != nil {
-						if ctx.Err() == nil {
-							errs <- err
-							cancel()
-						}
-						return
+				if err = local.ProcessBatch(ctx, ds, "filtered", noop); err != nil {
+					if ctx.Err() == nil {
+						errs <- err
+						cancel()
 					}
+					return
+				}
+				for _, d := range ds {
 					start, ok := starts.Load(d.Key)
 					if !ok {
 						errs <- fmt.Errorf("untracked delivery")
@@ -286,6 +286,7 @@ func TestStreamLoadReport(t *testing.T) {
 	report["postgres_diagnostics"] = databaseProfile
 	report["workload"] = "bounded paced synthetic authentication workload; 100-event batches; no production capacity claim"
 	report["offered_eps"] = workload.eps
+	report["consumer_batch_limit"] = workload.consumerBatch
 	report["scheduled_input_seconds"] = schedule[batches].Seconds()
 	report["burst"] = map[string]any{"multiplier": workload.burstMultiplier, "peak_offered_eps": workload.eps * workload.burstMultiplier, "start_seconds": schedule[batches/3].Seconds(), "end_seconds": schedule[2*batches/3].Seconds(), "scope": "middle third of event batches; offered schedule, not achieved throughput"}
 	report["max_producer_schedule_lag_ms"] = float64(maxScheduleLag.Load()) / 1000

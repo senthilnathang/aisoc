@@ -112,8 +112,8 @@ func (s Store) Accept(ctx context.Context, b telemetry.Binding, expected Checkpo
 	if current != expected {
 		return result, ErrCheckpoint
 	}
-	var count, size int64
-	err = tx.QueryRow(ctx, `SELECT count(*),COALESCE(sum(octet_length(envelope)),0) FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3`, b.TenantID, b.ConnectorID, b.Source).Scan(&count, &size)
+	var count, size, total int64
+	err = tx.QueryRow(ctx, `SELECT count(*) FILTER(WHERE a.event_key IS NULL),COALESCE(sum(octet_length(e.envelope)) FILTER(WHERE a.event_key IS NULL),0),count(*) FROM stream_events e LEFT JOIN stream_event_archives a USING(tenant_id,connector_id,source,event_key) WHERE tenant_id=$1 AND connector_id=$2 AND source=$3`, b.TenantID, b.ConnectorID, b.Source).Scan(&count, &size, &total)
 	if err != nil {
 		return result, err
 	}
@@ -144,11 +144,12 @@ func (s Store) Accept(ctx context.Context, b telemetry.Binding, expected Checkpo
 			}
 			continue
 		}
-		if count >= s.MaxEvents || int64(len(raw[i])) > s.MaxPayloadBytes-size {
+		if count >= s.MaxEvents || total >= 100000 || int64(len(raw[i])) > s.MaxPayloadBytes-size {
 			return Accepted{}, ErrCapacity
 		}
 		known[keys[i]] = hashes[i]
 		newKeys = append(newKeys, keys[i])
+		total++
 		newHashes = append(newHashes, hashes[i])
 		newRaw = append(newRaw, raw[i])
 		count++
@@ -196,14 +197,16 @@ func (s Store) ClaimBatch(ctx context.Context, b telemetry.Binding, limit int) (
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.Pool.Query(ctx, `WITH candidate AS (
- SELECT event_key FROM stream_outbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND attempts<max_attempts AND
+	// The locked CTIDs live only inside this statement on this unpartitioned
+	// table. A bounded TID update avoids rescanning all retained source receipts.
+	rows, err := s.Pool.Query(ctx, `WITH candidate AS MATERIALIZED (
+ SELECT ctid FROM stream_outbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND attempts<max_attempts AND
  ((state='queued' AND available_at<=clock_timestamp()) OR (state='publishing' AND lease_until<=clock_timestamp()))
  ORDER BY available_at,created_at,event_key FOR UPDATE SKIP LOCKED LIMIT $4), claimed AS (
  UPDATE stream_outbox o SET state='publishing',attempt_id=gen_random_uuid(),attempts=attempts+1,lease_until=clock_timestamp()+interval '30 seconds',updated_at=now()
- FROM candidate c WHERE o.tenant_id=$1 AND o.connector_id=$2 AND o.source=$3 AND o.event_key=c.event_key RETURNING o.event_key,o.attempts,o.attempt_id)
+ WHERE o.ctid=ANY(ARRAY(SELECT ctid FROM candidate)) RETURNING o.event_key,o.attempts,o.attempt_id)
  SELECT c.event_key,e.content_hash,e.envelope,c.attempts,c.attempt_id::text FROM claimed c CROSS JOIN LATERAL
- (SELECT content_hash,envelope FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=c.event_key OFFSET 0) e`, b.TenantID, b.ConnectorID, b.Source, limit)
+ (SELECT content_hash,envelope FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=c.event_key OFFSET 0) e`, pgx.QueryExecModeExec, b.TenantID, b.ConnectorID, b.Source, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -282,6 +285,10 @@ func (s Store) Apply(ctx context.Context, b telemetry.Binding, processor, key, h
 	}
 	if storedHash != hash {
 		return false, ErrConflict
+	}
+	raw, err = ResolveEnvelope(ctx, tx, b, key, raw)
+	if err != nil {
+		return false, err
 	}
 	e, err := telemetry.Decode(raw, b)
 	if err != nil {

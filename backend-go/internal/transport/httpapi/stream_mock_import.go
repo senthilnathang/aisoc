@@ -60,7 +60,7 @@ func registerStreamMockImport(mux *http.ServeMux, pool *pgxpool.Pool, scopes []c
 		if _, err := pool.Exec(r.Context(), `INSERT INTO tenants(id) VALUES($1) ON CONFLICT DO NOTHING`, b.TenantID); err != nil {
 			return nil, 0, err
 		}
-		receipt, err := (eventstate.Store{Pool: pool, MaxEvents: 1000, MaxPayloadBytes: 16 << 20}).Accept(r.Context(), b, page.Expected, page.Next, events)
+		receipt, err := (eventstate.Store{Pool: pool, MaxEvents: scope.HotEventLimit(), MaxPayloadBytes: 16 << 20}).Accept(r.Context(), b, page.Expected, page.Next, events)
 		return map[string]any{"mode": "mock-json", "accepted": receipt, "privileged_actions_enabled": false}, 202, streamError(err)
 	}))
 }

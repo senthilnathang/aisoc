@@ -138,6 +138,7 @@ const pathForView = {
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/build-operations" || pathname === "/build-operations/") pathname = "/build/stream-operations";
   const responseView = Object.entries(pathForView).find(([view, path]) => view.startsWith("response") && path === pathname);
   if (responseView) return { view: responseView[0], investigationId: null, reportId: null, ruleId: null };
   if (pathname === "/skills/new") return { view: "skillCreate", skillId: null };

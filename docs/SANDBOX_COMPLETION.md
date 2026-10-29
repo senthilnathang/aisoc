@@ -24,7 +24,7 @@ Completed local work, in dependency order:
 No Kafka/ClickHouse/new orchestration service. Rust changes require measured benefit.
 All response execution stays sandbox-only; no privileged actions are activated.
 
-The foundation has been backed up, migrated through 027 and started locally.
+The foundation has been backed up, migrated through 029 and started locally.
 Browser validation imported four events, observed four completed and zero pending,
 followed the investigation link, confirmed mock SOAR synchronization and replayed
 the fixture with zero insertions. Browser console: zero errors/warnings. The
@@ -39,16 +39,15 @@ established. Those limits do not prevent testing the bounded local JSON workflow
 ## Start and use
 
 ```bash
-python3 scripts/framework/dev.py start --investigation-worker --python-worker --streams
-python3 scripts/framework/dev.py status
-# In another terminal, from frontend/:
-AISOC_API_PROXY_TARGET=http://127.0.0.1:3003 ./node_modules/.bin/vite --host 127.0.0.1 --port 8082 --strictPort
+AISOC_RUNTIME_PROFILE=foundation ./run.sh start both
+AISOC_RUNTIME_PROFILE=foundation ./run.sh status both
 ```
 
-Stop an already-running foundation before enabling streams. The launcher applies
-additive migrations through 027, starts its own Redis on 16379 and retains private
-settings under `.run/`. Existing release API 3002/frontend 8080 are separate.
-Open `http://127.0.0.1:8082/build/stream-operations`, load the suspicious-login
+Stop an already-running frontend before switching profiles. The launcher applies
+additive migrations through 029, starts its own Redis on 16379 and retains private
+settings under `.run/`. Release API 3002 remains separate. The main frontend on 8080
+now targets foundation API 3003. The extra demo preview on 8082 is stopped.
+Open `http://127.0.0.1:8080/build/stream-operations`, load the suspicious-login
 example, then import. A source checkpoint is checked atomically. Reimporting the
 same source events inserts zero new events. The worker sends bounded typed work
 to Python gRPC 50051; FastAPI health is on 8001. Go verifies the mock result and
@@ -59,8 +58,10 @@ path has no measured reason to cross a Rust RPC boundary.
 Local scopes live in `.run/go-dev/stream-scopes.json`; other environments can set
 `AISOC_GO_STREAM_OPERATIONS_FILE`. Grants bind actor, tenant, connector, source and
 processor. Inspection, mock import and retry permissions are separate. Production
-configuration refuses mock import. The sandbox admits at most 1,000 retained
-events per source, 100 per import and 1 MiB per request. It deliberately stops at
+configuration refuses mock import and sandbox response grants. The sandbox defaults
+to 1,000 hot events per source (configurable to 10,000), 100 per import and 1 MiB per
+request. Verified payload archives free hot capacity while retaining dedup identities;
+the identity ceiling is 100,000 per source. It deliberately stops at
 capacity; it is not an unbounded telemetry collector.
 
 ## Monitoring and recovery

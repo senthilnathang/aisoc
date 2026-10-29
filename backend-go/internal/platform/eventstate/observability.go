@@ -14,6 +14,7 @@ type Snapshot struct {
 	PublicationFailed    int64   `json:"publication_failed"`
 	HistoricalGaps       int64   `json:"historical_gap_observations"`
 	DeadLetters          int64   `json:"dead_letters"`
+	Archived             int64   `json:"archived"`
 }
 
 // Snapshot reports one SQL snapshot. Accepted = completed + dead + pending;
@@ -23,20 +24,21 @@ func (s Store) Snapshot(ctx context.Context, b telemetry.Binding, processor stri
 	if !validBinding(b) || !idPattern.MatchString(processor) {
 		return r, ErrInvalid
 	}
-	// Materialize once: aggregate predicates otherwise repeat the correlated
-	// inbox lookup for every count/age expression. This is query-local, not a cache.
+	// Aggregate scoped sets once instead of probing inbox/work for every retained
+	// event. Completed still wins over dead; unknown work cannot become acceptance.
 	err := s.Pool.QueryRow(ctx, `WITH states AS MATERIALIZED (
- SELECT e.created_at,
- EXISTS(SELECT 1 FROM stream_inbox i WHERE i.tenant_id=$1 AND i.connector_id=$2 AND i.source=$3 AND i.processor=$4 AND i.event_key=e.event_key) AS completed,
- EXISTS(SELECT 1 FROM stream_consumer_work w WHERE w.tenant_id=$1 AND w.connector_id=$2 AND w.source=$3 AND w.processor=$4 AND w.work_key='event:'||e.event_key AND w.state='dead') AS dead
- FROM stream_events e
- WHERE e.tenant_id=$1 AND e.connector_id=$2 AND e.source=$3)
+ SELECT event_key,min(created_at) AS created_at,bool_or(completed) AS completed,bool_or(dead) AS dead FROM (
+ SELECT event_key,created_at,false AS completed,false AS dead,true AS accepted FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3
+ UNION ALL SELECT event_key,NULL,true,false,false FROM stream_inbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4
+ UNION ALL SELECT substring(work_key from 7),NULL,false,true,false FROM stream_consumer_work WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4 AND state='dead' AND work_key LIKE 'event:%'
+ ) records GROUP BY event_key HAVING bool_or(accepted))
  SELECT count(*),count(*) FILTER(WHERE completed),count(*) FILTER(WHERE NOT completed AND dead),count(*) FILTER(WHERE NOT completed AND NOT dead),
  COALESCE(GREATEST(0,extract(epoch FROM clock_timestamp()-min(created_at) FILTER(WHERE NOT completed AND NOT dead))),0),
  (SELECT count(*) FROM stream_outbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND state='failed'),
  (SELECT count(*) FROM stream_replay_gaps WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4),
- (SELECT count(*) FROM stream_dead_letters WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4)
- FROM states`, b.TenantID, b.ConnectorID, b.Source, processor).Scan(&r.Accepted, &r.Completed, &r.Dead, &r.Pending, &r.OldestPendingSeconds, &r.PublicationFailed, &r.HistoricalGaps, &r.DeadLetters)
+ (SELECT count(*) FROM stream_dead_letters WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4),
+ (SELECT count(*) FROM stream_event_archives WHERE tenant_id=$1 AND connector_id=$2 AND source=$3)
+ FROM states`, b.TenantID, b.ConnectorID, b.Source, processor).Scan(&r.Accepted, &r.Completed, &r.Dead, &r.Pending, &r.OldestPendingSeconds, &r.PublicationFailed, &r.HistoricalGaps, &r.DeadLetters, &r.Archived)
 	return r, err
 }
 func (s Store) Committed(ctx context.Context, b telemetry.Binding, processor, key, hash string) (bool, error) {

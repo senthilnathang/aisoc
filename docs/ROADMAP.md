@@ -70,3 +70,12 @@ existing PostgreSQL investigation jobs; Redis will carry telemetry/findings firs
 
 The [feature roadmap](FEATURE_ROADMAP.md) defines acceptance criteria. Stored
 queries, demo metrics, simulations and vendor claims are not live provider execution.
+
+## Current local delivery status — 2026-10-30
+
+[Delivery tracker](NEXT_DELIVERY_TASKS.md) records the persisted 10,000-event demo,
+main frontend on 8080, sandbox session revocation, verified payload offload, optional
+JSON inference transport and read-only QRadar adapters. The final synthetic run
+completed every event at 641 EPS; stable 1,000 EPS remains open. Live Ariel/source
+mapping, SOAR write-back, Sentinel, model quality and production activation remain
+separate gates. JSON fixtures do not establish live integration compatibility.

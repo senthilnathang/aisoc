@@ -20,7 +20,7 @@ def known(message):
 def valid(task):
     now = time.time()
     if (task.ByteSize() > 16384 or not known(task) or task.schema_version != '1'
-        or task.mode != 'mock-v1' or not 512 <= task.max_output_bytes <= 16384
+        or task.mode not in ('mock-v1', 'model-v1') or not 512 <= task.max_output_bytes <= 16384
         or not 1 <= len(task.evidence) <= 16
         or not now * 1000 < task.deadline_unix_ms <= (now + 30) * 1000):
         return False
@@ -44,8 +44,9 @@ def valid(task):
 
 
 class Investigator(rpc.InvestigatorServicer):
-    def __init__(self, token):
+    def __init__(self, token, model=None):
         self.credential = ('Bearer ' + token).encode()
+        self.model = model
 
     def Investigate(self, task, context):
         credentials = [v for k, v in context.invocation_metadata() if k == 'authorization']
@@ -55,6 +56,24 @@ class Investigator(rpc.InvestigatorServicer):
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'invalid investigation contract')
         if not context.is_active():
             context.abort(grpc.StatusCode.CANCELLED, 'request cancelled')
+        if task.mode == 'model-v1':
+            if self.model is None:
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, 'inference adapter is not configured')
+            try:
+                value = self.model.investigate(task)
+                result = pb.InvestigationResult(tenant_id=task.tenant_id, incident_id=task.incident_id,
+                    task_id=task.task_id, attempt_id=task.attempt_id, schema_version='1',
+                    verdict=value['verdict'], requires_human_review=True,
+                    model_version='json-model:' + self.model.model,
+                    missing_evidence=value['missing_evidence'],
+                    hypotheses=[pb.Hypothesis(**item) for item in value['hypotheses']])
+            except (ValueError, TypeError, KeyError):
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, 'inference failed contract checks')
+            if result.ByteSize() > task.max_output_bytes:
+                context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, 'result exceeds budget')
+            if not context.is_active():
+                context.abort(grpc.StatusCode.CANCELLED, 'request cancelled')
+            return result
         # Observations can be consistent with either explanation; neither is a verdict.
         refs = [item.reference for item in task.evidence]
         result = pb.InvestigationResult(

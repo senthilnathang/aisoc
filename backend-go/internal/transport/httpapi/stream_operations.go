@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"aisoc/backend/internal/modules/response"
 	"aisoc/backend/internal/modules/soarsync"
 	"aisoc/backend/internal/modules/telemetry"
 	"aisoc/backend/internal/platform/auth"
@@ -72,6 +74,65 @@ func registerStreamOperations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []c
 		}
 		return config.StreamScope{}, telemetry.Binding{}, eventstate.ErrRecoveryDenied
 	}
+	mux.HandleFunc("POST /api/v1/stream-operations/{scope}/sandbox-session", streamRespond(func(r *http.Request) (any, int, error) {
+		s, b, err := get(r)
+		if err != nil {
+			return nil, 0, streamError(err)
+		}
+		if !s.AllowSandboxResponse {
+			return nil, 0, streamError(eventstate.ErrRecoveryDenied)
+		}
+		var input response.SandboxSessionRequest
+		if err = streamBody(r, &input); err != nil {
+			return nil, 0, streamError(err)
+		}
+		actor := auth.From(r.Context())
+		result, err := (response.Store{Pool: pool}).SandboxSession(r.Context(), actor, b, []response.SandboxGrant{{Actor: actor, Binding: b}}, input)
+		return result, 200, streamError(err)
+	}))
+	mux.HandleFunc("GET /api/v1/stream-operations/{scope}/events", streamRespond(func(r *http.Request) (any, int, error) {
+		s, b, err := get(r)
+		if err != nil {
+			return nil, 0, streamError(err)
+		}
+		after := r.URL.Query().Get("after")
+		if after != "" {
+			if raw, err := hex.DecodeString(after); err != nil || len(raw) != 32 {
+				return nil, 0, streamError(eventstate.ErrInvalid)
+			}
+		}
+		rows, err := pool.Query(r.Context(), `SELECT e.event_key,e.envelope,COALESCE(i.disposition,'pending') FROM stream_events e LEFT JOIN stream_inbox i ON i.tenant_id=e.tenant_id AND i.connector_id=e.connector_id AND i.source=e.source AND i.event_key=e.event_key AND i.processor=$4 WHERE e.tenant_id=$1 AND e.connector_id=$2 AND e.source=$3 AND e.event_key>$5 ORDER BY e.event_key LIMIT 51`, b.TenantID, b.ConnectorID, b.Source, s.Processor, after)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer rows.Close()
+		items := []map[string]any{}
+		for rows.Next() {
+			var key, disposition string
+			var envelope json.RawMessage
+			if err = rows.Scan(&key, &envelope, &disposition); err != nil {
+				return nil, 0, err
+			}
+			items = append(items, map[string]any{"event_key": key, "event": envelope, "disposition": disposition})
+		}
+		if err = rows.Err(); err != nil {
+			return nil, 0, err
+		}
+		next := ""
+		if len(items) > 50 {
+			items = items[:50]
+			next = items[49]["event_key"].(string)
+		}
+		rows.Close()
+		for _, item := range items {
+			raw, err := eventstate.ResolveEnvelope(r.Context(), pool, b, item["event_key"].(string), item["event"].(json.RawMessage))
+			if err != nil {
+				return nil, 0, err
+			}
+			item["event"] = json.RawMessage(raw)
+		}
+		return map[string]any{"items": items, "next_after": next}, 200, nil
+	}))
 	mux.HandleFunc("GET /api/v1/stream-operations", streamRespond(func(r *http.Request) (any, int, error) {
 		actor := auth.From(r.Context())
 		items := []config.StreamScope{}
@@ -167,7 +228,7 @@ func registerStreamOperations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []c
 		if worker["status"] != "running" {
 			alerts = append(alerts, "worker_"+worker["status"].(string))
 		}
-		if snapshot.Accepted >= 1000 && s.AllowMockImport {
+		if snapshot.Accepted-snapshot.Archived >= s.HotEventLimit() && s.AllowMockImport {
 			alerts = append(alerts, "mock_source_capacity")
 		}
 		if snapshot.DeadLetters > 0 {

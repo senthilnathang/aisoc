@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--stream-pause-seconds',type=int,default=0,help='Pause both consumers halfway through scheduled input (0..10 seconds)')
     parser.add_argument('--stream-idle-poll-ms',type=int,default=1,help='Benchmark publisher delay after an empty claim (1..100 ms)')
     parser.add_argument('--stream-burst-multiplier',type=int,default=1,choices=range(1,6),help='Multiply offered EPS for the middle third of event batches (1..5)')
+    parser.add_argument('--stream-consumer-batch',type=int,default=10,choices=range(1,101),help='Bounded fresh-event transaction batch (1..100)')
     options=parser.parse_args()
     if options.stream_load and not options.with_streams:
         parser.error('--stream-load requires --with-streams')
@@ -42,7 +43,7 @@ def main():
         parser.error('--stream-measure-only requires --stream-load')
     if not (100 <= options.stream_events <= 10000 and options.stream_events % 100 == 0 and 100 <= options.stream_eps <= 1000 and 0 <= options.stream_pause_seconds <= 10 and 1 <= options.stream_idle_poll_ms <= 100):
         parser.error('Invalid bounded stream workload configuration')
-    if not options.stream_load and (options.stream_events != 1000 or options.stream_eps != 1000 or options.stream_pause_seconds != 0 or options.stream_idle_poll_ms != 1 or options.stream_burst_multiplier != 1):
+    if not options.stream_load and (options.stream_events != 1000 or options.stream_eps != 1000 or options.stream_pause_seconds != 0 or options.stream_idle_poll_ms != 1 or options.stream_burst_multiplier != 1 or options.stream_consumer_batch != 10):
         parser.error('Stream workload options require --stream-load')
     if os.geteuid() == 0:
         raise RuntimeError('Run as an ordinary user; initdb refuses root')
@@ -66,6 +67,8 @@ def main():
                            text=True, stdout=log, stderr=log, check=True, timeout=900 if args[0]=='go' else 300)
         def spawn(args, cwd=ROOT, specialist=False):
             process_env = {key:value for key,value in env.items() if key in ('PATH','LANG','AISOC_WORKER_TOKEN','AISOC_PYTHON_ADDR','AISOC_PYTHON_HTTP_ADDR','AISOC_RUST_ADDR')} if specialist else env
+            if specialist and any(str(arg).endswith('python-worker/worker.py') for arg in args):
+                process_env.update({key:value for key,value in env.items() if key in ('AISOC_INFERENCE_URL','AISOC_INFERENCE_MODEL','AISOC_INFERENCE_CREDENTIAL_FILE')})
             process = subprocess.Popen([str(arg) for arg in args], cwd=cwd, env=process_env, stdout=log, stderr=log)
             children.append(process)
             return process
@@ -78,6 +81,7 @@ def main():
             env['AISOC_STREAM_LOAD_PAUSE_SECONDS']=str(options.stream_pause_seconds)
             env['AISOC_STREAM_LOAD_IDLE_POLL_MS']=str(options.stream_idle_poll_ms)
             env['AISOC_STREAM_LOAD_BURST_MULTIPLIER']=str(options.stream_burst_multiplier)
+            env['AISOC_STREAM_LOAD_CONSUMER_BATCH']=str(options.stream_consumer_batch)
             env['AISOC_STREAM_LOAD_REPORT']=str(report/'stream-load.json')
             try:
                 pgpid=int((temp/'pg/postmaster.pid').read_text().splitlines()[0])
@@ -124,7 +128,7 @@ def main():
                 AISOC_PYTHON_HTTP_ADDR=f'127.0.0.1:{pythonhttpport}',
                 AISOC_RUST_ADDR=f'127.0.0.1:{rustport}',AISOC_WORKER_TOKEN=secrets.token_hex(32))
             env.update(AISOC_GO_CONNECTOR_KEY=secrets.token_hex(32),AISOC_GO_AUTH_MODE='local',AISOC_GO_OPERATORS_FILE='',AISOC_GO_ENV='development',AISOC_GO_SECURE_COOKIES='false',AISOC_GO_SESSION_TTL_MS='28800000')
-            for name in ('api','migrate','worker','plugin-probe','investigation-worker','stream-worker','stream-archive'):
+            for name in ('api','migrate','worker','plugin-probe','integration-probe','investigation-worker','stream-worker','stream-archive'):
                 run(['go','build','-o','bin/'+name,'./cmd/'+name], ROOT/'backend-go')
             run(['cargo','test','--locked','--manifest-path','services/wasm-worker/Cargo.toml'])
             run(['cargo','build','--locked','--manifest-path','services/wasm-worker/Cargo.toml'])
@@ -295,7 +299,7 @@ def main():
             run([python,'-c',"import sys; from aisoc.worker.v1.investigation_pb2 import InvestigationResult; r=InvestigationResult.FromString(bytes.fromhex(sys.stdin.read())); assert r.verdict=='INCONCLUSIVE' and r.requires_human_review and r.tenant_id=='framework-e2e' and len(r.hypotheses)==2; print('PASS durable typed investigation result after Go QA')"],ROOT/'services/python-worker',input=investigation_output)
             if options.with_streams:
                 scopes=temp/'stream-scopes.json'
-                scopes.write_text(json.dumps([{'id':'mock-siem','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-qradar','source':'qradar-siem','processor':'mock-login-v1','allow_retry':True,'allow_mock_import':True}]))
+                scopes.write_text(json.dumps([{'id':'mock-siem','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-qradar','source':'qradar-siem','processor':'mock-login-v1','allow_retry':True,'allow_mock_import':True,'allow_sandbox_response':True}]))
                 env.update(AISOC_GO_STREAM_OPERATIONS_FILE=str(scopes),AISOC_STREAM_REDIS_ADDR=env['AISOC_TEST_REDIS_ADDR'],AISOC_STREAM_REDIS_PUBLISHER_PASSWORD=env['AISOC_TEST_REDIS_PUBLISHER_PASSWORD'],AISOC_STREAM_REDIS_CONSUMER_PASSWORD=env['AISOC_TEST_REDIS_CONSUMER_PASSWORD'])
                 api.terminate();api.wait(timeout=10)
                 api=spawn([ROOT/'backend-go/bin/api']);wait_port(apiport)
@@ -309,6 +313,8 @@ def main():
                     return value
                 assert stream_http('',actor='b')['items']==[]
                 stream_http('/mock-siem',actor='b',expected=403)
+                stream_http('/mock-siem/events',actor='b',expected=403)
+                stream_http('/mock-siem/events?after=invalid',expected=400)
                 page=stream_http('/mock-siem/mock-example')
                 stream_http('/mock-siem/mock-import',page,actor='b',expected=403)
                 stream_http('/mock-siem/retry-publication',{},actor='b',expected=403)
@@ -318,6 +324,9 @@ def main():
                 stream_http('/mock-siem/mock-import',{**page,'next_cursor':'x'*(1024*1024)},expected=413)
                 imported=stream_http('/mock-siem/mock-import',page,expected=202)
                 assert imported['accepted']['Inserted']==4
+                events_page=stream_http('/mock-siem/events')
+                assert len(events_page['items'])==4 and not events_page['next_after']
+                assert all(item['event']['tenant_id']=='auth-a' for item in events_page['items'])
                 stream_worker=spawn([ROOT/'backend-go/bin/stream-worker'])
                 for _ in range(200):
                     if sql("SELECT count(*) FROM mock_soar_notes WHERE tenant_id='auth-a' AND connector_id='mock-soar'")=='1': break
@@ -343,8 +352,43 @@ def main():
                 assert observed['snapshot']['accepted']==observed['snapshot']['completed']==8 and observed['snapshot']['pending']==0
                 assert sql("SELECT count(*) FROM l1_escalations WHERE tenant_id='auth-a' AND state='synced'")=='2'
                 (report/'sandbox-flow.json').write_text(json.dumps({'passed':True,'mode':'JSON mocks; no privileged actions','accepted':8,'replayed_insertions':0,'mock_soar_notes':2,'worker_restart_recovered':True,'tenant_denial_verified':True},indent=2)+'\n')
+                action={'id':'demo-revoke','session_id':'demo-session','principal_ref':'demo-user','expected_version':1,'ticket':'TEST-REVIEW'}
+                def response_op(operation, expected=200, **extra):
+                    return stream_http('/mock-siem/sandbox-session',{**action,'operation':operation,**extra},expected=expected)
+                stream_http('/mock-siem/sandbox-session',{**action,'operation':'create_session'},actor='b',expected=403)
+                assert response_op('create_session')['version']==1
+                assert response_op('propose')['state']=='proposed'
+                response_op('execute',403)
+                assert not response_op('dry_run')['would_execute']
+                assert response_op('approve')['state']=='approved'
+                response_op('execute',403) # Default kill switch remains enabled.
+                response_op('policy',stopped=False)
+                assert response_op('dry_run')['would_execute']
+                sql("UPDATE sandbox_session_actions SET approval_expires_at=now()-interval '1 second' WHERE tenant_id='auth-a' AND id='demo-revoke'")
+                response_op('execute',403)
+                assert not response_op('dry_run')['would_execute']
+                sql("UPDATE sandbox_session_actions SET approval_expires_at=now()+interval '1 minute' WHERE tenant_id='auth-a' AND id='demo-revoke'")
+                sql("CREATE FUNCTION sandbox_audit_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='sandbox_execute' THEN RAISE EXCEPTION 'audit unavailable'; END IF; RETURN NEW; END $$; CREATE TRIGGER sandbox_audit_fail BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION sandbox_audit_fail()")
+                response_op('execute',500)
+                assert sql("SELECT revoked FROM sandbox_sessions WHERE tenant_id='auth-a' AND id='demo-session'")=='f'
+                sql('DROP TRIGGER sandbox_audit_fail ON audit_events; DROP FUNCTION sandbox_audit_fail()')
+                assert response_op('execute')['state']=='executed'
+                assert response_op('execute')['replayed']
+                assert response_op('create_session')['revoked'] # Never resurrect an existing session.
+                response_op('policy',stopped=True)
+                sql("INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) SELECT 'auth-a','mock-qradar','qradar-siem','capacity-'||n,'demo-session',1,'TEST' FROM generate_series(1,99) n")
+                response_op('propose',409,id='capacity-overflow')
                 stream_worker.terminate();stream_worker.wait(timeout=10)
-            for process in (py,rust): process.terminate();process.wait(timeout=10)
+            py.terminate();py.wait(timeout=10)
+            modelport=port()
+            model_fixture=spawn([python,ROOT/'scripts/framework/model_fixture.py','--port',str(modelport)],specialist=True)
+            wait_port(modelport)
+            env.update(AISOC_INFERENCE_URL=f'http://127.0.0.1:{modelport}/investigate',AISOC_INFERENCE_MODEL='fixture-v1',AISOC_PROBE_MODEL='1')
+            py=spawn([python,ROOT/'services/python-worker/worker.py'],specialist=True)
+            wait_port(pythonport);wait_port(pythonhttpport)
+            run([ROOT/'backend-go/bin/plugin-probe'])
+            env.pop('AISOC_PROBE_MODEL',None)
+            for process in (py,rust,model_fixture): process.terminate();process.wait(timeout=10)
             http('/ready',200);http('/health',200)
             checks=['Go race tests and vet','PostgreSQL migration and readiness','response library HTTP parity and restart persistence','manual cases and runbook HTTP parity, concurrency and restart persistence','source intake, mapping, metrics and credential transaction checks','three-phase investigation worker HTTP parity, explicit retry, concurrent workers and SIGKILL rollback/recovery','operator/session/CSRF and tenant HTTP parity including case runbooks','response and case audit failure rollback, foreign keys and cascade','transaction rollback, concurrent claim, lease recovery, stale/cross-tenant/cancelled result rejection','Python and Rust unit tests','Go to Python/Rust RPC outputs and bad credential rejection','durable Go jobs dispatch to both workers','core readiness independent of optional workers']
             checks += ['Skills authoring/material revisions, matching, suggestions, applications, feedback and outcomes', 'all 11 shared functional scenarios', 'bounded WASM transformation and Python subprocess cleanup', 'HTTP error/latency, pool and queue metrics']

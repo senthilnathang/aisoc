@@ -3,6 +3,7 @@ package l1
 import (
 	"aisoc/backend/internal/modules/enrichment"
 	"aisoc/backend/internal/modules/telemetry"
+	"aisoc/backend/internal/platform/eventstate"
 	"context"
 	"encoding/json"
 	"github.com/jackc/pgx/v5"
@@ -35,6 +36,10 @@ func EnrichLogin(ctx context.Context, pool *pgxpool.Pool, cache *enrichment.Cach
 		var envelope []byte
 		var hash string
 		if err = tx.QueryRow(ctx, `SELECT envelope,content_hash FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=$4`, b.TenantID, b.ConnectorID, b.Source, key).Scan(&envelope, &hash); err != nil {
+			return nil, err
+		}
+		envelope, err = eventstate.ResolveEnvelope(ctx, tx, b, key, envelope)
+		if err != nil {
 			return nil, err
 		}
 		e, err := telemetry.Decode(envelope, b)

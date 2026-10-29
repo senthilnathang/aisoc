@@ -91,10 +91,34 @@ func TestVerifiedArchiveCompactionRollbackAndReplay(t *testing.T) {
 	if err = s.FinishReplay(ctx, b, "test", w); err != nil {
 		t.Fatal(err)
 	}
+	var pointer []byte
+	if err = s.Pool.QueryRow(ctx, `SELECT envelope FROM stream_events WHERE tenant_id=$1 AND event_key=$2`, b.TenantID, e.Identity()).Scan(&pointer); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := ResolveEnvelope(ctx, s.Pool, b, e.Identity(), pointer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if original, err := telemetry.Decode(resolved, b); err != nil || original.ContentHash() != e.ContentHash() {
+		t.Fatal("archive read", err)
+	}
+	s.MaxEvents = 1
+	next := e
+	next.SourceEventID = "after-archive"
+	continued := accept(t, s, b, accepted.Checkpoint, "continued", next)
+	if continued.Inserted != 1 {
+		t.Fatal("hot capacity not released")
+	}
+	if replay := accept(t, s, b, continued.Checkpoint, "replayed", e); replay.Inserted != 0 {
+		t.Fatal("archive lost dedup")
+	}
 	if err = os.WriteFile(receipt.File, []byte("corrupted"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = VerifyArchive(receipt.File, receipt.SHA256); err == nil {
 		t.Fatal("corrupt archive verified")
+	}
+	if _, err = ResolveEnvelope(ctx, s.Pool, b, e.Identity(), pointer); err == nil {
+		t.Fatal("corrupt archive served")
 	}
 }

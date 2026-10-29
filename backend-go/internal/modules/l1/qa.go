@@ -12,12 +12,16 @@ import (
 var ErrInvalid = errors.New("invalid or unsupported investigation contract")
 var identifier = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$`)
 var hash = regexp.MustCompile(`^[0-9a-f]{64}$`)
+var modelLabel = regexp.MustCompile(`^json-model:[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$`)
+var missingLabel = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)
 
 const Mode = "mock-v1"
+const ModelMode = "model-v1"
 
-// ValidateTask enforces zero tools/model spend by accepting only deterministic mock mode.
+// ValidateTask bounds both mock and explicitly requested model tasks. Neither
+// contract carries tools, action credentials or authority to execute a response.
 func ValidateTask(t *pb.InvestigationTask, now time.Time) error {
-	if t == nil || proto.Size(t) > 16384 || len(t.ProtoReflect().GetUnknown()) != 0 || t.SchemaVersion != "1" || t.Mode != Mode || t.MaxOutputBytes < 512 || t.MaxOutputBytes > 16384 || len(t.Evidence) < 1 || len(t.Evidence) > 16 {
+	if t == nil || proto.Size(t) > 16384 || len(t.ProtoReflect().GetUnknown()) != 0 || t.SchemaVersion != "1" || (t.Mode != Mode && t.Mode != ModelMode) || t.MaxOutputBytes < 512 || t.MaxOutputBytes > 16384 || len(t.Evidence) < 1 || len(t.Evidence) > 16 {
 		return ErrInvalid
 	}
 	for _, s := range []string{t.TenantId, t.IncidentId, t.TaskId, t.AttemptId} {
@@ -52,8 +56,17 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 	if ValidateTask(t, now) != nil || r == nil || proto.Size(r) > int(t.MaxOutputBytes) || len(r.ProtoReflect().GetUnknown()) != 0 {
 		return ErrInvalid
 	}
-	if r.TenantId != t.TenantId || r.IncidentId != t.IncidentId || r.TaskId != t.TaskId || r.AttemptId != t.AttemptId || r.SchemaVersion != "1" || r.Verdict != "INCONCLUSIVE" || !r.RequiresHumanReview || r.ModelVersion != "deterministic-mock-v1" || len(r.Hypotheses) != 2 {
+	if r.TenantId != t.TenantId || r.IncidentId != t.IncidentId || r.TaskId != t.TaskId || r.AttemptId != t.AttemptId || r.SchemaVersion != "1" || !r.RequiresHumanReview || len(r.Hypotheses) != 2 {
 		return ErrInvalid
+	}
+	if t.Mode == Mode {
+		if r.Verdict != "INCONCLUSIVE" || r.ModelVersion != "deterministic-mock-v1" {
+			return ErrInvalid
+		}
+	} else {
+		if (r.Verdict != "INCONCLUSIVE" && r.Verdict != "SUSPICIOUS" && r.Verdict != "BENIGN" && r.Verdict != "MALICIOUS") || !modelLabel.MatchString(r.ModelVersion) {
+			return ErrInvalid
+		}
 	}
 	refs := map[string]bool{}
 	for _, e := range t.Evidence {
@@ -80,12 +93,12 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 	}
 	missing := map[string]bool{}
 	for _, s := range r.MissingEvidence {
-		if missing[s] || (s != "iam_mfa_context" && s != "endpoint_process_tree") {
+		if missing[s] || (t.Mode == Mode && s != "iam_mfa_context" && s != "endpoint_process_tree") || !missingLabel.MatchString(s) {
 			return ErrInvalid
 		}
 		missing[s] = true
 	}
-	if len(missing) != 2 {
+	if (t.Mode == Mode && len(missing) != 2) || len(missing) < 1 || len(missing) > 16 {
 		return ErrInvalid
 	}
 	return nil

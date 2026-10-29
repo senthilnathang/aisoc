@@ -274,3 +274,20 @@ intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archi
 export, startup and measured limits. Earlier task entries are historical checkpoints.
 Live vendor/model validation and privileged response activation are outside this
 user-selected local release.
+
+## Persistent showcase and local response validation (2026-10-30)
+
+The complete disposable framework suite passed with streams and a 10,000-event
+load probe. Coverage includes fresh-batch atomic rollback/replay, archive content
+verification and capacity release, scoped telemetry pagination, QRadar read-only
+HTTP fixtures, Go → Python gRPC → JSON inference fixture → Go QA, and sandbox
+session approval expiry, default kill switch, audit rollback, replay and quotas.
+The JSON model fixture is deterministic, not a real LLM quality evaluation.
+
+Browser checks use main frontend 8080, including `/build-operations` alias, source
+selection, event pagination and investigation links. A sandbox session was approved,
+previewed and revoked; execution was stopped again afterward. Supervisor recovery
+was tested by killing an owned stream worker. Backup encryption passed an ephemeral
+key decrypt/compare test and rejected a changed input; this is not off-host restore
+verification. See [current limits](NEXT_DELIVERY_TASKS.md) and
+[measurements](STREAM_PERFORMANCE_REPORT.md).
