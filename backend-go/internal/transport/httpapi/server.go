@@ -30,9 +30,12 @@ func New(ready func(context.Context) error, log *slog.Logger) http.Handler {
 	return build(ready, log, nil, nil)
 }
 func Application(ready func(context.Context) error, log *slog.Logger, c config.Auth, pool *pgxpool.Pool, connectorKey ...[]byte) http.Handler {
-	return build(ready, log, auth.New(c), pool, connectorKey...)
+	return buildWithStreams(ready, log, auth.New(c), pool, c.StreamOperations, connectorKey...)
 }
 func build(ready func(context.Context) error, log *slog.Logger, security *auth.Manager, pool *pgxpool.Pool, connectorKey ...[]byte) http.Handler {
+	return buildWithStreams(ready, log, security, pool, nil, connectorKey...)
+}
+func buildWithStreams(ready func(context.Context) error, log *slog.Logger, security *auth.Manager, pool *pgxpool.Pool, scopes []config.StreamScope, connectorKey ...[]byte) http.Handler {
 	a := &API{ready: ready, log: log, pool: pool}
 	mux := http.NewServeMux()
 	if security != nil {
@@ -55,6 +58,7 @@ func build(ready func(context.Context) error, log *slog.Logger, security *auth.M
 		registerSources(mux, pool)
 		registerSourceMapping(mux, pool)
 		registerIntake(mux, pool)
+		registerStreamOperations(mux, pool, scopes)
 	}
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		write(w, 200, map[string]any{"status": "ok", "database": "postgresql", "version": "0.1.0-framework"})

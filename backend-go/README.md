@@ -14,7 +14,10 @@ port 3002 after the 2026-10-29 migration. See [architecture](../docs/ARCHITECTUR
 - `cmd/migrate`: schema/checksums; `cmd/data-migrate`: import/export/reconciliation.
 - `internal/modules`: tenant-scoped domains and transactional repositories.
 - `internal/platform`: config/auth/database/jobs/RPC; `internal/transport/httpapi`: HTTP.
-- `migrations/`: 19 ordered PostgreSQL migrations, applied transactionally.
+- `migrations/`: 27 ordered PostgreSQL migrations in source, applied transactionally.
+  Migrations 020–027 add streaming recovery, finding admission, mock investigation/SOAR,
+  cache invalidation, metadata-budget counters and worker heartbeat. Foundation
+  startup applies all migrations; the separate release remains on 019.
 
 Domain modules cover investigations, detection, intake, response plans/runbooks,
 Skills, hunts, connectors, intelligence and dashboard projections. Related writes
@@ -77,6 +80,11 @@ Wasmi executes an embedded allowlisted transform with fuel, one memory page and
 no host imports. Python executes trusted allowlisted code in a bounded child
 process with deadline/cancellation cleanup, not arbitrary uploaded code.
 Ordinary API workflows work with both specialists disabled.
+
+The optional [Redis Streams sandbox](../docs/REDIS_STREAMS.md) now provides a
+bounded telemetry adapter with authenticated consumer groups and explicit ACK.
+Run `python3 scripts/framework/check.py --with-streams` to verify the PostgreSQL
+outbox/inbox bridge. It is not connected to live intake or required by core startup.
 
 Python includes FastAPI health/readiness and authenticated capability endpoints
 with gRPC execution in the same independent process. Enable with

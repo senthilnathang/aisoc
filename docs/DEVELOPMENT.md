@@ -111,6 +111,12 @@ Node comparison and controlled performance commands are in the [root README](../
 
 ## Implementation conventions
 
+The optional [Redis Streams sandbox](REDIS_STREAMS.md) is managed separately with
+`python3 scripts/framework/redis_runtime.py start|status|stop`. It uses port 16379
+and private `.run/redis-dev/` state. Run `python3 scripts/framework/check_streams.py`
+for isolated adapter checks, or `python3 scripts/framework/check.py --with-streams`
+to include the PostgreSQL/Redis bridge. Core development startup needs no Redis.
+
 - Keep handlers/validation under `internal/transport/httpapi`, domain logic under
   `internal/modules`, infrastructure under `internal/platform`.
 - Carry request contexts, use parameterized SQL, bound resource usage and scope all
@@ -137,3 +143,11 @@ browser evidence belong in `output/`; original reference material lives in
 Never commit `.run/`, database snapshots, connector keys or operator tokens.
 Keep lockfiles, migrations, environment examples and generated contract sources.
 Cleaning build caches must not delete active data, matching keys or rollback artifacts.
+
+## Current JSON sandbox milestone
+
+See [sandbox completion and operations](SANDBOX_COMPLETION.md) for scoped JSON
+intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archive
+export, startup and measured limits. Earlier task entries are historical checkpoints.
+Live vendor/model validation and privileged response activation are outside this
+user-selected local release.

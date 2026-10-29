@@ -41,7 +41,7 @@ and start a frontend against port 3003. Do not rerun historical cutover to start
 After installing the [development prerequisites](docs/DEVELOPMENT.md), run:
 
 ```bash
-python3 scripts/framework/dev.py start --investigation-worker --python-worker
+python3 scripts/framework/dev.py start --investigation-worker --python-worker --streams
 python3 scripts/framework/dev.py status
 ```
 
@@ -60,8 +60,15 @@ enabling Python. Rust remains optional and is exercised by the framework tests.
 This foundation uses a separate development database. The release frontend on
 8080 continues to use API 3002; it does not display development records. To use a
 frontend with the foundation, follow [development setup](docs/DEVELOPMENT.md).
-Only the normalization plugin is currently implemented in Python; QRadar/Sentinel
-adapters and LLM investigation are the next product work, not running capabilities.
+The JSON sandbox supports intake, Redis delivery, Go correlation, typed Python mock
+investigation, Go QA and mock SOAR notes. Open `/build/stream-operations` on the
+foundation frontend. Live vendors and model inference need separate validation.
+See [sandbox guide](docs/SANDBOX_COMPLETION.md).
+
+Redis Streams has an independent, opt-in [sandbox launcher](docs/REDIS_STREAMS.md)
+on port 16379. Its adapter and PostgreSQL bridge are verified with disposable
+fixtures; live telemetry intake, retry/DLQ and provider integration remain gated
+by the [implementation tasks](docs/IMPLEMENTATION_TASKS.md).
 
 ## Implemented workflows
 
@@ -152,3 +159,13 @@ Frontend builds no longer copy generated bundles into the source root.
 Start with [architecture](docs/ARCHITECTURE.md), [developer setup](docs/DEVELOPMENT.md),
 [API](docs/API_CONTRACT.md), [data model](docs/DATA_MODEL.md),
 [testing](docs/TESTING.md), or [migration completion](docs/migration/RELEASE_STATUS.md).
+
+The optional [agentic L1 sandbox](docs/L1_INVESTIGATION.md) now includes typed
+Go-to-Python investigation RPCs, durable mock jobs and Go QA. It has no live model
+or production response enablement; see the [task tracker](docs/IMPLEMENTATION_TASKS.md).
+
+[Mock SOAR reconciliation](docs/MOCK_SOAR_RECONCILIATION.md) adds audited review
+records and version-checked note drafts while preserving analyst updates.
+
+[Local IOC caching](docs/ENRICHMENT_CACHE.md) is opt-in, tenant-scoped and invalidated
+by PostgreSQL source changes. Cache failures fall back to authoritative reads.

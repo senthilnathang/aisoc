@@ -8,4 +8,5 @@ PATH="$PWD/backend-go/.tools:$PATH" services/python-worker/.venv/bin/python -m g
   -I contracts/proto --go_out=backend-go --go_opt=module=aisoc/backend \
   --go-grpc_out=backend-go --go-grpc_opt=module=aisoc/backend \
   --python_out=services/python-worker --grpc_python_out=services/python-worker \
-  contracts/proto/aisoc/worker/v1/worker.proto
+  contracts/proto/aisoc/worker/v1/worker.proto \
+  contracts/proto/aisoc/worker/v1/investigation.proto

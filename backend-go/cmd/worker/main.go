@@ -36,7 +36,7 @@ func run() error {
 		return err
 	}
 	clients := map[string]*plugins.Client{}
-	for name, address := range map[string]string{"python.normalize": c.PythonAddress, "rust.sha256": c.RustAddress, "rust.wasm_ascii_upper": c.RustAddress} {
+	for name, address := range map[string]string{"python.normalize": c.PythonAddress, "python.investigate_mock": c.PythonAddress, "rust.sha256": c.RustAddress, "rust.wasm_ascii_upper": c.RustAddress} {
 		if address == "" {
 			continue
 		}

@@ -11,6 +11,7 @@ import socket
 import subprocess
 import time
 import urllib.request
+import redis_runtime
 
 ROOT=Path(__file__).resolve().parents[2]
 STATE=ROOT/'.run/go-dev'
@@ -18,6 +19,7 @@ PG=Path(os.environ.get('AISOC_DEV_PG_BIN','/usr/lib/postgresql/16/bin'))
 API=ROOT/'backend-go/bin/api'
 INVESTIGATION_WORKER=ROOT/'backend-go/bin/investigation-worker'
 SPECIALIST_WORKER=ROOT/'backend-go/bin/worker'
+STREAM_WORKER=ROOT/'backend-go/bin/stream-worker'
 PYTHON=ROOT/'services/python-worker/.venv/bin/python'
 PYTHON_SERVICE=ROOT/'services/python-worker/worker.py'
 
@@ -35,7 +37,7 @@ def api_pid(config, name='api'):
             if str(PYTHON_SERVICE).encode() in command and ('AISOC_WORKER_TOKEN='+config.get('worker_token','')).encode() in environment:
                 return pid
             return None
-        binary={'api':API,'investigation-worker':INVESTIGATION_WORKER,'specialist-worker':SPECIALIST_WORKER}[name]
+        binary={'api':API,'investigation-worker':INVESTIGATION_WORKER,'specialist-worker':SPECIALIST_WORKER,'stream-worker':STREAM_WORKER}[name]
         if str(binary).encode() in command and ('AISOC_GO_DATABASE_URL='+config['url']).encode() in environment and b'AISOC_GO_ADDR=127.0.0.1:3003' in environment:
             return pid
     except (FileNotFoundError,ProcessLookupError,PermissionError,ValueError): pass
@@ -47,7 +49,32 @@ def dev_env(config):
             'AISOC_GO_CONNECTOR_KEY':config.get('connector_key',''),'AISOC_GO_AUTH_MODE':'local','AISOC_GO_OPERATORS_FILE':'','AISOC_GO_DEFAULT_TENANT':'demo',
             'AISOC_GO_ENV':'development','AISOC_GO_SECURE_COOKIES':'false','AISOC_GO_SESSION_TTL_MS':'28800000',
             'AISOC_PYTHON_ADDR':'127.0.0.1:50051' if config.get('python_worker_enabled') else '',
-            'AISOC_RUST_ADDR':'','AISOC_WORKER_TOKEN':config.get('worker_token','') if config.get('python_worker_enabled') else ''}
+            'AISOC_RUST_ADDR':'','AISOC_WORKER_TOKEN':config.get('worker_token','') if config.get('python_worker_enabled') else '',
+            'AISOC_GO_STREAM_OPERATIONS_FILE':str(STATE/'stream-scopes.json') if config.get('streams_enabled') else ''}
+
+
+def prepare_streams(config):
+    if not config.get('streams_enabled'): return
+    if not config.get('python_worker_enabled'): raise RuntimeError('Sandbox streams require --python-worker')
+    scopes=STATE/'stream-scopes.json'
+    if not scopes.exists():
+        scopes.write_text(json.dumps([{'id':'sandbox-qradar','operator_id':'local-development','tenant_id':'demo','connector_id':'mock-qradar','source':'qradar-siem','processor':'mock-login-v1','allow_retry':True,'allow_mock_import':True,'pending_warning':500,'age_warning_seconds':15}],indent=2)+'\n')
+        scopes.chmod(0o600)
+    redis_runtime.start(redis_runtime.DEFAULT_STATE,16379)
+
+
+def start_stream_worker(config):
+    if not config.get('streams_enabled') or api_pid(config,'stream-worker'): return
+    redis=redis_runtime.settings(redis_runtime.DEFAULT_STATE)
+    env=dev_env(config)
+    env.update(AISOC_STREAM_REDIS_ADDR='127.0.0.1:'+str(redis['port']),AISOC_STREAM_REDIS_PUBLISHER_PASSWORD=redis['passwords']['publisher'],AISOC_STREAM_REDIS_CONSUMER_PASSWORD=redis['passwords']['consumer'])
+    subprocess.run(['go','build','-o','bin/stream-worker','./cmd/stream-worker'],cwd=ROOT/'backend-go',check=True)
+    with (STATE/'stream-worker.log').open('a') as log:
+        process=subprocess.Popen([str(STREAM_WORKER)],env=env,cwd=ROOT,stdout=log,stderr=log,start_new_session=True)
+    (STATE/'stream-worker.pid').write_text(str(process.pid))
+    time.sleep(.2)
+    if process.poll() is not None: raise RuntimeError('Sandbox stream worker exited; inspect its development log')
+    print('JSON sandbox pipeline enabled: scoped Redis -> Go -> Python gRPC -> mock SOAR')
 
 
 def start_python_worker(config):
@@ -114,6 +141,7 @@ def main():
     parser.add_argument('action',choices=['start','stop','status'])
     parser.add_argument('--investigation-worker',action='store_true',help='Start the local three-phase investigation worker with the Go API')
     parser.add_argument('--python-worker',action='store_true',help='Enable independent Python FastAPI/gRPC service and Go specialist dispatcher')
+    parser.add_argument('--streams',action='store_true',help='Enable JSON sandbox intake, scoped operations and local Redis stream worker')
     args=parser.parse_args()
     action=args.action
     if not (PG/'pg_ctl').exists(): raise RuntimeError('Set AISOC_DEV_PG_BIN to PostgreSQL binaries')
@@ -126,10 +154,11 @@ def main():
             print('Investigation worker: '+('running' if config and api_pid(config,'investigation-worker') else 'stopped'))
             print('Python FastAPI/gRPC: '+('running on 8001/50051' if config and api_pid(config,'python-worker') else 'stopped'))
             print('Go specialist dispatcher: '+('running' if config and api_pid(config,'specialist-worker') else 'stopped'))
+            print('Sandbox stream worker: '+('running' if config and api_pid(config,'stream-worker') else 'stopped'))
             print('PostgreSQL: '+('running on 127.0.0.1:55435 (aisoc_go_dev)' if pg_running() else 'stopped'))
             return
         if action=='stop':
-            for name in ('specialist-worker','python-worker'):
+            for name in ('stream-worker','specialist-worker','python-worker'):
                 if config and (pid:=api_pid(config,name)):
                     os.kill(pid,signal.SIGTERM)
                     for _ in range(150):
@@ -149,13 +178,17 @@ def main():
                     time.sleep(.1)
                 if api_pid(config): raise RuntimeError('Go API did not exit; PostgreSQL left running')
             if pg_running(): subprocess.run([str(PG/'pg_ctl'),'-D',str(STATE/'pg'),'-m','fast','-w','stop'],check=True)
+            if config and config.get('streams_enabled'): redis_runtime.stop(redis_runtime.DEFAULT_STATE)
             print('Isolated development services stopped; PostgreSQL data retained')
             return
         if config and api_pid(config):
+            if args.streams and not config.get('streams_enabled'):
+                raise RuntimeError('Stop foundation services, then start with --streams --python-worker to change configuration')
             if args.python_worker and not config.get('python_worker_enabled'):
                 raise RuntimeError('Stop development services, then start with --python-worker to change their configuration')
             if args.investigation_worker or config.get('investigation_worker_enabled'): start_investigation_worker(config)
             start_python_worker(config)
+            prepare_streams(config);start_stream_worker(config)
             print('Go API already running on http://127.0.0.1:3003');return
         available(3003)
         if not pg_running(): available(55435)
@@ -187,6 +220,10 @@ def main():
             config['python_worker_enabled']=True
             config.setdefault('worker_token',secrets.token_hex(32))
             state=STATE/'settings.json';state.write_text(json.dumps(config));state.chmod(0o600)
+        if args.streams:
+            config['streams_enabled']=True
+            state=STATE/'settings.json';state.write_text(json.dumps(config));state.chmod(0o600)
+        prepare_streams(config)
         env=dev_env(config)
         subprocess.run([str(ROOT/'backend-go/bin/migrate')],env=env,check=True)
         with (STATE/'api.log').open('a') as log:
@@ -205,8 +242,9 @@ def main():
         print('Go API ready: http://127.0.0.1:3003 (local development auth)')
         if args.investigation_worker or config.get('investigation_worker_enabled'): start_investigation_worker(config)
         start_python_worker(config)
+        start_stream_worker(config)
         print('PostgreSQL ready: 127.0.0.1:55435 / aisoc_go_dev (dedicated non-superuser role)')
-        print('State and private credentials: .run/go-dev/; active Node services unchanged')
+        print('State and private credentials: .run/go-dev/; release services unchanged')
 
 
 if __name__=='__main__': main()

@@ -15,6 +15,8 @@ import uvicorn
 
 from aisoc.worker.v1 import worker_pb2_grpc
 from worker import Worker
+from investigation import Investigator
+from aisoc.worker.v1 import investigation_pb2_grpc
 
 SERVICE = 'aisoc.worker.v1.Worker'
 
@@ -57,7 +59,7 @@ class Health(health_pb2_grpc.HealthServicer):
         values = [v for k, v in context.invocation_metadata() if k == 'authorization']
         if len(values) != 1 or not hmac.compare_digest(values[0].encode(), self.credential):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, 'invalid worker credential')
-        if request.service not in ('', SERVICE):
+        if request.service not in ('', SERVICE, 'aisoc.worker.v1.Investigator'):
             context.abort(grpc.StatusCode.NOT_FOUND, 'unknown service')
         return health_pb2.HealthCheckResponse(status=(health_pb2.HealthCheckResponse.SERVING
             if self.serving.is_set() else health_pb2.HealthCheckResponse.NOT_SERVING))
@@ -72,6 +74,7 @@ class Runtime:
             ('grpc.max_receive_message_length', 70000), ('grpc.max_send_message_length', 70000),
             ('grpc.so_reuseport', 0)])
         worker_pb2_grpc.add_WorkerServicer_to_server(Worker(settings.token), self.server)
+        investigation_pb2_grpc.add_InvestigatorServicer_to_server(Investigator(settings.token), self.server)
         health_pb2_grpc.add_HealthServicer_to_server(Health(settings.token, self.serving), self.server)
         self.channel = grpc.insecure_channel(settings.rpc_address)
         self.health = health_pb2_grpc.HealthStub(self.channel)
@@ -136,6 +139,8 @@ def create_app(settings=None):
             raise HTTPException(401, 'invalid worker credential')
         return {'schema_version': '1.0', 'service': SERVICE,
                 'plugins': [{'id': 'python.normalize', 'version': '1'}],
+                'investigation_rpc': 'aisoc.worker.v1.Investigator/Investigate',
+                'investigation_mode': 'mock-v1',
                 'max_input_bytes': 65536, 'max_output_bytes': 65536,
                 'max_concurrent_rpcs': 4, 'execution_transport': 'grpc'}
 

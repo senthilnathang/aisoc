@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aisoc:telemetry:1.0",
+  "title": "AISOC projected authentication telemetry v1",
+  "description": "Maximum encoded envelope 16384 bytes. Bind tenant/connector/source to trusted configuration. No raw logs or instructions. Additional event families need explicit contracts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_id", "tenant_id", "connector_id", "source", "source_event_id", "source_revision", "event_type", "event_time", "ingested_at", "severity", "evidence_ref", "trace_id", "projection"],
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$", "maxLength": 128},
+    "utc": {"type": "string", "format": "date-time", "maxLength": 30, "pattern": "Z$"}
+  },
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "event_id": {"$ref": "#/$defs/id"},
+    "tenant_id": {"$ref": "#/$defs/id"},
+    "connector_id": {"$ref": "#/$defs/id"},
+    "source": {"$ref": "#/$defs/id"},
+    "source_event_id": {"$ref": "#/$defs/id"},
+    "source_revision": {"$ref": "#/$defs/id"},
+    "event_type": {"enum": ["authentication.failed", "authentication.succeeded"]},
+    "event_time": {"$ref": "#/$defs/utc"},
+    "ingested_at": {"$ref": "#/$defs/utc"},
+    "severity": {"enum": ["low", "medium", "high", "critical"]},
+    "evidence_ref": {"$ref": "#/$defs/id"},
+    "trace_id": {"$ref": "#/$defs/id"},
+    "projection": {
+      "type": "object", "additionalProperties": false,
+      "required": ["principal_ref", "asset_ref", "source_ip"],
+      "properties": {
+        "principal_ref": {"$ref": "#/$defs/id"},
+        "asset_ref": {"$ref": "#/$defs/id"},
+        "source_ip": {"type": "string", "oneOf": [{"format": "ipv4"}, {"format": "ipv6"}]}
+      }
+    }
+  }
+}

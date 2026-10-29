@@ -22,6 +22,7 @@ type Auth struct {
 	Origins             []string
 	SecureCookies       bool
 	SessionTTL          time.Duration
+	StreamOperations    []StreamScope
 }
 
 func loadAuth() (Auth, error) {
@@ -33,6 +34,15 @@ func loadAuth() (Auth, error) {
 		}
 		if err = json.Unmarshal(data, &a.Operators); err != nil || a.Operators == nil {
 			return a, errors.New("invalid operator credential configuration")
+		}
+	}
+	if path := os.Getenv("AISOC_GO_STREAM_OPERATIONS_FILE"); path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return a, errors.New("cannot read stream operations grants")
+		}
+		if err = json.Unmarshal(data, &a.StreamOperations); err != nil || a.StreamOperations == nil {
+			return a, errors.New("invalid stream operations grants")
 		}
 	}
 	if raw := os.Getenv("AISOC_GO_SECURE_COOKIES"); raw != "" {
@@ -52,6 +62,14 @@ func loadAuth() (Auth, error) {
 	return a, a.Validate(os.Getenv("AISOC_GO_ENV") == "production")
 }
 func (a Auth) Validate(production bool) error {
+	for _, scope := range a.StreamOperations {
+		if production && scope.AllowMockImport {
+			return errors.New("mock stream import is disabled in production")
+		}
+	}
+	if err := validateStreamScopes(a); err != nil {
+		return err
+	}
 	if a.Mode != "local" && a.Mode != "token" {
 		return errors.New("auth mode must be local or token")
 	}

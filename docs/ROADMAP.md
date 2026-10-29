@@ -41,7 +41,13 @@ not production capacity guarantees. See [completion](migration/RELEASE_STATUS.md
 The Python FastAPI/gRPC prerequisite is implemented in the development framework:
 independent lifecycle, bounded authenticated execution, standard gRPC health and
 Go dispatcher integration. See [ADR 004](adr/004-python-fastapi-grpc-service.md).
-QRadar/Sentinel adapters and agentic L1 reasoning remain subsequent work.
+The JSON QRadar-to-L1-to-mock-SOAR sandbox is implemented, including scoped
+operations, retries, conflict review, monitoring and verified archive export.
+Live vendor adapters and evaluated model reasoning remain subsequent work.
+
+Streaming and agentic L1 work now follows the ordered
+[implementation task tracker](IMPLEMENTATION_TASKS.md). The Redis boundary keeps
+existing PostgreSQL investigation jobs; Redis will carry telemetry/findings first.
 
 1. **Reusable integration framework and QRadar sandbox slice:** preserve existing
    intake and add capability-based adapters, starting with distinct mock SOAR case

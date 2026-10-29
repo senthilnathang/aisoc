@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "event_id": "mock-delivery-001",
+  "tenant_id": "sandbox-tenant",
+  "connector_id": "mock-qradar-siem",
+  "source": "qradar-siem",
+  "source_event_id": "mock-auth-001",
+  "source_revision": "1",
+  "event_type": "authentication.failed",
+  "event_time": "2026-10-29T10:00:00Z",
+  "ingested_at": "2026-10-29T10:00:01Z",
+  "severity": "medium",
+  "evidence_ref": "mock-evidence:auth-001",
+  "trace_id": "mock-trace-001",
+  "projection": {
+    "principal_ref": "mock-user-1",
+    "asset_ref": "mock-device-1",
+    "source_ip": "192.0.2.10"
+  }
+}

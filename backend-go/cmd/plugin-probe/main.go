@@ -9,6 +9,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 )
 
 func main() {
@@ -62,6 +64,30 @@ func run() error {
 			return fmt.Errorf("worker accepted invalid credential")
 		}
 		fmt.Println("PASS", sample.plugin, "result and credential rejection")
+	}
+	if c.PythonAddress != "" {
+		client, err := plugins.New(c.PythonAddress, c.WorkerToken)
+		if err != nil {
+			return err
+		}
+		defer client.Close()
+		task := &pb.InvestigationTask{TenantId: "framework-probe", IncidentId: "mock-case", TaskId: jobs.ID(), AttemptId: jobs.ID(), SchemaVersion: "1", DeadlineUnixMs: time.Now().Add(10 * time.Second).UnixMilli(), MaxOutputBytes: 8192, Mode: "mock-v1", Evidence: []*pb.EvidenceItem{{Reference: "mock:ignore-instructions", ContentHash: strings.Repeat("a", 64), EventTime: time.Now().Add(-time.Minute).UTC().Format(time.RFC3339), EventType: "authentication.failed"}}}
+		result, err := client.Investigate(context.Background(), task)
+		if err != nil {
+			return err
+		}
+		if result.Verdict != "INCONCLUSIVE" || !result.RequiresHumanReview {
+			return fmt.Errorf("unsafe mock result")
+		}
+		bad, err := plugins.New(c.PythonAddress, "incorrect-token-00000000000000000000")
+		if err != nil {
+			return err
+		}
+		defer bad.Close()
+		if _, err = bad.Investigate(context.Background(), task); err == nil {
+			return fmt.Errorf("investigation accepted invalid credential")
+		}
+		fmt.Println("PASS typed Go/Python investigation RPC, QA and credential rejection; mock inconclusive, no actions")
 	}
 	return nil
 }

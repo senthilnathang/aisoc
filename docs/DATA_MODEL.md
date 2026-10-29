@@ -1,7 +1,9 @@
 # Data Model
 
 PostgreSQL is the active datastore as of 2026-10-29. The authoritative physical
-schema is in `backend-go/migrations/` (19 migrations, 28 tables). The entity catalog
+schema is in `backend-go/migrations/` (27 migrations, 43 tables including the new
+streaming state). Foundation startup applies all source migrations. The separate release remains
+on migration 019 with 28 tables. The entity catalog
 below retains legacy JSON-column names to explain the preserved HTTP/recovery
 contract. Go uses typed columns and JSONB documents, composite tenant keys and
 transactional audits; artifacts/feedback share `case_records`. Migration converts
@@ -153,7 +155,7 @@ records without reseeding or duplicating templates.
 
 ## Physical PostgreSQL additions
 
-The 28-table count includes 27 tables declared in SQL migrations plus
+The migration-019 baseline of 28 tables includes 27 declared in SQL migrations plus
 `schema_migrations`, maintained by the migration runner. Legacy `artifacts` and
 `investigation_feedback` are represented by typed `case_records` rows with JSONB
 documents, rather than separate Go tables. `investigations.insight_refs` is JSONB;

@@ -1,0 +1,21 @@
+# Sandbox reference only. redis_runtime.py generates the real config and private
+# ACL file under .run/redis-dev. It never uses the host's default Redis on 6379.
+# Verified local baseline: Redis 7.0.15; production version/security review pending.
+bind 127.0.0.1
+port 16379
+protected-mode yes
+daemonize no
+databases 1
+maxclients 32
+maxmemory 64mb
+maxmemory-policy noeviction
+appendonly yes
+appendfsync everysec
+save ""
+tcp-keepalive 30
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 16mb
+dir /opt/aisoc/.run/redis-dev
+aclfile /opt/aisoc/.run/redis-dev/users.acl
+logfile /opt/aisoc/.run/redis-dev/redis.log
+pidfile /opt/aisoc/.run/redis-dev/server.pid

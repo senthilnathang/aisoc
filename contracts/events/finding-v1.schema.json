@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aisoc:finding:1.0",
+  "title": "AISOC suspicious-login finding v1",
+  "description": "An investigation candidate, not a verdict or action authorization. Go must validate source evidence membership, time ordering and deterministic identity before admission.",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "finding_id", "tenant_id", "connector_id", "source", "rule_id", "rule_version", "kind", "disposition", "observed_from", "observed_until", "event_keys", "evidence_refs"],
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$", "maxLength": 128},
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "utc": {"type": "string", "format": "date-time", "maxLength": 30, "pattern": "Z$"}
+  },
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "finding_id": {"$ref": "#/$defs/hash"},
+    "tenant_id": {"$ref": "#/$defs/id"},
+    "connector_id": {"$ref": "#/$defs/id"},
+    "source": {"$ref": "#/$defs/id"},
+    "rule_id": {"$ref": "#/$defs/id"},
+    "rule_version": {"$ref": "#/$defs/id"},
+    "kind": {"const": "suspicious_login"},
+    "disposition": {"const": "requires_review"},
+    "observed_from": {"$ref": "#/$defs/utc"},
+    "observed_until": {"$ref": "#/$defs/utc"},
+    "event_keys": {"type": "array", "minItems": 2, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/hash"}},
+    "evidence_refs": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}}
+  }
+}

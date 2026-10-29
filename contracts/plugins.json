@@ -2,7 +2,13 @@
   "schema_version": 1,
   "transport": "aisoc.worker.v1.Worker/Execute",
   "authentication": "shared service bearer credential on literal loopback; remote deployment requires TLS before enabling remote addresses",
-  "identity": ["tenant_id", "job_id", "attempt_id", "plugin_id", "plugin_version"],
+  "identity": [
+    "tenant_id",
+    "job_id",
+    "attempt_id",
+    "plugin_id",
+    "plugin_version"
+  ],
   "max_input_bytes": 65536,
   "max_output_bytes": 65536,
   "rpc_deadline_seconds": 5,
@@ -19,10 +25,49 @@
     "execution_transport": "grpc only; HTTP exposes health, readiness and authenticated capabilities"
   },
   "plugins": [
-    {"id":"rust.sha256","version":"1","runtime":"rust","capabilities":[],"description":"SHA-256 digest of bounded input"},
-    {"id":"rust.wasm_ascii_upper","version":"1","runtime":"wasmi 1.1.0","capabilities":[],"max_memory_bytes":65536,"fuel":2000000,"modules":"embedded allowlisted module only","description":"ASCII uppercase transformation; no WASI or host imports"},
-    {"id":"python.normalize","version":"1","runtime":"isolated Python subprocess","capabilities":[],"address_space_bytes":134217728,"cpu_seconds":2,"wall_seconds":3,"file_size_bytes":0,"open_files":16,"description":"Trusted UTF-8 whitespace/case normalization; no dynamic plugin imports"}
+    {
+      "id": "rust.sha256",
+      "version": "1",
+      "runtime": "rust",
+      "capabilities": [],
+      "description": "SHA-256 digest of bounded input"
+    },
+    {
+      "id": "rust.wasm_ascii_upper",
+      "version": "1",
+      "runtime": "wasmi 1.1.0",
+      "capabilities": [],
+      "max_memory_bytes": 65536,
+      "fuel": 2000000,
+      "modules": "embedded allowlisted module only",
+      "description": "ASCII uppercase transformation; no WASI or host imports"
+    },
+    {
+      "id": "python.normalize",
+      "version": "1",
+      "runtime": "isolated Python subprocess",
+      "capabilities": [],
+      "address_space_bytes": 134217728,
+      "cpu_seconds": 2,
+      "wall_seconds": 3,
+      "file_size_bytes": 0,
+      "open_files": 16,
+      "description": "Trusted UTF-8 whitespace/case normalization; no dynamic plugin imports"
+    }
   ],
   "result_policy": "Go verifies all identity fields and size before an attempt can commit; expired, cancelled, foreign or replaced attempts cannot commit results",
-  "deployment_policy": "Optional workers have no database credentials. Core domain routes require neither worker. This allowlisted foundation does not accept arbitrary user code."
+  "deployment_policy": "Optional workers have no database credentials. Core domain routes require neither worker. This allowlisted foundation does not accept arbitrary user code.",
+  "investigation": {
+    "transport": "aisoc.worker.v1.Investigator/Investigate",
+    "mode": "mock-v1",
+    "schema_version": "1",
+    "queue_plugin": "python.investigate_mock",
+    "max_evidence_refs": 16,
+    "max_envelope_bytes": 16384,
+    "rpc_deadline_seconds": 5,
+    "model_calls": 0,
+    "tool_calls": 0,
+    "model_tokens": 0,
+    "result_policy": "Go QA plus existing durable job attempt fencing; inconclusive and human review only"
+  }
 }

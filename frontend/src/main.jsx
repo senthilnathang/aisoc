@@ -44,6 +44,7 @@ import InvestigationCase from "./InvestigationCase";
 import InvestigationQueue from "./InvestigationQueue";
 import AuthGate from "./AuthGate";
 import ApiSources from "./ApiSources";
+import StreamOperations from "./StreamOperations";
 import CreateDetectionRule from "./CreateDetectionRule";
 import DetectionRegistry, { RuleWorkspace } from "./DetectionRegistry";
 import DetectionIntelligence from "./DetectionIntelligence";
@@ -105,7 +106,7 @@ const navIsActive = (item, view) =>
   view === viewForNav[item] ||
   (item === "Respond" && view === "queue") ||
   (item === "Respond" && view.startsWith("response")) ||
-  (item === "Build" && view === "connector") ||
+  (item === "Build" && ["connector", "streamOperations"].includes(view)) ||
   (item === "Detect" && view === "detectionRuleDetail") ||
   (item === "Detect" && view === "detectionIntelligence") ||
   (item === "Threat Intel" && view === "threatIntelDetail") ||
@@ -128,6 +129,7 @@ const pathForView = {
   memory: "/memory",
   connector: "/build/connectors/cribl",
   apiSources: "/build/api-sources",
+  streamOperations: "/build/stream-operations",
   skills: "/skills",
   skillCreate: "/skills/new",
   skillTemplates: "/skills/templates",
@@ -2899,6 +2901,7 @@ function App() {
     memory: <MemoryCenter setView={setView} />,
     connector: <ConnectorSetupLive setView={setView} />,
     apiSources: <ApiSources setView={setView} />,
+    streamOperations: <StreamOperations setView={setView} />,
     skills: <SkillsLibrary setView={setView} />,
     skillTemplates: <SkillsLibrary setView={setView} templatesView />,
     skillSuggestions: <SkillsLibrary setView={setView} suggestions />,
@@ -2929,6 +2932,7 @@ function App() {
     memory: ["Memory", "Investigation Memory"],
     connector: ["Configuration", "Log Connectors › Cribl"],
     apiSources: ["Build", "API Sources"],
+    streamOperations: ["Build", "Stream operations"],
     skills: ["Skills", "Library"], skillTemplates: ["Skills", "Starter templates"], skillSuggestions: ["Skills", "Environment suggestions"], skillOutcomes: ["Skills", "Outcomes"], skillCreate: ["Skills", "Create skill"], skillDetail: ["Skills", "Skill details"],
   };
   return (

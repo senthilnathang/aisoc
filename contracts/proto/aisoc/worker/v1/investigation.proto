@@ -1,0 +1,40 @@
+syntax = "proto3";
+package aisoc.worker.v1;
+option go_package = "aisoc/backend/internal/gen/worker/v1;workerv1";
+
+// Go supplies bounded evidence; workers have no tools, credentials or action API.
+service Investigator { rpc Investigate(InvestigationTask) returns (InvestigationResult); }
+message EvidenceItem {
+ string reference = 1;
+ string content_hash = 2;
+ string event_time = 3;
+ string event_type = 4;
+}
+message InvestigationTask {
+ string tenant_id = 1;
+ string incident_id = 2;
+ string task_id = 3;
+ string attempt_id = 4;
+ string schema_version = 5;
+ int64 deadline_unix_ms = 6;
+ repeated EvidenceItem evidence = 7;
+ uint32 max_output_bytes = 8;
+ string mode = 9;
+}
+message Hypothesis {
+ string kind = 1;
+ repeated string supporting_refs = 2;
+ repeated string counterevidence_refs = 3;
+}
+message InvestigationResult {
+ string tenant_id = 1;
+ string incident_id = 2;
+ string task_id = 3;
+ string attempt_id = 4;
+ string schema_version = 5;
+ string verdict = 6;
+ repeated Hypothesis hypotheses = 7;
+ repeated string missing_evidence = 8;
+ bool requires_human_review = 9;
+ string model_version = 10;
+}

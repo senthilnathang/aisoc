@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build and verify the replacement framework against a disposable PostgreSQL cluster."""
 import hashlib
+import argparse
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,8 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+import redis_runtime
+from resource_probe import ResourceProbe
 
 ROOT = Path(__file__).resolve().parents[2]
 PG = Path(os.environ.get('AISOC_TEST_PG_BIN', '/usr/lib/postgresql/16/bin'))
@@ -23,6 +26,24 @@ def port():
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--with-streams',action='store_true',help='Include disposable Redis and PostgreSQL/stream bridge tests')
+    parser.add_argument('--stream-load',action='store_true',help='Measure bounded synthetic traffic in isolated PostgreSQL/Redis after correctness checks')
+    parser.add_argument('--stream-measure-only',action='store_true',help='Isolated measurement iteration; skips full correctness gates')
+    parser.add_argument('--stream-events',type=int,default=1000,help='Synthetic event count (100..10000, multiples of 100)')
+    parser.add_argument('--stream-eps',type=int,default=1000,help='Scheduled offered rate (100..1000 EPS)')
+    parser.add_argument('--stream-pause-seconds',type=int,default=0,help='Pause both consumers halfway through scheduled input (0..10 seconds)')
+    parser.add_argument('--stream-idle-poll-ms',type=int,default=1,help='Benchmark publisher delay after an empty claim (1..100 ms)')
+    parser.add_argument('--stream-burst-multiplier',type=int,default=1,choices=range(1,6),help='Multiply offered EPS for the middle third of event batches (1..5)')
+    options=parser.parse_args()
+    if options.stream_load and not options.with_streams:
+        parser.error('--stream-load requires --with-streams')
+    if options.stream_measure_only and not options.stream_load:
+        parser.error('--stream-measure-only requires --stream-load')
+    if not (100 <= options.stream_events <= 10000 and options.stream_events % 100 == 0 and 100 <= options.stream_eps <= 1000 and 0 <= options.stream_pause_seconds <= 10 and 1 <= options.stream_idle_poll_ms <= 100):
+        parser.error('Invalid bounded stream workload configuration')
+    if not options.stream_load and (options.stream_events != 1000 or options.stream_eps != 1000 or options.stream_pause_seconds != 0 or options.stream_idle_poll_ms != 1 or options.stream_burst_multiplier != 1):
+        parser.error('Stream workload options require --stream-load')
     if os.geteuid() == 0:
         raise RuntimeError('Run as an ordinary user; initdb refuses root')
     if not (PG/'initdb').exists():
@@ -30,9 +51,14 @@ def main():
     report = ROOT/'output/backend-framework'
     report.mkdir(parents=True, exist_ok=True)
     (report/'report.json').write_text(json.dumps({'passed':False,'status':'running','active_backend_modified':False})+'\n')
+    if options.stream_load:
+        for filename in ('stream-load.json','stream-load.json.cache.json','stream-load.json.resources.json'):
+            (report/filename).write_text(json.dumps({'status':'not_completed'})+'\n')
     env = os.environ.copy()
+    env.pop('AISOC_STREAM_LOAD_REPORT',None)
     children = []
     pg_started = False
+    redis_state = None
     with tempfile.TemporaryDirectory(prefix='aisoc-go-check-') as directory, (report/'check.log').open('w') as log:
         temp = Path(directory)
         def run(args, cwd=ROOT, input=None):
@@ -46,6 +72,20 @@ def main():
         def sql(statement):
             return subprocess.check_output([str(PG/'psql'), '-X', '-v', 'ON_ERROR_STOP=1', '-At'],
                 env=env, input=statement, text=True, stderr=log, timeout=15).strip()
+        def measure_streams():
+            env['AISOC_STREAM_LOAD_EVENTS']=str(options.stream_events)
+            env['AISOC_STREAM_LOAD_EPS']=str(options.stream_eps)
+            env['AISOC_STREAM_LOAD_PAUSE_SECONDS']=str(options.stream_pause_seconds)
+            env['AISOC_STREAM_LOAD_IDLE_POLL_MS']=str(options.stream_idle_poll_ms)
+            env['AISOC_STREAM_LOAD_BURST_MULTIPLIER']=str(options.stream_burst_multiplier)
+            env['AISOC_STREAM_LOAD_REPORT']=str(report/'stream-load.json')
+            try:
+                pgpid=int((temp/'pg/postmaster.pid').read_text().splitlines()[0])
+                with ResourceProbe(pgpid, report/'stream-load.json.resources.json'):
+                    run(['go','test','-count=1','-run','^TestStreamLoadReport$','-v','./internal/modules/telemetrypipeline'],ROOT/'backend-go')
+                run(['go','test','-count=1','-run','^TestCacheLoadReport$','-v','./internal/modules/enrichment'],ROOT/'backend-go')
+            finally:
+                env.pop('AISOC_STREAM_LOAD_REPORT',None)
         def wait_port(number):
             for _ in range(100):
                 try:
@@ -62,12 +102,19 @@ def main():
             assert code == expected, (path, code, expected)
             return json.loads(body)
         try:
+            # Never inherit an external Redis target into this destructive fixture suite.
+            for key in list(env):
+                if key.startswith('AISOC_TEST_REDIS_'): del env[key]
+            if options.with_streams:
+                redis_state=temp/'redis'
+                redis_runtime.start(redis_state,port())
+                env.update(redis_runtime.test_env(redis_state))
             password=secrets.token_hex(24)
             pwfile=temp/'password';pwfile.write_text(password);pwfile.chmod(0o600)
             pgport,apiport,pythonport,rustport,pythonhttpport=port(),port(),port(),port(),port()
             env.update(PGHOST='127.0.0.1',PGPORT=str(pgport),PGUSER='aisoc',PGPASSWORD=password,PGDATABASE='postgres')
             run([PG/'initdb','-D',temp/'pg','-U','aisoc','--auth-local=trust','--auth-host=scram-sha-256','--pwfile',pwfile])
-            run([PG/'pg_ctl','-D',temp/'pg','-l',temp/'pg.log','-o',f'-h 127.0.0.1 -p {pgport} -k {temp}','-w','start'])
+            run([PG/'pg_ctl','-D',temp/'pg','-l',temp/'pg.log','-o',f'-h 127.0.0.1 -p {pgport} -k {temp} -c track_io_timing=on -c track_wal_io_timing=on','-w','start'])
             pg_started=True
             sql('CREATE DATABASE aisoc_go_test;')
             env['PGDATABASE']='aisoc_go_test'
@@ -77,7 +124,7 @@ def main():
                 AISOC_PYTHON_HTTP_ADDR=f'127.0.0.1:{pythonhttpport}',
                 AISOC_RUST_ADDR=f'127.0.0.1:{rustport}',AISOC_WORKER_TOKEN=secrets.token_hex(32))
             env.update(AISOC_GO_CONNECTOR_KEY=secrets.token_hex(32),AISOC_GO_AUTH_MODE='local',AISOC_GO_OPERATORS_FILE='',AISOC_GO_ENV='development',AISOC_GO_SECURE_COOKIES='false',AISOC_GO_SESSION_TTL_MS='28800000')
-            for name in ('api','migrate','worker','plugin-probe','investigation-worker'):
+            for name in ('api','migrate','worker','plugin-probe','investigation-worker','stream-worker','stream-archive'):
                 run(['go','build','-o','bin/'+name,'./cmd/'+name], ROOT/'backend-go')
             run(['cargo','test','--locked','--manifest-path','services/wasm-worker/Cargo.toml'])
             run(['cargo','build','--locked','--manifest-path','services/wasm-worker/Cargo.toml'])
@@ -90,11 +137,18 @@ def main():
             metrics=http('/metrics',200)
             assert metrics['database_pool']['maximum']==8
             assert metrics['investigation_jobs']['active']==0
+            if options.stream_measure_only:
+                measure_streams()
+                (report/'report.json').write_text(json.dumps({'passed':True,'scope':'measurement_only','full_correctness_checks_run':False,'active_backend_modified':False},indent=2)+'\n')
+                print('PASS isolated measurement only; full correctness gates skipped',flush=True)
+                return
             # Packages install failure-injection triggers on the same audit table.
             # Serialize packages to avoid unrelated DDL locks; each package still
             # exercises concurrent domain writes with the race detector enabled.
             run(['go','test','-race','-p','1','./...'],ROOT/'backend-go')
             run(['go','vet','./...'],ROOT/'backend-go')
+            if options.stream_load:
+                measure_streams()
             run(['node','tests/backend-parity/response-library.mjs','--url','http://'+env['AISOC_GO_ADDR'],'--allow-fixture-writes','--label','go','--output','output/backend-parity/go-response-library.json'])
             run(['node','tests/backend-parity/case-runbooks.mjs','--url','http://'+env['AISOC_GO_ADDR'],'--allow-fixture-writes','--label','go','--output','output/backend-parity/go-case-runbooks.json'])
             saved=json.loads((ROOT/'output/backend-parity/go-case-runbooks.json').read_text())['persistence_fixture']
@@ -228,17 +282,77 @@ def main():
             run([ROOT/'backend-go/bin/plugin-probe'])
             sql("BEGIN; INSERT INTO tenants(id) VALUES('framework-e2e'); INSERT INTO jobs(tenant_id,id,plugin_id,plugin_version,input) VALUES ('framework-e2e','00000000-0000-4000-8000-000000000001','python.normalize','1',convert_to('  HELLO   WORLD  ','UTF8')), ('framework-e2e','00000000-0000-4000-8000-000000000002','rust.sha256','1',convert_to('hello','UTF8')), ('framework-e2e','00000000-0000-4000-8000-000000000003','rust.wasm_ascii_upper','1',convert_to('wasm','UTF8')); COMMIT;")
             spawn([ROOT/'backend-go/bin/worker'])
+            investigation_input = subprocess.check_output([str(python), '-c', "from aisoc.worker.v1.investigation_pb2 import InvestigationTask,EvidenceItem; print(InvestigationTask(tenant_id='framework-e2e',incident_id='mock-case',task_id='00000000-0000-4000-8000-000000000004',schema_version='1',mode='mock-v1',max_output_bytes=8192,evidence=[EvidenceItem(reference='mock:auth',content_hash='a'*64,event_time='2026-01-01T00:00:00Z',event_type='authentication.failed')]).SerializeToString().hex())"], cwd=ROOT/'services/python-worker', text=True, timeout=5).strip()
+            assert all(c in '0123456789abcdef' for c in investigation_input)
+            sql("INSERT INTO jobs(tenant_id,id,plugin_id,plugin_version,input) VALUES ('framework-e2e','00000000-0000-4000-8000-000000000004','python.investigate_mock','1',decode('" + investigation_input + "','hex'))")
             for _ in range(150):
-                if sql("SELECT count(*) FROM jobs WHERE tenant_id='framework-e2e' AND state='completed'")=='3': break
+                if sql("SELECT count(*) FROM jobs WHERE tenant_id='framework-e2e' AND state='completed'")=='4': break
                 time.sleep(.1)
             else: raise RuntimeError('Durable jobs did not complete')
-            values=sql("SELECT convert_from(output,'UTF8') FROM jobs WHERE tenant_id='framework-e2e' ORDER BY id").splitlines()
+            values=sql("SELECT convert_from(output,'UTF8') FROM jobs WHERE tenant_id='framework-e2e' AND plugin_id<>'python.investigate_mock' ORDER BY id").splitlines()
             assert values==['hello world',hashlib.sha256(b'hello').hexdigest(),'WASM'], values
+            investigation_output=sql("SELECT encode(output,'hex') FROM jobs WHERE tenant_id='framework-e2e' AND plugin_id='python.investigate_mock'")
+            run([python,'-c',"import sys; from aisoc.worker.v1.investigation_pb2 import InvestigationResult; r=InvestigationResult.FromString(bytes.fromhex(sys.stdin.read())); assert r.verdict=='INCONCLUSIVE' and r.requires_human_review and r.tenant_id=='framework-e2e' and len(r.hypotheses)==2; print('PASS durable typed investigation result after Go QA')"],ROOT/'services/python-worker',input=investigation_output)
+            if options.with_streams:
+                scopes=temp/'stream-scopes.json'
+                scopes.write_text(json.dumps([{'id':'mock-siem','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-qradar','source':'qradar-siem','processor':'mock-login-v1','allow_retry':True,'allow_mock_import':True}]))
+                env.update(AISOC_GO_STREAM_OPERATIONS_FILE=str(scopes),AISOC_STREAM_REDIS_ADDR=env['AISOC_TEST_REDIS_ADDR'],AISOC_STREAM_REDIS_PUBLISHER_PASSWORD=env['AISOC_TEST_REDIS_PUBLISHER_PASSWORD'],AISOC_STREAM_REDIS_CONSUMER_PASSWORD=env['AISOC_TEST_REDIS_CONSUMER_PASSWORD'])
+                api.terminate();api.wait(timeout=10)
+                api=spawn([ROOT/'backend-go/bin/api']);wait_port(apiport)
+                def stream_http(path, body=None, actor='a', expected=200):
+                    headers={'Authorization':'Bearer parity_fixture_'+actor*40,'Content-Type':'application/json'}
+                    request=urllib.request.Request('http://'+env['AISOC_GO_ADDR']+'/api/v1/stream-operations'+path,headers=headers,data=None if body is None else json.dumps(body).encode())
+                    try:
+                        with urllib.request.urlopen(request,timeout=10) as response: code,value=response.status,json.load(response)
+                    except urllib.error.HTTPError as error: code,value=error.code,json.load(error)
+                    assert code==expected,(code,expected,value)
+                    return value
+                assert stream_http('',actor='b')['items']==[]
+                stream_http('/mock-siem',actor='b',expected=403)
+                page=stream_http('/mock-siem/mock-example')
+                stream_http('/mock-siem/mock-import',page,actor='b',expected=403)
+                stream_http('/mock-siem/retry-publication',{},actor='b',expected=403)
+                stream_http('/mock-siem/retry-consumer',{},actor='b',expected=403)
+                stream_http('/mock-siem/rebase-soar',{},actor='b',expected=403)
+                stream_http('/mock-siem/mock-import',{**page,'unexpected':True},expected=400)
+                stream_http('/mock-siem/mock-import',{**page,'next_cursor':'x'*(1024*1024)},expected=413)
+                imported=stream_http('/mock-siem/mock-import',page,expected=202)
+                assert imported['accepted']['Inserted']==4
+                stream_worker=spawn([ROOT/'backend-go/bin/stream-worker'])
+                for _ in range(200):
+                    if sql("SELECT count(*) FROM mock_soar_notes WHERE tenant_id='auth-a' AND connector_id='mock-soar'")=='1': break
+                    if stream_worker.poll() is not None: raise RuntimeError('Sandbox stream worker exited')
+                    time.sleep(.1)
+                else: raise RuntimeError('JSON-to-Redis-to-Python-to-mock-SOAR flow did not complete')
+                page['expected_checkpoint']=imported['accepted']['Checkpoint']
+                page['next_cursor']='mock-replay'
+                replayed=stream_http('/mock-siem/mock-import',page,expected=202)
+                assert replayed['accepted']['Inserted']==0
+                stream_worker.kill();stream_worker.wait(timeout=10)
+                page['expected_checkpoint']=replayed['accepted']['Checkpoint'];page['next_cursor']='mock-after-restart'
+                for event in page['events']:
+                    for key in ('event_id','source_event_id','evidence_ref'): event[key]+='-restart'
+                    event['projection']['principal_ref']='restart-user'
+                assert stream_http('/mock-siem/mock-import',page,expected=202)['accepted']['Inserted']==4
+                stream_worker=spawn([ROOT/'backend-go/bin/stream-worker'])
+                for _ in range(200):
+                    if sql("SELECT count(*) FROM mock_soar_notes WHERE tenant_id='auth-a' AND connector_id='mock-soar'")=='2': break
+                    time.sleep(.1)
+                else: raise RuntimeError('Sandbox worker restart did not recover queued intake')
+                observed=stream_http('/mock-siem')
+                assert observed['snapshot']['accepted']==observed['snapshot']['completed']==8 and observed['snapshot']['pending']==0
+                assert sql("SELECT count(*) FROM l1_escalations WHERE tenant_id='auth-a' AND state='synced'")=='2'
+                (report/'sandbox-flow.json').write_text(json.dumps({'passed':True,'mode':'JSON mocks; no privileged actions','accepted':8,'replayed_insertions':0,'mock_soar_notes':2,'worker_restart_recovered':True,'tenant_denial_verified':True},indent=2)+'\n')
+                stream_worker.terminate();stream_worker.wait(timeout=10)
             for process in (py,rust): process.terminate();process.wait(timeout=10)
             http('/ready',200);http('/health',200)
             checks=['Go race tests and vet','PostgreSQL migration and readiness','response library HTTP parity and restart persistence','manual cases and runbook HTTP parity, concurrency and restart persistence','source intake, mapping, metrics and credential transaction checks','three-phase investigation worker HTTP parity, explicit retry, concurrent workers and SIGKILL rollback/recovery','operator/session/CSRF and tenant HTTP parity including case runbooks','response and case audit failure rollback, foreign keys and cascade','transaction rollback, concurrent claim, lease recovery, stale/cross-tenant/cancelled result rejection','Python and Rust unit tests','Go to Python/Rust RPC outputs and bad credential rejection','durable Go jobs dispatch to both workers','core readiness independent of optional workers']
             checks += ['Skills authoring/material revisions, matching, suggestions, applications, feedback and outcomes', 'all 11 shared functional scenarios', 'bounded WASM transformation and Python subprocess cleanup', 'HTTP error/latency, pool and queue metrics']
             checks += ['FastAPI lifecycle with authenticated standard gRPC readiness and Go-to-Python execution']
+            if options.with_streams:
+                checks += ['Authenticated scoped JSON import, Redis delivery, typed Python investigation, Go QA, mock SOAR notes, replay idempotency and real stream-worker SIGKILL/restart']
+                checks += ['Redis ACLs, stream delivery/ACK/reclaim/gap reporting and PostgreSQL outbox/inbox duplicate-effect prevention',
+                           'Durable consumer retries and DLQ, DLQ outage without ACK, bounded atomic publish/OOM backpressure, stalled TCP recovery, missing-stream replay, poison isolation and stale consumer fencing']
             (report/'report.json').write_text(json.dumps({'passed':True,'checks':checks,'active_backend_modified':False},indent=2)+'\n')
             print('PASS isolated Go + PostgreSQL + Rust + Python framework',flush=True)
             print('Report: '+str(report/'report.json'),flush=True)
@@ -248,8 +362,12 @@ def main():
                     process.terminate()
                     try: process.wait(timeout=10)
                     except subprocess.TimeoutExpired: process.kill();process.wait()
-            if pg_started:
-                run([PG/'pg_ctl','-D',temp/'pg','-m','fast','-w','stop'])
+            try:
+                if pg_started:
+                    run([PG/'pg_ctl','-D',temp/'pg','-m','fast','-w','stop'])
+            finally:
+                if redis_state is not None:
+                    redis_runtime.stop(redis_state)
 
 
 if __name__=='__main__': main()

@@ -2,6 +2,7 @@ package plugins
 
 import (
 	pb "aisoc/backend/internal/gen/worker/v1"
+	"aisoc/backend/internal/modules/l1"
 	"aisoc/backend/internal/platform/config"
 	"context"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 	"time"
 )
 
@@ -71,6 +73,19 @@ func (c *Client) Execute(ctx context.Context, r *pb.ExecuteRequest) ([]byte, err
 		if len(value) == 0 || len(value) > 120 {
 			return nil, errors.New("invalid execution identity")
 		}
+	}
+	if r.PluginId == l1.Plugin && r.PluginVersion == "1" {
+		var task pb.InvestigationTask
+		if proto.Unmarshal(r.Input, &task) != nil || task.TenantId != r.TenantId || task.TaskId != r.JobId || task.AttemptId != "" || task.DeadlineUnixMs != 0 {
+			return nil, l1.ErrInvalid
+		}
+		task.AttemptId = r.AttemptId
+		task.DeadlineUnixMs = time.Now().Add(5 * time.Second).UnixMilli()
+		result, err := c.Investigate(ctx, &task)
+		if err != nil {
+			return nil, err
+		}
+		return proto.Marshal(result)
 	}
 	if r.PluginVersion != "1" || (r.PluginId != "python.normalize" && r.PluginId != "rust.sha256" && r.PluginId != "rust.wasm_ascii_upper") {
 		return nil, errors.New("unknown plugin version")

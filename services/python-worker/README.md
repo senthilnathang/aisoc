@@ -61,7 +61,7 @@ Use this entry point: extra Uvicorn workers/reload would compete for the gRPC po
 | gRPC `aisoc.worker.v1.Worker/Execute` | Existing versioned, bounded execution contract |
 
 Go executes work over gRPC; there is no HTTP execution bypass. Only
-`python.normalize` version `1` exists: a trusted bounded subprocess, not an LLM
+`python.normalize` version `1` is available through Worker/Execute: a trusted bounded subprocess, not an LLM
 or arbitrary-code runtime. Unknown plugin versions fail closed. Inputs/outputs
 preserve tenant/job/attempt/plugin identity.
 
@@ -69,6 +69,13 @@ Four RPCs can execute concurrently. Go imposes a five-second deadline; Python
 enforces three-second child execution, 64 KiB payloads and subprocess cleanup.
 Health shares the admission limit and may report not ready under load; readiness
 failure alone should not trigger a process restart.
+
+S07 adds a separate typed `Investigator/Investigate` RPC on the same listener,
+with authenticated named health and capabilities discovery. Only `mock-v1` is
+supported: two alternative hypotheses, supplied citations, missing evidence and an
+inconclusive result requiring review. Go owns evidence access, job retries and QA.
+There are no model calls or privileged tools. This direct bounded mock does not
+launch the normalization subprocess. See [contract and limits](../../docs/L1_INVESTIGATION.md).
 
 ## Verification
 

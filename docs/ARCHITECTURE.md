@@ -40,6 +40,16 @@ no database credentials.
 
 ## Persistence and concurrency
 
+The S02 streaming persistence module is implemented but not connected to live
+intake. Additive migration 020 supplies source checkpoints, retained envelopes,
+publication outbox and processing inbox. It has been verified on disposable
+PostgreSQL only; running services still use their existing schema. See
+[streaming persistence](STREAMING_PERSISTENCE.md) and the
+[implementation tasks](IMPLEMENTATION_TASKS.md). S03 adds an optional
+[Redis adapter and local runtime](REDIS_STREAMS.md), verified against disposable
+Redis/PostgreSQL. It is not connected to live intake and core startup still needs
+no Redis.
+
 PostgreSQL uses typed columns, JSONB documents, composite tenant keys and scoped
 indexes. Mutations and audits commit together. Row locks serialize conflicting
 case/response/Skills updates; multi-query projections use repeatable-read snapshots
@@ -116,3 +126,46 @@ into a new SQLite database; restarting the old snapshot loses acknowledged write
 [ADR 002](adr/002-go-backend-replacement.md) records the architecture choice;
 [ADR 003](adr/003-replacement-contract-decisions.md) defines compatibility limits.
 Live integrations and enterprise deployment remain [roadmap work](FEATURE_ROADMAP.md).
+
+S04 adds [stream recovery primitives](STREAMING_RECOVERY.md): durable retries/DLQ,
+bounded publication, consumer fencing and retained-event reconciliation. These are
+not scheduled by the core API; live ingestion remains disabled.
+
+S05 adds a [bounded mock QRadar flow](MOCK_QRADAR_FLOW.md). Go correlates an
+authoritative event-time snapshot into review-only findings; a separate pure
+SOAR reducer checks revision transitions. S05 alone does not persist findings or
+admit investigation jobs; S06 adds that path below. Python FastAPI/gRPC remains the inference boundary;
+this deterministic rule does not require model calls or a new Rust service.
+
+S06 extends that mock flow with [durable finding admission](FINDING_ADMISSION.md),
+reusing the existing alert/case/job transaction and local worker. Canonical receipts
+prevent duplicate cases; per-tenant budgets and scheduling bound stream-admitted
+work. The source implementation is opt-in and has not been deployed to the running
+foundation/release services. S07 adds the mock Python/QA boundary below.
+
+S07 adds [typed mock investigation and QA](L1_INVESTIGATION.md) to the independent
+Python FastAPI/gRPC service. Go builds bounded evidence tasks, queues explicit mock
+jobs, owns deadlines/leases and vetoes invalid output before persistence. Results
+are inconclusive and require review; S08 adds the note-only mock path below.
+
+S08 adds [audited L2-review records and mock SOAR notes](MOCK_SOAR_RECONCILIATION.md).
+Go revalidates completed jobs, preserves analyst-owned fields and fences note append
+by source version. Conflicts require explicit reconciliation; no live provider
+write-back or automatic response is enabled.
+
+S09 adds an [opt-in local IOC cache](ENRICHMENT_CACHE.md) for Go-owned enrichment.
+PostgreSQL generations invalidate positive/negative Redis entries; cache failures
+fall back to source reads. Existing processing remains uncached pending measurement.
+
+S10 adds [scoped accounting and explicit Redis retention](STREAM_OPERATIONS.md).
+[Measured probes](STREAM_PERFORMANCE_REPORT.md) fell short of nominal 1,000 offered
+EPS and showed no useful local IOC cache benefit. Live rollout remains gated by
+profiling, capacity, operational monitoring and durable-retention work.
+
+## Current JSON sandbox milestone
+
+See [sandbox completion and operations](SANDBOX_COMPLETION.md) for scoped JSON
+intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archive
+export, startup and measured limits. Earlier task entries are historical checkpoints.
+Live vendor/model validation and privileged response activation are outside this
+user-selected local release.

@@ -29,7 +29,13 @@ func (s Store) ProcessNext(ctx context.Context) (bool, error) {
 	}
 	defer tx.Rollback(ctx)
 	var job runJob
-	err = tx.QueryRow(ctx, `SELECT id,tenant_id,investigation_id,alert_id,phase,result FROM investigation_jobs WHERE status IN ('queued','running') ORDER BY updated_at,ordinal FOR UPDATE SKIP LOCKED LIMIT 1`).Scan(&job.ID, &job.Tenant, &job.Case, &job.Alert, &job.Phase, &job.Result)
+	found, err := claimFindingPhase(ctx, tx, &job)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		err = tx.QueryRow(ctx, `SELECT id,tenant_id,investigation_id,alert_id,phase,result FROM investigation_jobs j WHERE status IN ('queued','running') AND NOT EXISTS(SELECT 1 FROM stream_findings f WHERE f.tenant_id=j.tenant_id AND f.investigation_id=j.investigation_id) ORDER BY updated_at,ordinal FOR UPDATE SKIP LOCKED LIMIT 1`).Scan(&job.ID, &job.Tenant, &job.Case, &job.Alert, &job.Phase, &job.Result)
+	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}

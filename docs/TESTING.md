@@ -16,6 +16,29 @@ No production integration or model-latency benchmark is claimed by these checks.
 
 ## Required checks
 
+Streaming milestone S03 passed `python3 scripts/framework/check_streams.py` and
+the full `python3 scripts/framework/check.py --with-streams` suite. Redis checks
+cover authentication/ACLs, concurrent group consumption, explicit ACK, pending
+reclaim, missing/poisoned payloads and a graceful AOF restart retaining pending
+work. The PostgreSQL bridge proves one sample job despite duplicate publication
+and consumer replay. Redis is disposable for these tests; unflagged framework
+runs intentionally skip Redis-dependent cases. See [Redis Streams](REDIS_STREAMS.md).
+
+Streaming milestone S02 passed the full disposable framework check. Five tests in
+`backend-go/internal/platform/eventstate/store_integration_test.go` exercised real
+PostgreSQL acceptance/outbox/checkpoint atomicity, capacity limits, concurrent
+ownership, lease recovery/fencing, retained failed publications and transactional
+inbox/effect replay. Existing Go race/vet and HTTP/worker tests also passed.
+Lease expiry and transaction failures model crash boundaries; Redis/network fault
+injection is covered by subsequent S03/S04 checks. The running databases were not migrated during this check.
+
+Streaming milestone S01 adds Go telemetry/finding contract validation tests under
+`backend-go/internal/modules/telemetry`. Race tests and vet passed, as did a
+ten-second decoder fuzz run with 66,968 executions. Schema syntax and mock telemetry
+format validation passed. These tests do not establish Redis capacity or delivery
+guarantees; no stream pipeline is connected yet. See the
+[contract guide](../contracts/events/README.md) for commands and boundary rules.
+
 Python FastAPI/gRPC boundary tests live in `services/python-worker/test_service.py`:
 HTTP and authenticated gRPC readiness, service restart/channel reconnection,
 credential rejection, duplicate authorization, payload limits and plugin versions.
@@ -127,3 +150,127 @@ Remaining work: CI browser automation, broader visual regression, production-lik
 capacity/longer soaks, real-provider contract tests when adapters exist, and
 additional malformed-input/Unicode fuzzing. Current tests do not prove provider
 execution, autonomous reasoning or enterprise readiness.
+
+S04 adds seven PostgreSQL/Redis pipeline integration tests plus concurrent capacity
+and retry-jitter checks to `python3 scripts/framework/check.py --with-streams`.
+See [recovery evidence and limits](STREAMING_RECOVERY.md). These tests model loss
+and stalled transport; they do not certify HA failover or production throughput.
+
+S05 passed the full disposable framework suite. `qradarmock` tests cover correlation
+permutations, duplicate/conflicting revisions, entity/IP/tenant separation, window
+and watermark boundaries, and SOAR update/reopen conflicts. The pipeline integration
+test accepts and replays a synthetic SIEM page, passes it through Redis, reads the
+committed inbox snapshot and reproduces one review finding. The offline
+`go run ./cmd/qradar-mock` demonstration also passed. See [scope](MOCK_QRADAR_FLOW.md).
+
+S06 adds admission integration tests in `intake/findings_integration_test.go` and
+extends the mock Redis flow to verify durable case/job receipt replay. Coverage
+includes capacity races, rollback, evidence validation, tenant rotation and bounded
+phase concurrency. See [finding admission](FINDING_ADMISSION.md).
+
+The full `--with-streams` suite passed after S06, including ordinary intake progress
+and analyst retry scheduling. Migration 022 was applied only in disposable checks.
+
+S07 extends framework checks with typed Python investigation RPCs, Go QA adversarial
+cases, read-only evidence isolation, mock-job admission limits and real durable
+dispatcher result persistence. See [scope and limits](L1_INVESTIGATION.md).
+
+The full S07 framework suite passed, including the real typed RPC and a completed
+durable mock job after Go QA. A focused Python RPC test also verified the added
+Investigator named-health endpoint. These are mock contract evaluations, not LLM
+accuracy or live-provider results.
+
+S08 adds PostgreSQL escalation/reconciliation tests for concurrent replay, analyst
+update preservation, conflict/rebase, source reopen/echo, audit rollback and invalid
+results. The mock provider effect and receipt share a transaction; these tests do
+not establish live network write-back guarantees. See [scope](MOCK_SOAR_RECONCILIATION.md).
+
+The full S08 framework suite passed, including all four new PostgreSQL tests and
+existing Go race/vet, HTTP and specialist checks. Migration 024 was disposable-only.
+
+S09 adds four Redis/PostgreSQL cache tests and extends the mock pipeline with local
+IOC enrichment. Coverage includes positive/negative caching, source generation
+invalidation, rollback, tenant separation, expiry/corruption, concurrent capacity,
+ACL separation, Redis outage and source failure. See [limits](ENRICHMENT_CACHE.md).
+
+The full S09 framework suite passed after correcting a test cleanup that closed its
+database pool too early. All cache and existing regression checks passed; migration
+025 was applied only in disposable tests. No cache latency improvement is claimed.
+
+S10 full `--with-streams --stream-load` checks passed, including ACK-safe retention
+and accounting. Targeted non-race load/cache probes produced the
+[performance report](STREAM_PERFORMANCE_REPORT.md). Correctness success does not
+mean capacity success: nominal 1,000 offered EPS was not sustained. Production
+gates remain open; no additional migration or active-service change was made.
+
+S10 profiling follow-up also passed the full framework command, including new
+concurrent batch claim, independent lease, conflict/capacity rollback, atomic
+receipt fencing and backpressure tests. The latest probe completed 1,000 events
+at 269.66 EPS (p95 2.558 s), below the nominal offered rate. SQL timings and
+post-load snapshot/claim plans are generated with the load report. For quicker
+measurement iteration, `--stream-measure-only` skips full correctness and HTTP
+regression checks and labels the report accordingly; it is not a release gate.
+
+The paced workload accepts `--stream-events`, `--stream-eps` and optional
+`--stream-pause-seconds`. The 3,000-event/100 EPS run with a two-second cooperative
+pause exercised both consumers and completed every event with zero pending ACKs.
+Its full framework check passed; the matching no-pause run was measurement-only.
+See the performance report for both results and their short-duration limitations.
+
+Operator publication recovery tests cover default-deny/exact-source grants,
+stale reviews, concurrent idempotent requests, conflicting reuse, retry caps,
+audit-insertion rollback and completed-event refusal. The full suite passed on
+rerun after one existing intake credential-revocation test hit a database statement
+timeout; no production auth behavior was changed to accommodate that failure.
+This tests an internal primitive, not an enabled operator endpoint or consumer-DLQ
+retry. No migration was added.
+
+The final combined full check passed with the paced pause workload, including the
+added source-grant and invalid-reason checks. Its slower repeat (75.79 EPS,
+p95 15.816 s) is recorded alongside the earlier faster results; correctness success
+does not imply a stable 100 EPS capacity result.
+
+The PostgreSQL-instrumented full check also passed. The load report now includes
+250 ms active-client wait samples and database counters before/after measurement;
+the disposable cluster alone enables I/O timing. The profiling follow-up report
+preserves the new result alongside the earlier slow repeat. Sampling does not
+replace PostgreSQL process/host resource measurement or failover tests.
+
+The subsequent full framework check passed after combining recovery-budget checks.
+A race-enabled concurrency test admits only one competing work/gap record into a
+one-slot budget and permits replay at capacity. The Linux resource-parser unit
+test (`python3 scripts/framework/test_resource_probe.py`) also passed, including
+process names containing spaces/parentheses. Actual resource sampling completed
+without errors in both comparison runs. The latest 3,000-event probe drained fully
+at 99.18 EPS with p95 1.970 s; no end-to-end speedup is established.
+
+The WAL/idle-poll follow-up passed the separate full `--with-streams` framework
+gate, including Go race/vet and the idle-delay configuration bounds. Four fresh
+measurement-only runs (1/20/20/1 ms empty-claim delays) each completed 3,000 events
+with zero final pending/dead/failure/gap/ACK backlog and no resource-sampling errors.
+WAL reset timestamps matched within each measurement. The repeated results show
+lower query/CPU cost at 20 ms, not a consistent tail-latency improvement; see the
+performance report for every observation. The historical 1 ms harness default and
+running services remain unchanged.
+
+Snapshot accounting now has a mixed-state database test: completed, historical
+dead-plus-completed, dead-only and pending events, including another processor's
+work. It verifies precedence, processor isolation, the accounting identity and
+oldest-pending age. The load report compares the original and materialized snapshot
+queries against the same retained fixture after the timed drain, in both execution
+orders, recording execution time, buffer hits/reads and temporary blocks written.
+These query-plan measurements are separate from end-to-end throughput.
+
+The full snapshot-change check passed on rerun. Its first attempt hit a statement
+timeout in the existing threat-intelligence concurrency test; the new snapshot
+test passed both times. Timeout settings were unchanged. The paired same-fixture
+plans showed 29–32% lower snapshot execution time and 44% fewer buffer hits with no
+temp writes; the final load completed all 3,000 events with zero ACK backlog.
+
+## Current JSON sandbox milestone
+
+See [sandbox completion and operations](SANDBOX_COMPLETION.md) for scoped JSON
+intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archive
+export, startup and measured limits. Earlier task entries are historical checkpoints.
+Live vendor/model validation and privileged response activation are outside this
+user-selected local release.
