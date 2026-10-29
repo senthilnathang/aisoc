@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {argumentsFor,target,client,output} from './harness.mjs';
+const options=argumentsFor(),server=await target(options),events=[];
+const tenant='edits-'+randomUUID(),req=client(server.url,tenant,events);
+const createCase=title=>req('POST','/api/v1/investigations',{title,source:'Fixture',severity:'high'},201);
+try{
+ const record=await createCase('Edit case'),path='/api/v1/investigations/'+record.id;
+ const patch={summary:'Analyst summary',owner:'Analyst',risk_score:73,status:'contained',determination:'malicious',insight_refs:['intel-1'],replay_count:2,title:'Edited case',source:'Manual',category:'Identity',severity:'critical',primary_entity:'host-9'};
+ const edited=await req('PATCH',path,patch);
+ for(const [key,value] of Object.entries(patch))assert.deepEqual(edited[key],value);
+ assert.equal(edited.created_at,record.created_at);
+ assert.deepEqual((await req('GET',path+'/history')).items[0].details.fields,Object.keys(patch));
+ const unchanged=await req('PATCH',path,{id:'override',tenant_id:'foreign',secret:'ignored',unknown:'ignored'});
+ assert.deepEqual(unchanged,edited);
+ assert.deepEqual((await req('GET',path+'/history')).items[0].details.fields,['id','tenant_id','unknown']);
+ assert.deepEqual(await req('PATCH',path,{}),edited);
+ assert.deepEqual((await req('GET',path+'/history')).items[0].details.fields,[]);
+ const outcome=await req('POST',path+'/determination',{summary:'Additional outcome context',determination:'benign',status:'resolved',unknown:'ignored'});
+ assert.equal(outcome.summary,'Additional outcome context');assert.equal(outcome.status,'resolved');assert.equal(outcome.determination,'benign');
+ assert.deepEqual((await req('GET',path+'/history')).items[0].details.fields,['summary','determination','status','unknown']);
+ await req('POST','/api/v1/investigations/missing/determination',{determination:'invalid'},400);
+ await req('PATCH',path,{summary:'foreign'},404,{'x-tenant-id':tenant+'-foreign'});
+ await req('PATCH','/api/v1/investigations/missing',{summary:'missing'},404);
+ const base={investigation_id:record.id,action_type:'isolate_host',title:'Isolate endpoint'};
+ const remediation=await req('POST','/api/v1/remediations',base,201),rp='/api/v1/remediations/'+remediation.id;
+ assert.match(remediation.id,/^REM-/);assert.equal(remediation.status,'pending');assert.equal(remediation.executed_at,null);assert.equal(remediation.description,'');assert.equal(remediation.connector,'');
+ assert.deepEqual((await req('GET',path)).remediations,[remediation]);
+ assert.equal((await req('GET','/api/v1/remediations?investigationId='+record.id+'&status=pending&search=endpoint')).items[0].id,remediation.id);
+ assert.deepEqual((await req('GET','/api/v1/remediations?status=completed')).items,[]);
+ const updated=await req('PATCH',rp,{description:'Simulation only',connector:'test',title:'Updated action'});assert.equal(updated.description,'Simulation only');
+ assert.deepEqual(await req('PATCH',rp,{unknown:true}),updated);
+ const executed=await req('POST',rp+'/execute');assert.equal(executed.status,'completed');assert.ok(Number.isFinite(Date.parse(executed.executed_at)));
+ assert.equal((await req('POST',rp+'/execute')).status,'completed');
+ const reset=await req('PATCH',rp,{status:'pending',executed_at:null});assert.equal(reset.executed_at,null);
+ const other=await createCase('Other parent'),otherPath='/api/v1/investigations/'+other.id;
+ const moved=await req('PATCH',rp,{investigation_id:other.id});assert.equal(moved.investigation_id,other.id);
+ assert.deepEqual((await req('GET',path)).remediations,[]);assert.deepEqual((await req('GET',otherPath)).remediations,[moved]);
+ for(const [method,suffix,body] of [['GET','',undefined],['PATCH','',{title:'foreign'}],['POST','/execute',undefined],['DELETE','',undefined]]){
+  await req(method,rp+suffix,body,404,{'x-tenant-id':tenant+'-foreign'});
+  await req(method,'/api/v1/remediations/missing'+suffix,body,404);
+ }
+ assert.deepEqual((await req('GET','/api/v1/remediations',undefined,200,{'x-tenant-id':tenant+'-foreign'})).items,[]);
+ await req('GET','/api/v1/remediations?limit=0',undefined,400);
+ await req('POST','/api/v1/remediations',{title:'Missing fields'},400);
+ await req('DELETE',path,undefined,204);assert.equal((await req('GET',rp)).id,remediation.id);
+ await req('DELETE',otherPath,undefined,204);await req('GET',rp,undefined,404);
+ const saved=await createCase('Persistent simulation');
+ const action=await req('POST','/api/v1/remediations',{...base,investigation_id:saved.id},201);
+ await req('POST','/api/v1/remediations/'+action.id+'/execute');
+ const deleted=await req('POST','/api/v1/remediations',{...base,investigation_id:saved.id},201);
+ await req('DELETE','/api/v1/remediations/'+deleted.id,undefined,204);await req('GET','/api/v1/remediations/'+deleted.id,undefined,404);
+ await output(options.output||'output/backend-parity/case-edits.json',{passed:true,backend:options.label||(server.owned?'node':'external'),request_count:events.length,persistence_fixture:{tenant,case_id:saved.id,remediation_id:action.id},checks:['case editing and ordered audit fields','unknown and empty patch semantics','remediation CRUD and filters','simulation and repeated execution','parent reassignment and cascade','tenant isolation']});
+ console.log('PASS case edits and response simulations');
+}finally{await server.close();}

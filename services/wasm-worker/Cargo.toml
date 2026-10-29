@@ -1,0 +1,19 @@
+[package]
+name = "aisoc-wasm-worker"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+publish = false
+
+[dependencies]
+tonic = "0.14.6"
+tonic-prost = "0.14.6"
+prost = "0.14.3"
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "signal", "sync"] }
+sha2 = "0.10.9"
+subtle = "2.6.1"
+wasmi = "=1.1.0"
+
+[build-dependencies]
+tonic-prost-build = "0.14.6"
+protoc-bin-vendored = "3.2.0"

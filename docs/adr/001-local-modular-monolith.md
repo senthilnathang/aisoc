@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted for the initial implementation.
+Accepted for the initial implementation; superseded operationally on 2026-10-29.
+[ADR 002](002-go-backend-replacement.md) defines the successor architecture;
+the Go/PostgreSQL replacement passed its gates and is now active. SQLite remains
+only as the retained reference and recovery format.
 
 ## Decision
 

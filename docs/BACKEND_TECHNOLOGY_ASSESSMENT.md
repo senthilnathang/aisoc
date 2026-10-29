@@ -1,5 +1,10 @@
 # Production Backend Technology Assessment
 
+The public-client observations below are historical reference findings from the
+original assessment, not a fresh verification of the vendor's current system.
+AISOC's own active architecture is Go/PostgreSQL with optional Rust/WASM and
+Python runtimes as of 2026-10-29. See [architecture](ARCHITECTURE.md).
+
 ## Confidence Levels
 
 ### Confirmed From Public Client Assets
@@ -28,7 +33,12 @@ Claiming a specific production server language would be speculation.
 
 ## Local Technology Decision
 
-Use a modular TypeScript service:
+The original local prototype used the following TypeScript stack. It was replaced
+after the gates in [ADR 002](adr/002-go-backend-replacement.md) and the
+[completed migration plan](GO_BACKEND_MIGRATION_PLAN.md) passed. It remains a
+comparison/recovery reference, not the active backend.
+
+Historical prototype:
 
 - Fastify for HTTP routing and JSON schema validation
 - Node 24 built-in `node:sqlite` for the first persistence adapter
@@ -37,6 +47,6 @@ Use a modular TypeScript service:
 - Transport-neutral service functions so ConnectRPC can be added later
 - Tenant-scoped repositories from day one
 
-This choice optimizes local delivery without pretending to know the production language.
-It preserves the production architecture's observable boundaries and provides a direct
-path to PostgreSQL, Descope verification, ConnectRPC, and WebSockets.
+The active Go choice was verified independently of assumptions about the vendor's
+implementation language. Enterprise identity, live provider execution and realtime
+transport remain product/deployment work; see [roadmap](ROADMAP.md).

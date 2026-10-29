@@ -1,0 +1,12 @@
+[Unit]
+Description=AISOC verified local PostgreSQL backup
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/aisoc
+ExecStart=/usr/bin/python3 /opt/aisoc/scripts/runtime/backup.py
+TimeoutStartSec=30min
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+Nice=10

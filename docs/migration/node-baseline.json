@@ -1,0 +1,439 @@
+{
+  "format_version": 1,
+  "label": "node-isolated",
+  "created_at": "2026-10-28T08:33:56.065Z",
+  "fixture_fingerprint": "ad877f0b42f02e97dc2997510e0a7c0cc26800ae695881c1cd39900cb6fc7f2c",
+  "workload": {
+    "version": 1,
+    "tenants": 2,
+    "rows_per_tenant": {
+      "small": 100,
+      "large": 1000
+    },
+    "requests": 1000,
+    "concurrency": 8,
+    "warmup_requests": 100,
+    "mix": {
+      "list": 0.5,
+      "detail": 0.3,
+      "update": 0.1,
+      "create": 0.1
+    },
+    "worker_interval_ms": 50
+  },
+  "environment": {
+    "platform": "linux",
+    "release": "7.0.0-38-generic",
+    "node": "v24.0.1",
+    "cpu_model": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+    "logical_cpus": 8,
+    "host_memory_bytes": 16565579776,
+    "cgroup_cpu_max": null,
+    "cgroup_memory_max": null
+  },
+  "limitations": [
+    "Closed-loop fixed-operation test, not an open-loop saturation test.",
+    "Resource samples include only supplied server/worker PIDs; external PostgreSQL and optional workers must be included in a later whole-stack comparison.",
+    "Database lock/wait time and sustained backlog lag are not instrumented yet.",
+    "50ms worker interval is a comparison fixture, not the production default.",
+    "Shared host measurements are observational; use controlled resources before enforcing release thresholds.",
+    "Sampled RSS may miss peaks between 100ms intervals. CPU measurements exclude fixture creation and job probes."
+  ],
+  "reports": [
+    {
+      "size": "small",
+      "repeat": 1,
+      "initial_case_count": 200,
+      "request_count": 1000,
+      "concurrency": 8,
+      "duration_ms": 4254.874691999999,
+      "throughput_rps": 235.0245476982428,
+      "successful_rps": 235.0245476982428,
+      "latency": {
+        "count": 1000,
+        "p50_ms": 27.946745000000192,
+        "p95_ms": 62.882880000000114,
+        "p99_ms": 72.68063900000016
+      },
+      "operations": {
+        "list": {
+          "count": 500,
+          "p50_ms": 28.348470999999336,
+          "p95_ms": 63.141749000000345,
+          "p99_ms": 69.78198599999996
+        },
+        "detail": {
+          "count": 300,
+          "p50_ms": 27.564612000000125,
+          "p95_ms": 62.882880000000114,
+          "p99_ms": 72.68063900000016
+        },
+        "create": {
+          "count": 100,
+          "p50_ms": 28.971999000000324,
+          "p95_ms": 60.02168000000165,
+          "p99_ms": 66.14037300000109
+        },
+        "update": {
+          "count": 100,
+          "p50_ms": 27.202987999999095,
+          "p95_ms": 58.58343200000127,
+          "p99_ms": 77.95497699999942
+        }
+      },
+      "error_count": 0,
+      "errors": [],
+      "resources": {
+        "pids": [
+          441667
+        ],
+        "cpu_ms": 4150,
+        "cpu_core_equivalents": 0.9753518729477076,
+        "rss_start_bytes": 177577984,
+        "rss_end_bytes": 180396032,
+        "sampled_peak_rss_bytes": 180371456,
+        "sampled_peak_threads": 12,
+        "sampling_error": null
+      },
+      "jobs": {
+        "samples": [
+          310.50659200000155,
+          288.82355499999903
+        ],
+        "unit": "milliseconds",
+        "measurement": "API acceptance through observed completion; 50ms polling; separate from HTTP workload",
+        "worker_interval_ms": 50
+      }
+    },
+    {
+      "size": "small",
+      "repeat": 2,
+      "initial_case_count": 200,
+      "request_count": 1000,
+      "concurrency": 8,
+      "duration_ms": 4034.0503439999993,
+      "throughput_rps": 247.88981661751916,
+      "successful_rps": 247.88981661751916,
+      "latency": {
+        "count": 1000,
+        "p50_ms": 26.16820000000007,
+        "p95_ms": 58.53056300000026,
+        "p99_ms": 69.51764800000092
+      },
+      "operations": {
+        "list": {
+          "count": 500,
+          "p50_ms": 27.06815799999822,
+          "p95_ms": 56.0594749999982,
+          "p99_ms": 64.27473499999905
+        },
+        "create": {
+          "count": 100,
+          "p50_ms": 24.644670000001497,
+          "p95_ms": 62.12752800000089,
+          "p99_ms": 67.76958499999819
+        },
+        "detail": {
+          "count": 300,
+          "p50_ms": 24.59248899999875,
+          "p95_ms": 59.63163799999893,
+          "p99_ms": 70.35803699999815
+        },
+        "update": {
+          "count": 100,
+          "p50_ms": 24.384584000003088,
+          "p95_ms": 62.06634900000063,
+          "p99_ms": 69.51764800000092
+        }
+      },
+      "error_count": 0,
+      "errors": [],
+      "resources": {
+        "pids": [
+          442189
+        ],
+        "cpu_ms": 3900,
+        "cpu_core_equivalents": 0.9667702848083248,
+        "rss_start_bytes": 170008576,
+        "rss_end_bytes": 173133824,
+        "sampled_peak_rss_bytes": 173109248,
+        "sampled_peak_threads": 12,
+        "sampling_error": null
+      },
+      "jobs": {
+        "samples": [
+          298.7943410000007,
+          290.4588960000001
+        ],
+        "unit": "milliseconds",
+        "measurement": "API acceptance through observed completion; 50ms polling; separate from HTTP workload",
+        "worker_interval_ms": 50
+      }
+    },
+    {
+      "size": "small",
+      "repeat": 3,
+      "initial_case_count": 200,
+      "request_count": 1000,
+      "concurrency": 8,
+      "duration_ms": 4538.040552999999,
+      "throughput_rps": 220.3594234826575,
+      "successful_rps": 220.3594234826575,
+      "latency": {
+        "count": 1000,
+        "p50_ms": 30.057212000003346,
+        "p95_ms": 69.95937000000049,
+        "p99_ms": 85.37302600000112
+      },
+      "operations": {
+        "list": {
+          "count": 500,
+          "p50_ms": 31.3576839999987,
+          "p95_ms": 69.30695699999706,
+          "p99_ms": 80.64637100000255
+        },
+        "create": {
+          "count": 100,
+          "p50_ms": 27.603807999999844,
+          "p95_ms": 76.97264399999767,
+          "p99_ms": 85.37302600000112
+        },
+        "detail": {
+          "count": 300,
+          "p50_ms": 28.778347999999824,
+          "p95_ms": 70.97641199999998,
+          "p99_ms": 86.46937699999762
+        },
+        "update": {
+          "count": 100,
+          "p50_ms": 26.641113999998197,
+          "p95_ms": 64.64246500000081,
+          "p99_ms": 87.27073699999892
+        }
+      },
+      "error_count": 0,
+      "errors": [],
+      "resources": {
+        "pids": [
+          442480
+        ],
+        "cpu_ms": 4320,
+        "cpu_core_equivalents": 0.9519527094450804,
+        "rss_start_bytes": 173473792,
+        "rss_end_bytes": 176357376,
+        "sampled_peak_rss_bytes": 176332800,
+        "sampled_peak_threads": 12,
+        "sampling_error": null
+      },
+      "jobs": {
+        "samples": [
+          252.04673900000125,
+          309.8984339999988
+        ],
+        "unit": "milliseconds",
+        "measurement": "API acceptance through observed completion; 50ms polling; separate from HTTP workload",
+        "worker_interval_ms": 50
+      }
+    },
+    {
+      "size": "large",
+      "repeat": 1,
+      "initial_case_count": 2000,
+      "request_count": 1000,
+      "concurrency": 8,
+      "duration_ms": 17723.886913000002,
+      "throughput_rps": 56.421032525688624,
+      "successful_rps": 56.421032525688624,
+      "latency": {
+        "count": 1000,
+        "p50_ms": 44.1592759999985,
+        "p95_ms": 268.31818799999746,
+        "p99_ms": 3331.4937060000084
+      },
+      "operations": {
+        "list": {
+          "count": 500,
+          "p50_ms": 46.99695499999507,
+          "p95_ms": 274.54660099999455,
+          "p99_ms": 3326.2349629999953
+        },
+        "create": {
+          "count": 100,
+          "p50_ms": 34.71525300000212,
+          "p95_ms": 220.7636860000057,
+          "p99_ms": 3312.989459999997
+        },
+        "detail": {
+          "count": 300,
+          "p50_ms": 41.29436500000156,
+          "p95_ms": 258.8677080000052,
+          "p99_ms": 3333.9225739999965
+        },
+        "update": {
+          "count": 100,
+          "p50_ms": 33.392525000002934,
+          "p95_ms": 286.4127440000011,
+          "p99_ms": 5185.064793999998
+        }
+      },
+      "error_count": 0,
+      "errors": [],
+      "resources": {
+        "pids": [
+          442878
+        ],
+        "cpu_ms": 6040,
+        "cpu_core_equivalents": 0.3407830364551593,
+        "rss_start_bytes": 188092416,
+        "rss_end_bytes": 190590976,
+        "sampled_peak_rss_bytes": 190590976,
+        "sampled_peak_threads": 12,
+        "sampling_error": null
+      },
+      "jobs": {
+        "samples": [
+          295.4874109999946,
+          344.415359000006
+        ],
+        "unit": "milliseconds",
+        "measurement": "API acceptance through observed completion; 50ms polling; separate from HTTP workload",
+        "worker_interval_ms": 50
+      }
+    },
+    {
+      "size": "large",
+      "repeat": 2,
+      "initial_case_count": 2000,
+      "request_count": 1000,
+      "concurrency": 8,
+      "duration_ms": 5793.389614999993,
+      "throughput_rps": 172.61052103432564,
+      "successful_rps": 172.61052103432564,
+      "latency": {
+        "count": 1000,
+        "p50_ms": 38.781256999995094,
+        "p95_ms": 87.86642500000016,
+        "p99_ms": 108.83159100000921
+      },
+      "operations": {
+        "list": {
+          "count": 500,
+          "p50_ms": 41.64337499999965,
+          "p95_ms": 79.7896929999988,
+          "p99_ms": 98.40816900000209
+        },
+        "create": {
+          "count": 100,
+          "p50_ms": 30.4524800000072,
+          "p95_ms": 85.27502300000924,
+          "p99_ms": 108.5667289999983
+        },
+        "detail": {
+          "count": 300,
+          "p50_ms": 36.867159000001266,
+          "p95_ms": 91.98079200000211,
+          "p99_ms": 109.45810200000415
+        },
+        "update": {
+          "count": 100,
+          "p50_ms": 30.92911000001186,
+          "p95_ms": 102.13855099999637,
+          "p99_ms": 112.65433399999165
+        }
+      },
+      "error_count": 0,
+      "errors": [],
+      "resources": {
+        "pids": [
+          444626
+        ],
+        "cpu_ms": 5590,
+        "cpu_core_equivalents": 0.9648928125818803,
+        "rss_start_bytes": 188129280,
+        "rss_end_bytes": 190562304,
+        "sampled_peak_rss_bytes": 190521344,
+        "sampled_peak_threads": 12,
+        "sampling_error": null
+      },
+      "jobs": {
+        "samples": [
+          246.32588400000532,
+          299.32938399999694
+        ],
+        "unit": "milliseconds",
+        "measurement": "API acceptance through observed completion; 50ms polling; separate from HTTP workload",
+        "worker_interval_ms": 50
+      }
+    },
+    {
+      "size": "large",
+      "repeat": 3,
+      "initial_case_count": 2000,
+      "request_count": 1000,
+      "concurrency": 8,
+      "duration_ms": 5994.147622000004,
+      "throughput_rps": 166.82939144337266,
+      "successful_rps": 166.82939144337266,
+      "latency": {
+        "count": 1000,
+        "p50_ms": 40.47744300001068,
+        "p95_ms": 91.3078300000052,
+        "p99_ms": 110.38601999999082
+      },
+      "operations": {
+        "list": {
+          "count": 500,
+          "p50_ms": 44.066196999992826,
+          "p95_ms": 85.50207800000499,
+          "p99_ms": 99.68910600000527
+        },
+        "create": {
+          "count": 100,
+          "p50_ms": 31.409669000000576,
+          "p95_ms": 87.47647499998857,
+          "p99_ms": 106.71510099999432
+        },
+        "detail": {
+          "count": 300,
+          "p50_ms": 38.7568009999959,
+          "p95_ms": 99.2606880000094,
+          "p99_ms": 119.21898599999258
+        },
+        "update": {
+          "count": 100,
+          "p50_ms": 32.382660999996006,
+          "p95_ms": 101.33648600000015,
+          "p99_ms": 136.9533439999941
+        }
+      },
+      "error_count": 0,
+      "errors": [],
+      "resources": {
+        "pids": [
+          445666
+        ],
+        "cpu_ms": 5810,
+        "cpu_core_equivalents": 0.9692787642859951,
+        "rss_start_bytes": 189300736,
+        "rss_end_bytes": 191774720,
+        "sampled_peak_rss_bytes": 191758336,
+        "sampled_peak_threads": 12,
+        "sampling_error": null
+      },
+      "jobs": {
+        "samples": [
+          296.8265170000086,
+          286.14072199999646
+        ],
+        "unit": "milliseconds",
+        "measurement": "API acceptance through observed completion; 50ms polling; separate from HTTP workload",
+        "worker_interval_ms": 50
+      }
+    }
+  ],
+  "source_provenance": {
+    "backend_sources_sha256": "9e7ea38fdbb43d16fa0e4a06cc8b7f79ef33f842edbc27cd441ae5249f3553e3",
+    "git_head": "012ff11277cf9f29064a6ac9427d04f6954b7278",
+    "note": "Backend source hash includes current uncommitted implementation. Git HEAD alone does not identify this build."
+  }
+}

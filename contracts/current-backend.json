@@ -1,0 +1,6641 @@
+{
+  "format_version": 1,
+  "source": "Runtime route registration and migrated temporary database; no live data",
+  "migrations": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/alerts",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/alerts",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "source": {
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "external_id": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "rule_id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": {
+              "minLength": 1,
+              "maxLength": 300,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "summary": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "category": {
+              "maxLength": 120,
+              "type": "string"
+            },
+            "alert_type": {
+              "maxLength": 120,
+              "type": "string"
+            },
+            "primary_entity": {
+              "maxLength": 500,
+              "type": "string"
+            },
+            "insight_refs": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "evidence": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "anyOf": [
+                      {
+                        "const": "entity",
+                        "type": "string"
+                      },
+                      {
+                        "const": "ip",
+                        "type": "string"
+                      },
+                      {
+                        "const": "domain",
+                        "type": "string"
+                      },
+                      {
+                        "const": "file",
+                        "type": "string"
+                      },
+                      {
+                        "const": "email",
+                        "type": "string"
+                      },
+                      {
+                        "const": "url",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "value": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "label": {
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "value"
+                ]
+              }
+            }
+          },
+          "required": [
+            "source",
+            "external_id",
+            "rule_id",
+            "title",
+            "severity"
+          ]
+        }
+      },
+      "bodyLimit": 131072
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/alerts/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/api-sources",
+      "access": "operator-or-local",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/api-sources",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "provider": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "rule_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "expires_in_days": {
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "name",
+            "provider",
+            "rule_id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/api-sources/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/api-sources/:id/mapping",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "mapping": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "severity_map": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "anyOf": [
+                        {
+                          "const": "low",
+                          "type": "string"
+                        },
+                        {
+                          "const": "medium",
+                          "type": "string"
+                        },
+                        {
+                          "const": "high",
+                          "type": "string"
+                        },
+                        {
+                          "const": "critical",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "required": [
+                "fields"
+              ]
+            }
+          },
+          "required": [
+            "mapping"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/api-sources/:id/mapping/preview",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "mapping": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "severity_map": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "anyOf": [
+                        {
+                          "const": "low",
+                          "type": "string"
+                        },
+                        {
+                          "const": "medium",
+                          "type": "string"
+                        },
+                        {
+                          "const": "high",
+                          "type": "string"
+                        },
+                        {
+                          "const": "critical",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "required": [
+                "fields"
+              ]
+            },
+            "sample": {
+              "type": "object",
+              "patternProperties": {
+                "^(.*)$": {}
+              }
+            }
+          },
+          "required": [
+            "mapping",
+            "sample"
+          ]
+        }
+      },
+      "bodyLimit": 131072
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/api-sources/:id/revoke",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/api-sources/:id/rotate-key",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "expires_in_days": {
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "access": "public",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "access": "operator-or-local",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/session",
+      "access": "public",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/connectors",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "investigationId": {
+              "type": "string"
+            },
+            "reportId": {
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/connectors",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "workspace_url": {
+              "type": "string"
+            },
+            "client_id": {
+              "type": "string"
+            },
+            "secret": {
+              "type": "string"
+            },
+            "config": {
+              "type": "object",
+              "patternProperties": {
+                "^(.*)$": {}
+              }
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/connectors/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/connectors/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/connectors/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {}
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/connectors/:id/test",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "access": "operator-or-local",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/detection-intelligence",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "minimum": 1,
+              "maximum": 90,
+              "default": 7,
+              "type": "integer"
+            },
+            "source": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/detection-registry",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "enabled": {
+              "anyOf": [
+                {
+                  "const": "true",
+                  "type": "string"
+                },
+                {
+                  "const": "false",
+                  "type": "string"
+                }
+              ]
+            },
+            "source": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "sort": {
+              "anyOf": [
+                {
+                  "const": "name",
+                  "type": "string"
+                },
+                {
+                  "const": "updated_at",
+                  "type": "string"
+                },
+                {
+                  "const": "severity",
+                  "type": "string"
+                },
+                {
+                  "const": "detections",
+                  "type": "string"
+                }
+              ]
+            },
+            "direction": {
+              "anyOf": [
+                {
+                  "const": "asc",
+                  "type": "string"
+                },
+                {
+                  "const": "desc",
+                  "type": "string"
+                }
+              ]
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/detection-rules",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "investigationId": {
+              "type": "string"
+            },
+            "reportId": {
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/detection-rules",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "expected_version": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "name": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "mitre_techniques": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "execution_mode": {
+              "anyOf": [
+                {
+                  "const": "scheduled",
+                  "type": "string"
+                },
+                {
+                  "const": "realtime",
+                  "type": "string"
+                }
+              ]
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "query": {
+              "maxLength": 20000,
+              "type": "string"
+            },
+            "schedule": {
+              "minLength": 1,
+              "maxLength": 120,
+              "type": "string"
+            },
+            "lookback_window": {
+              "minLength": 1,
+              "maxLength": 120,
+              "type": "string"
+            },
+            "routing": {
+              "anyOf": [
+                {
+                  "const": "Investigate",
+                  "type": "string"
+                },
+                {
+                  "const": "Sample (10%)",
+                  "type": "string"
+                },
+                {
+                  "const": "Suppress",
+                  "type": "string"
+                },
+                {
+                  "const": "Escalate",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "severity"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/detection-rules/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/detection-rules/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/detection-rules/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "expected_version": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "name": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "mitre_techniques": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "execution_mode": {
+              "anyOf": [
+                {
+                  "const": "scheduled",
+                  "type": "string"
+                },
+                {
+                  "const": "realtime",
+                  "type": "string"
+                }
+              ]
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "query": {
+              "maxLength": 20000,
+              "type": "string"
+            },
+            "schedule": {
+              "minLength": 1,
+              "maxLength": 120,
+              "type": "string"
+            },
+            "lookback_window": {
+              "minLength": 1,
+              "maxLength": 120,
+              "type": "string"
+            },
+            "routing": {
+              "anyOf": [
+                {
+                  "const": "Investigate",
+                  "type": "string"
+                },
+                {
+                  "const": "Sample (10%)",
+                  "type": "string"
+                },
+                {
+                  "const": "Suppress",
+                  "type": "string"
+                },
+                {
+                  "const": "Escalate",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/detection-rules/:id/clone",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/detection-rules/:id/history",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/detection-rules/:id/toggle",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/hunts",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "investigationId": {
+              "type": "string"
+            },
+            "reportId": {
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/hunts",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "query": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "insight_refs": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "query"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/hunts/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/hunts/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/hunts/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {}
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/hunts/:id/run",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/intake/:id/alerts",
+      "access": "source",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "external_id": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": {
+              "minLength": 1,
+              "maxLength": 300,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "summary": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "category": {
+              "maxLength": 120,
+              "type": "string"
+            },
+            "alert_type": {
+              "maxLength": 120,
+              "type": "string"
+            },
+            "primary_entity": {
+              "maxLength": 500,
+              "type": "string"
+            },
+            "insight_refs": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "evidence": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "anyOf": [
+                      {
+                        "const": "entity",
+                        "type": "string"
+                      },
+                      {
+                        "const": "ip",
+                        "type": "string"
+                      },
+                      {
+                        "const": "domain",
+                        "type": "string"
+                      },
+                      {
+                        "const": "file",
+                        "type": "string"
+                      },
+                      {
+                        "const": "email",
+                        "type": "string"
+                      },
+                      {
+                        "const": "url",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "value": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "label": {
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "value"
+                ]
+              }
+            }
+          },
+          "required": [
+            "external_id",
+            "title",
+            "severity"
+          ]
+        }
+      },
+      "bodyLimit": 131072
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/intake/:id/events",
+      "access": "source",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {}
+          }
+        }
+      },
+      "bodyLimit": 131072
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/investigation-queue",
+      "access": "operator-or-local",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/investigations",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "investigationId": {
+              "type": "string"
+            },
+            "reportId": {
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/investigations",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "source": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "insight_refs": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "determination": {
+              "type": "string"
+            },
+            "risk_score": {
+              "minimum": 0,
+              "maximum": 100,
+              "type": "integer"
+            },
+            "owner": {
+              "type": "string"
+            },
+            "primary_entity": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "source",
+            "severity"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/investigations/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/investigations/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/investigations/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {}
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/investigations/:id/artifacts",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "type": {
+              "anyOf": [
+                {
+                  "const": "entity",
+                  "type": "string"
+                },
+                {
+                  "const": "ip",
+                  "type": "string"
+                },
+                {
+                  "const": "domain",
+                  "type": "string"
+                },
+                {
+                  "const": "file",
+                  "type": "string"
+                },
+                {
+                  "const": "email",
+                  "type": "string"
+                },
+                {
+                  "const": "url",
+                  "type": "string"
+                }
+              ]
+            },
+            "value": {
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "label": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "metadata": {
+              "type": "object",
+              "patternProperties": {
+                "^(.*)$": {}
+              }
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/investigations/:id/determination",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "determination": {
+              "anyOf": [
+                {
+                  "const": "unknown",
+                  "type": "string"
+                },
+                {
+                  "const": "benign",
+                  "type": "string"
+                },
+                {
+                  "const": "suspicious",
+                  "type": "string"
+                },
+                {
+                  "const": "malicious",
+                  "type": "string"
+                },
+                {
+                  "const": "mitigated",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": [
+            "determination"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/investigations/:id/feedback",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "comment": {
+              "minLength": 1,
+              "maxLength": 4000,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "comment"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/investigations/:id/history",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/investigations/:id/reinvestigate",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/investigations/:id/runbooks",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/investigations/:id/runbooks",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "plan_id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "expected_version": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "plan_id",
+            "expected_version"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/investigations/:id/runbooks/:assignmentId",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "assignmentId": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "assignmentId"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "expected_version": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "step_index": {
+              "minimum": 0,
+              "maximum": 49,
+              "type": "integer"
+            },
+            "completed": {
+              "type": "boolean"
+            },
+            "note": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "approval_confirmed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "expected_version",
+            "step_index",
+            "completed",
+            "note",
+            "approval_confirmed"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/remediations",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "investigationId": {
+              "type": "string"
+            },
+            "reportId": {
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/remediations",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "investigation_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "action_type": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "connector": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "investigation_id",
+            "action_type",
+            "title"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/remediations/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/remediations/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/remediations/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {}
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/remediations/:id/execute",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/response-plans",
+      "access": "operator-or-local",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/response-plans",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "kind": {
+              "anyOf": [
+                {
+                  "const": "workflow",
+                  "type": "string"
+                },
+                {
+                  "const": "runbook",
+                  "type": "string"
+                }
+              ]
+            },
+            "title": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "domain": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "trigger": {
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "steps": {
+              "minItems": 1,
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "maxLength": 4000,
+                    "type": "string"
+                  },
+                  "approval_required": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "title",
+                  "instructions",
+                  "approval_required"
+                ]
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "title",
+            "description",
+            "domain",
+            "trigger",
+            "steps"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/response-plans/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/response-plans/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "kind": {
+              "anyOf": [
+                {
+                  "const": "workflow",
+                  "type": "string"
+                },
+                {
+                  "const": "runbook",
+                  "type": "string"
+                }
+              ]
+            },
+            "title": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "domain": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "trigger": {
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "steps": {
+              "minItems": 1,
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "maxLength": 4000,
+                    "type": "string"
+                  },
+                  "approval_required": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "title",
+                  "instructions",
+                  "approval_required"
+                ]
+              }
+            },
+            "expected_version": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "title",
+            "description",
+            "domain",
+            "trigger",
+            "steps",
+            "expected_version"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/response-plans/:id/duplicate",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/response-plans/:id/history",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/response-plans/:id/state",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "expected_version": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "state": {
+              "anyOf": [
+                {
+                  "const": "active",
+                  "type": "string"
+                },
+                {
+                  "const": "archived",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": [
+            "expected_version",
+            "state"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "state": {
+              "anyOf": [
+                {
+                  "const": "draft",
+                  "type": "string"
+                },
+                {
+                  "const": "published",
+                  "type": "string"
+                }
+              ]
+            },
+            "module": {
+              "maxLength": 100,
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/skills",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "skill_type": {
+              "anyOf": [
+                {
+                  "const": "strategy",
+                  "type": "string"
+                },
+                {
+                  "const": "content",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "apply_when": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "content_markdown": {
+              "maxLength": 30000,
+              "type": "string"
+            },
+            "modules": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "maxLength": 100,
+                "type": "string"
+              }
+            },
+            "connectors": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 120,
+                "type": "string"
+              }
+            },
+            "alert_types": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 120,
+                "type": "string"
+              }
+            },
+            "alert_categories": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 120,
+                "type": "string"
+              }
+            },
+            "source_entities": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "runtime_entities": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "insight_refs": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "tags": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 100,
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/skills/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/skills/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "skill_type": {
+              "anyOf": [
+                {
+                  "const": "strategy",
+                  "type": "string"
+                },
+                {
+                  "const": "content",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "apply_when": {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            "content_markdown": {
+              "maxLength": 30000,
+              "type": "string"
+            },
+            "modules": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "maxLength": 100,
+                "type": "string"
+              }
+            },
+            "connectors": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 120,
+                "type": "string"
+              }
+            },
+            "alert_types": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 120,
+                "type": "string"
+              }
+            },
+            "alert_categories": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 120,
+                "type": "string"
+              }
+            },
+            "source_entities": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "runtime_entities": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "insight_refs": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "tags": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "maxLength": 100,
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills/:id/history",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills/:id/materials",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/skills/:id/materials",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "maxLength": 180,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "kind": {
+              "anyOf": [
+                {
+                  "const": "reference",
+                  "type": "string"
+                },
+                {
+                  "const": "checklist",
+                  "type": "string"
+                },
+                {
+                  "const": "example",
+                  "type": "string"
+                }
+              ]
+            },
+            "filename": {
+              "maxLength": 255,
+              "type": "string"
+            },
+            "source_url": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "content": {
+              "maxLength": 150000,
+              "type": "string"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/skills/:id/materials/:materialId",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "materialId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "materialId"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills/:id/materials/:materialId",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "materialId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "materialId"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/skills/:id/materials/:materialId",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "materialId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "materialId"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "maxLength": 180,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "kind": {
+              "anyOf": [
+                {
+                  "const": "reference",
+                  "type": "string"
+                },
+                {
+                  "const": "checklist",
+                  "type": "string"
+                },
+                {
+                  "const": "example",
+                  "type": "string"
+                }
+              ]
+            },
+            "filename": {
+              "maxLength": 255,
+              "type": "string"
+            },
+            "source_url": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "content": {
+              "maxLength": 150000,
+              "type": "string"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills/:id/materials/:materialId/versions",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "materialId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "materialId"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/skills/:id/publish",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/skills/:id/toggle",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/skills/applications/:id/feedback",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "rating": {
+              "anyOf": [
+                {
+                  "const": "helpful",
+                  "type": "string"
+                },
+                {
+                  "const": "not_helpful",
+                  "type": "string"
+                }
+              ]
+            },
+            "comment": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          "required": [
+            "rating"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills/outcomes",
+      "access": "operator-or-local",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/skills/suggestions",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "anyOf": [
+                {
+                  "const": "pending",
+                  "type": "string"
+                },
+                {
+                  "const": "accepted",
+                  "type": "string"
+                },
+                {
+                  "const": "dismissed",
+                  "type": "string"
+                }
+              ]
+            },
+            "refresh": {
+              "anyOf": [
+                {
+                  "const": "true",
+                  "type": "string"
+                },
+                {
+                  "const": "false",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/skills/suggestions/:id/accept",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/skills/suggestions/:id/dismiss",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/threat-indicators",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "investigationId": {
+              "type": "string"
+            },
+            "reportId": {
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/threat-indicators",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "report_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "indicator_type": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "value": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "hits": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "report_id",
+            "indicator_type",
+            "value"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/threat-indicators/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/threat-indicators/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/threat-indicators/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {}
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/threat-intel-reports",
+      "access": "operator-or-local",
+      "schema": {
+        "querystring": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "investigationId": {
+              "type": "string"
+            },
+            "reportId": {
+              "type": "string"
+            },
+            "limit": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "integer"
+            },
+            "offset": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/threat-intel-reports",
+      "access": "operator-or-local",
+      "schema": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "report_type": {
+              "type": "string"
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "const": "low",
+                  "type": "string"
+                },
+                {
+                  "const": "medium",
+                  "type": "string"
+                },
+                {
+                  "const": "high",
+                  "type": "string"
+                },
+                {
+                  "const": "critical",
+                  "type": "string"
+                }
+              ]
+            },
+            "ioc_count": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "published_at": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "severity"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/threat-intel-reports/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/threat-intel-reports/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/threat-intel-reports/:id",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {}
+          }
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/threat-intel-reports/:id/launch-hunt",
+      "access": "operator-or-local",
+      "schema": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/threat-intel/dashboard",
+      "access": "operator-or-local",
+      "schema": {},
+      "bodyLimit": 1048576
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "access": "public",
+      "schema": {},
+      "bodyLimit": 1048576
+    }
+  ],
+  "tables": [
+    {
+      "name": "alerts",
+      "sql": "CREATE TABLE alerts (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, source TEXT NOT NULL, external_id TEXT NOT NULL,\n        rule_id TEXT NOT NULL, investigation_id TEXT, title TEXT NOT NULL, severity TEXT NOT NULL,\n        routing TEXT NOT NULL, disposition TEXT NOT NULL, payload_json TEXT NOT NULL,\n        payload_hash TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, id), UNIQUE (tenant_id, source, external_id),\n        FOREIGN KEY (tenant_id, rule_id) REFERENCES detection_rules(tenant_id, id) ON DELETE RESTRICT,\n        FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE RESTRICT\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "source",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "external_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "rule_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "investigation_id",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "title",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "severity",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "routing",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "disposition",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "payload_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "payload_hash",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "investigations",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "investigations",
+          "from": "investigation_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "detection_rules",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 1,
+          "table": "detection_rules",
+          "from": "rule_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_alerts_rule",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "idx_alerts_case",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 2,
+          "name": "sqlite_autoindex_alerts_2",
+          "unique": 1,
+          "origin": "u",
+          "partial": 0
+        },
+        {
+          "seq": 3,
+          "name": "sqlite_autoindex_alerts_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "api_sources",
+      "sql": "CREATE TABLE api_sources (\n      id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, name TEXT NOT NULL, provider TEXT NOT NULL,\n      rule_id TEXT NOT NULL, key_hash TEXT, expires_at TEXT NOT NULL, revoked_at TEXT,\n      created_at TEXT NOT NULL, updated_at TEXT NOT NULL, mapping_json TEXT NOT NULL DEFAULT '{\"fields\":{}}',\n      FOREIGN KEY (tenant_id, rule_id) REFERENCES detection_rules(tenant_id, id) ON DELETE RESTRICT\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "provider",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "rule_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "key_hash",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "expires_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "revoked_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "mapping_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'{\"fields\":{}}'",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "detection_rules",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "detection_rules",
+          "from": "rule_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_sources_tenant",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_api_sources_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "artifacts",
+      "sql": "CREATE TABLE artifacts (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      investigation_id TEXT NOT NULL,\n      type TEXT NOT NULL,\n      value TEXT NOT NULL,\n      label TEXT NOT NULL DEFAULT '',\n      metadata_json TEXT NOT NULL DEFAULT '{}',\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, id),\n      FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "investigation_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "value",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "label",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "metadata_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'{}'",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "investigations",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "investigations",
+          "from": "investigation_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_artifacts_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "audit_events",
+      "sql": "CREATE TABLE audit_events (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, resource TEXT NOT NULL, resource_id TEXT NOT NULL,\n        action TEXT NOT NULL, details_json TEXT NOT NULL DEFAULT '{}',\n        created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (tenant_id, id)\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "resource",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "resource_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "action",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "details_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'{}'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_audit_resource",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_audit_events_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "case_runbook_events",
+      "sql": "CREATE TABLE case_runbook_events (\n        tenant_id TEXT NOT NULL, assignment_id TEXT NOT NULL, version INTEGER NOT NULL,\n        document_json TEXT NOT NULL, PRIMARY KEY (tenant_id, assignment_id, version),\n        FOREIGN KEY (tenant_id, assignment_id) REFERENCES case_runbooks(tenant_id, id) ON DELETE CASCADE\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "assignment_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 2,
+          "name": "version",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 3
+        },
+        {
+          "cid": 3,
+          "name": "document_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "case_runbooks",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "case_runbooks",
+          "from": "assignment_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_case_runbook_events_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "case_runbooks",
+      "sql": "CREATE TABLE case_runbooks (\n        tenant_id TEXT NOT NULL, id TEXT NOT NULL, investigation_id TEXT NOT NULL, plan_id TEXT NOT NULL,\n        document_json TEXT NOT NULL, PRIMARY KEY (tenant_id, id), UNIQUE (tenant_id, investigation_id, plan_id),\n        FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE,\n        FOREIGN KEY (tenant_id, plan_id) REFERENCES response_plans(tenant_id, id)\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 2,
+          "name": "investigation_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "plan_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "document_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "response_plans",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "response_plans",
+          "from": "plan_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "investigations",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 1,
+          "table": "investigations",
+          "from": "investigation_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_case_runbooks_case",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_case_runbooks_2",
+          "unique": 1,
+          "origin": "u",
+          "partial": 0
+        },
+        {
+          "seq": 2,
+          "name": "sqlite_autoindex_case_runbooks_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "connectors",
+      "sql": "CREATE TABLE connectors (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      type TEXT NOT NULL,\n      name TEXT NOT NULL,\n      description TEXT NOT NULL DEFAULT '',\n      workspace_url TEXT NOT NULL DEFAULT '',\n      client_id TEXT NOT NULL DEFAULT '',\n      secret_ciphertext TEXT NOT NULL DEFAULT '',\n      config_json TEXT NOT NULL DEFAULT '{}',\n      status TEXT NOT NULL DEFAULT 'untested',\n      last_tested_at TEXT,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, id)\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "description",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "workspace_url",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "client_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "secret_ciphertext",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "config_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'{}'",
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'untested'",
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "last_tested_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_connectors_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "detection_rule_versions",
+      "sql": "CREATE TABLE detection_rule_versions (\n      tenant_id TEXT NOT NULL, rule_id TEXT NOT NULL, version INTEGER NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, rule_id, version),\n      FOREIGN KEY (tenant_id, rule_id) REFERENCES detection_rules(tenant_id, id) ON DELETE CASCADE\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "rule_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 2,
+          "name": "version",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 3
+        },
+        {
+          "cid": 3,
+          "name": "snapshot_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "detection_rules",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "detection_rules",
+          "from": "rule_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_detection_rule_versions_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "detection_rules",
+      "sql": "CREATE TABLE detection_rules (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      name TEXT NOT NULL,\n      description TEXT NOT NULL DEFAULT '',\n      mitre_techniques_json TEXT NOT NULL DEFAULT '[]',\n      execution_mode TEXT NOT NULL DEFAULT 'scheduled',\n      enabled INTEGER NOT NULL DEFAULT 1,\n      severity TEXT NOT NULL,\n      detections INTEGER NOT NULL DEFAULT 0,\n      investigations INTEGER NOT NULL DEFAULT 0,\n      false_positive_rate REAL NOT NULL DEFAULT 0,\n      recommendation_status TEXT NOT NULL DEFAULT 'not_analyzed',\n      last_activity_at TEXT,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL, query TEXT NOT NULL DEFAULT '', schedule TEXT NOT NULL DEFAULT 'Every 5 minutes', lookback_window TEXT NOT NULL DEFAULT '15 minutes', routing TEXT NOT NULL DEFAULT 'Investigate',\n      PRIMARY KEY (tenant_id, id)\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "description",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "mitre_techniques_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "execution_mode",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'scheduled'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "enabled",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "1",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "severity",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "detections",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "investigations",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "false_positive_rate",
+          "type": "REAL",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "recommendation_status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'not_analyzed'",
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "last_activity_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 14,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 15,
+          "name": "query",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 16,
+          "name": "schedule",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'Every 5 minutes'",
+          "pk": 0
+        },
+        {
+          "cid": 17,
+          "name": "lookback_window",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'15 minutes'",
+          "pk": 0
+        },
+        {
+          "cid": 18,
+          "name": "routing",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'Investigate'",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_rules_tenant_enabled",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_detection_rules_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "hunts",
+      "sql": "CREATE TABLE hunts (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      name TEXT NOT NULL,\n      query TEXT NOT NULL,\n      source TEXT NOT NULL DEFAULT 'ad_hoc',\n      status TEXT NOT NULL DEFAULT 'draft',\n      verdict TEXT,\n      findings_count INTEGER NOT NULL DEFAULT 0,\n      last_run_at TEXT,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL, insight_refs_json TEXT NOT NULL DEFAULT '[]',\n      PRIMARY KEY (tenant_id, id)\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "query",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "source",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'ad_hoc'",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'draft'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "verdict",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "findings_count",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "last_run_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "insight_refs_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_hunts_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "investigation_feedback",
+      "sql": "CREATE TABLE investigation_feedback (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, investigation_id TEXT NOT NULL,\n        comment TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, id),\n        FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "investigation_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "comment",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "investigations",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "investigations",
+          "from": "investigation_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_feedback_case",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_investigation_feedback_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "investigation_jobs",
+      "sql": "CREATE TABLE investigation_jobs (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, investigation_id TEXT NOT NULL, alert_id TEXT NOT NULL,\n        status TEXT NOT NULL CHECK (status IN ('queued','running','completed','failed')),\n        phase INTEGER NOT NULL DEFAULT 0 CHECK (phase BETWEEN 0 AND 3),\n        error TEXT, result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, updated_at TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, id),\n        FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE,\n        FOREIGN KEY (tenant_id, alert_id) REFERENCES alerts(tenant_id, id) ON DELETE RESTRICT\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "investigation_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "alert_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "phase",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "error",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "result_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'{}'",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "alerts",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "alerts",
+          "from": "alert_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "investigations",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 1,
+          "table": "investigations",
+          "from": "investigation_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_jobs_case",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "idx_jobs_pending",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 2,
+          "name": "idx_jobs_active",
+          "unique": 1,
+          "origin": "c",
+          "partial": 1
+        },
+        {
+          "seq": 3,
+          "name": "sqlite_autoindex_investigation_jobs_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "investigation_steps",
+      "sql": "CREATE TABLE investigation_steps (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, investigation_id TEXT NOT NULL,\n        title TEXT NOT NULL, conclusion TEXT NOT NULL DEFAULT '', tool TEXT NOT NULL,\n        request_json TEXT NOT NULL DEFAULT '{}', response_json TEXT NOT NULL DEFAULT '{}',\n        created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (tenant_id, id),\n        FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "investigation_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "title",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "conclusion",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "tool",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "request_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'{}'",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "response_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'{}'",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "investigations",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "investigations",
+          "from": "investigation_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_steps_case",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_investigation_steps_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "investigations",
+      "sql": "CREATE TABLE investigations (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      title TEXT NOT NULL,\n      summary TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL,\n      category TEXT NOT NULL DEFAULT 'other',\n      severity TEXT NOT NULL CHECK (severity IN ('low','medium','high','critical')),\n      status TEXT NOT NULL CHECK (status IN ('open','investigating','contained','resolved','closed')),\n      determination TEXT NOT NULL CHECK (determination IN ('unknown','benign','suspicious','malicious','mitigated')),\n      risk_score INTEGER NOT NULL DEFAULT 0 CHECK (risk_score BETWEEN 0 AND 100),\n      owner TEXT NOT NULL DEFAULT 'AISOC Agent',\n      primary_entity TEXT NOT NULL DEFAULT '',\n      replay_count INTEGER NOT NULL DEFAULT 0,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL, insight_refs_json TEXT NOT NULL DEFAULT '[]',\n      PRIMARY KEY (tenant_id, id)\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "title",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "summary",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "source",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "category",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'other'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "severity",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "determination",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "risk_score",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "owner",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'AISOC Agent'",
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "primary_entity",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "replay_count",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 14,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 15,
+          "name": "insight_refs_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_investigations_tenant_status",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_investigations_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "remediations",
+      "sql": "CREATE TABLE remediations (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      investigation_id TEXT NOT NULL,\n      action_type TEXT NOT NULL,\n      title TEXT NOT NULL,\n      description TEXT NOT NULL DEFAULT '',\n      connector TEXT NOT NULL DEFAULT '',\n      status TEXT NOT NULL DEFAULT 'pending',\n      executed_at TEXT,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, id),\n      FOREIGN KEY (tenant_id, investigation_id) REFERENCES investigations(tenant_id, id) ON DELETE CASCADE\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "investigation_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "action_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "title",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "description",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "connector",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'pending'",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "executed_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "investigations",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "investigations",
+          "from": "investigation_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_remediations_investigation",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_remediations_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "response_plan_versions",
+      "sql": "CREATE TABLE response_plan_versions (\n        tenant_id TEXT NOT NULL, plan_id TEXT NOT NULL, version INTEGER NOT NULL,\n        snapshot_json TEXT NOT NULL, action TEXT NOT NULL, actor TEXT NOT NULL, created_at TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, plan_id, version),\n        FOREIGN KEY (tenant_id, plan_id) REFERENCES response_plans(tenant_id, id)\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "plan_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 2,
+          "name": "version",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 3
+        },
+        {
+          "cid": 3,
+          "name": "snapshot_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "action",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "actor",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "response_plans",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "response_plans",
+          "from": "plan_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_response_plan_versions_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "response_plans",
+      "sql": "CREATE TABLE response_plans (\n        tenant_id TEXT NOT NULL, id TEXT NOT NULL, document_json TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, id)\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 2,
+          "name": "document_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_response_plans_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "schema_migrations",
+      "sql": "CREATE TABLE schema_migrations (\n      version INTEGER PRIMARY KEY,\n      applied_at TEXT NOT NULL\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "version",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "applied_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": []
+    },
+    {
+      "name": "skill_application_feedback",
+      "sql": "CREATE TABLE skill_application_feedback (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, application_id TEXT NOT NULL,\n        rating TEXT NOT NULL CHECK (rating IN ('helpful','not_helpful')),\n        comment TEXT NOT NULL DEFAULT '', created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, id), UNIQUE (tenant_id, application_id, created_by),\n        FOREIGN KEY (tenant_id, application_id) REFERENCES skill_applications(tenant_id, id) ON DELETE CASCADE\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "application_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "rating",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "comment",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "created_by",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "skill_applications",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "skill_applications",
+          "from": "application_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_skill_feedback_app",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_skill_application_feedback_2",
+          "unique": 1,
+          "origin": "u",
+          "partial": 0
+        },
+        {
+          "seq": 2,
+          "name": "sqlite_autoindex_skill_application_feedback_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "skill_applications",
+      "sql": "CREATE TABLE skill_applications (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, skill_id TEXT NOT NULL,\n        target_type TEXT NOT NULL CHECK (target_type IN ('investigation','hunt')), target_id TEXT NOT NULL,\n        skill_version INTEGER NOT NULL, reason TEXT NOT NULL, snapshot_json TEXT NOT NULL,\n        created_at TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, id),\n        FOREIGN KEY (tenant_id, skill_id) REFERENCES skills(tenant_id, id) ON DELETE CASCADE\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "skill_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "target_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "target_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "skill_version",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "reason",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "snapshot_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "skills",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "skills",
+          "from": "skill_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_skill_applications_target",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_skill_applications_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "skill_material_versions",
+      "sql": "CREATE TABLE skill_material_versions (\n      tenant_id TEXT NOT NULL, material_id TEXT NOT NULL, version INTEGER NOT NULL,\n      snapshot_json TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, material_id, version),\n      FOREIGN KEY (tenant_id, material_id) REFERENCES skill_materials(tenant_id, id) ON DELETE CASCADE\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "material_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 2,
+          "name": "version",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 3
+        },
+        {
+          "cid": 3,
+          "name": "snapshot_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "created_by",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "skill_materials",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "skill_materials",
+          "from": "material_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_skill_material_versions_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "skill_materials",
+      "sql": "CREATE TABLE skill_materials (\n      id TEXT NOT NULL, tenant_id TEXT NOT NULL, skill_id TEXT NOT NULL, name TEXT NOT NULL,\n      kind TEXT NOT NULL CHECK (kind IN ('reference','checklist','example')),\n      file_type TEXT NOT NULL CHECK (file_type IN ('markdown','text','json','csv','url')),\n      source_url TEXT, content TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL DEFAULT 1,\n      archived_at TEXT, created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, id), FOREIGN KEY (tenant_id, skill_id) REFERENCES skills(tenant_id, id) ON DELETE CASCADE\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "skill_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "kind",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "file_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "source_url",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "content",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "version",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "1",
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "archived_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "created_by",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "skills",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "skills",
+          "from": "skill_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_skill_materials_parent",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_skill_materials_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "skill_suggestions",
+      "sql": "CREATE TABLE skill_suggestions (\n        id TEXT NOT NULL, tenant_id TEXT NOT NULL, signature TEXT NOT NULL, name TEXT NOT NULL,\n        explanation TEXT NOT NULL, source TEXT NOT NULL, category TEXT NOT NULL,\n        case_count INTEGER NOT NULL, feedback_count INTEGER NOT NULL DEFAULT 0,\n        sample_case_ids_json TEXT NOT NULL, draft_json TEXT NOT NULL,\n        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','dismissed')),\n        accepted_skill_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,\n        PRIMARY KEY (tenant_id, id), UNIQUE (tenant_id, signature)\n      )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "signature",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "explanation",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "source",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "category",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "case_count",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "feedback_count",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "sample_case_ids_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "draft_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'pending'",
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "accepted_skill_id",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 14,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_skill_suggestions_status",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_skill_suggestions_2",
+          "unique": 1,
+          "origin": "u",
+          "partial": 0
+        },
+        {
+          "seq": 2,
+          "name": "sqlite_autoindex_skill_suggestions_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "skills",
+      "sql": "CREATE TABLE skills (\n      id TEXT NOT NULL, tenant_id TEXT NOT NULL, name TEXT NOT NULL, skill_type TEXT NOT NULL,\n      description TEXT NOT NULL DEFAULT '', apply_when TEXT NOT NULL DEFAULT '', content_markdown TEXT NOT NULL DEFAULT '',\n      modules_json TEXT NOT NULL DEFAULT '[]', connectors_json TEXT NOT NULL DEFAULT '[]', alert_types_json TEXT NOT NULL DEFAULT '[]',\n      alert_categories_json TEXT NOT NULL DEFAULT '[]', source_entities_json TEXT NOT NULL DEFAULT '[]', runtime_entities_json TEXT NOT NULL DEFAULT '[]',\n      insight_refs_json TEXT NOT NULL DEFAULT '[]', tags_json TEXT NOT NULL DEFAULT '[]', origin TEXT NOT NULL DEFAULT 'user',\n      state TEXT NOT NULL DEFAULT 'draft', enabled INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL DEFAULT 1,\n      created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, id), CHECK (skill_type IN ('strategy','content')), CHECK (state IN ('draft','published')), CHECK (enabled IN (0,1))\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "skill_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "description",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "apply_when",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "content_markdown",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "modules_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "connectors_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "alert_types_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "alert_categories_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "source_entities_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "runtime_entities_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "insight_refs_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 14,
+          "name": "tags_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 15,
+          "name": "origin",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'user'",
+          "pk": 0
+        },
+        {
+          "cid": 16,
+          "name": "state",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'draft'",
+          "pk": 0
+        },
+        {
+          "cid": 17,
+          "name": "enabled",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 18,
+          "name": "version",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "1",
+          "pk": 0
+        },
+        {
+          "cid": 19,
+          "name": "created_by",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 20,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 21,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_skills_tenant_updated",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_skills_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "threat_indicators",
+      "sql": "CREATE TABLE threat_indicators (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      report_id TEXT NOT NULL,\n      indicator_type TEXT NOT NULL CHECK (indicator_type IN ('ip','domain','hash_sha256','hash_md5','url','email','cve')),\n      value TEXT NOT NULL,\n      severity TEXT NOT NULL DEFAULT 'medium',\n      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','mitigated','expired','false_positive')),\n      hits INTEGER NOT NULL DEFAULT 0,\n      last_seen_at TEXT,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, id),\n      FOREIGN KEY (tenant_id, report_id) REFERENCES threat_intel_reports(tenant_id, id) ON DELETE CASCADE\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "report_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "indicator_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "value",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "severity",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'medium'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'active'",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "hits",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "last_seen_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "threat_intel_reports",
+          "from": "tenant_id",
+          "to": "tenant_id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 0,
+          "seq": 1,
+          "table": "threat_intel_reports",
+          "from": "report_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_indicators_report",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_threat_indicators_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    },
+    {
+      "name": "threat_intel_reports",
+      "sql": "CREATE TABLE threat_intel_reports (\n      id TEXT NOT NULL,\n      tenant_id TEXT NOT NULL,\n      title TEXT NOT NULL,\n      summary TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL DEFAULT 'AISOC',\n      report_type TEXT NOT NULL DEFAULT 'threat_report' CHECK (report_type IN ('threat_report','advisory','ioc_feed','hunt_pack')),\n      severity TEXT NOT NULL CHECK (severity IN ('low','medium','high','critical')),\n      status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','reviewing','actionable','archived')),\n      ioc_count INTEGER NOT NULL DEFAULT 0,\n      hunt_status TEXT NOT NULL DEFAULT 'not_started' CHECK (hunt_status IN ('not_started','hunting','completed','no_findings')),\n      hunts_launched INTEGER NOT NULL DEFAULT 0,\n      findings_count INTEGER NOT NULL DEFAULT 0,\n      tags_json TEXT NOT NULL DEFAULT '[]',\n      published_at TEXT NOT NULL,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      PRIMARY KEY (tenant_id, id)\n    )",
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 1,
+          "name": "tenant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 2,
+          "name": "title",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "summary",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "''",
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "source",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'AISOC'",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "report_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'threat_report'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "severity",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'new'",
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "ioc_count",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "hunt_status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'not_started'",
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "hunts_launched",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "findings_count",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "tags_json",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "published_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 14,
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 15,
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_threat_intel_tenant_status",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_threat_intel_reports_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0
+        }
+      ]
+    }
+  ]
+}

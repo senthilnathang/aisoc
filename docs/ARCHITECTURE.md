@@ -1,128 +1,105 @@
-# Application Architecture
+# Application architecture
 
-## Context
+Current as of 2026-10-29. Go/PostgreSQL is active; Node is retained for comparison
+and rollback. The frontend remains React/Chakra/Vite.
 
-```text
-┌──────────────────────┐      HTTP/JSON       ┌─────────────────────────┐
-│ React + Chakra UI    │ ───────────────────▶ │ Fastify API             │
-│ :8080                │ ◀─────────────────── │ :3002                   │
-└──────────────────────┘                      └────────────┬────────────┘
-                                                         │
-                                              Domain services/repositories
-                                                         │
-                                              ┌──────────▼──────────┐
-                                              │ SQLite: sqlite.db   │
-                                              └─────────────────────┘
+```mermaid
+flowchart LR
+  UI[React frontend :8080] -->|HTTP JSON /api| API[Go API :3002]
+  API --> PG[(PostgreSQL :55436)]
+  IW[Go investigation worker] --> PG
+  SW[Optional Go specialist dispatcher] --> PG
+  SW -->|versioned gRPC| Rust[Rust / embedded Wasmi]
+  SW -->|versioned gRPC| Python[Python / trusted subprocess]
 ```
 
-## Backend Structure
+Normal investigations use the local domain worker; specialist jobs use separate
+optional services. Ordinary routes need neither Rust nor Python. Specialist jobs
+remain disabled in the release during the legacy rollback window.
 
-```text
-backend/
-  src/
-    app.ts             Fastify composition root
-    server.ts          process lifecycle
-    config.ts          environment parsing
-    database.ts        SQLite adapter, schema migrations and seeds
-    auth.ts            local/token authentication, sessions, CSRF, tenant identity
-    pipeline-schema.ts additive schema for pipeline, detection and Skills domains
-    errors.ts          API error mapping
-    routes.ts          all resource CRUD + custom action routes
-    services/
-      platform-service.ts   investigations, detection, hunts and projections
-      alert-pipeline.ts     normalized intake, routing, durable local worker
-      api-sources.ts        tenant-bound source keys and lifecycle
-      skills.ts             authoring, materials, matching and outcomes
-    repositories/
-      store.ts              generic tenant-scoped CRUD for all resource tables
-    types/
-      domain.ts             severity, status, determination, threat intel types
-  data/sqlite.db       local data, ignored from source control
-  test/                integration tests by domain workflow
-```
+## Code and process boundaries
 
-## Frontend Structure
+| Path/process | Responsibility |
+|---|---|
+| `backend-go/cmd/api` | HTTP lifecycle, readiness and domain API |
+| `backend-go/cmd/investigation-worker` | Durable local investigation phases |
+| `backend-go/cmd/worker` | Optional job leases and RPC dispatch |
+| `backend-go/cmd/migrate` | Checksum-verified PostgreSQL migrations |
+| `backend-go/cmd/data-migrate` | Snapshot import, reconciliation and reverse export |
+| `backend-go/internal/transport/httpapi` | Parameter/body validation and HTTP errors |
+| `backend-go/internal/modules` | Investigations, detection, intake, response, Skills, hunts, connectors, intelligence |
+| `backend-go/internal/platform` | Auth, config, database, jobs and RPC |
+| `contracts/proto`, `contracts/plugins.json` | Worker wire contract and resource limits |
+| `services/wasm-worker`, `services/python-worker` | Optional specialists |
+| `scripts/runtime` | Lifecycle, monitoring, backup/restore and rollback |
 
-```text
-frontend/
-  src/
-    main.jsx           App shell, navigation and client-side route selection
-                        ├── Icon system (30+ inline SVG icons)
-                        ├── TopNav, ToolRail, Breadcrumb, Shell (layout)
-                        ├── Operations queue dashboard
-                        ├── InvestigationQueue + InvestigationCase
-                        ├── DetectionRegistry + DetectionIntelligence
-                        ├── Skills library, authoring, references and outcomes
-                        ├── HuntDashboard (ad-hoc hunts, mode toggle)
-                        ├── RespondCenter (bulk execute, confirmation modal)
-                        ├── ThreatIntelFeed + ThreatIntelDetail
-                        ├── MemoryStore
-                        ├── ConnectorSetupLive (4-step wizard)
-                        └── App (client-side router via pushState)
-    api.js             API client with all endpoints
-    Skills.jsx         Skills library, editor, materials and outcomes
-    DetectionRegistry.jsx searchable registry and rule inspector
-    InvestigationQueue.jsx / InvestigationCase.jsx case workflows
-    ApiSources.jsx     hybrid intake source management
-    theme.js           Chakra UI theme with `ui` color tokens
-    app.css            Animations, responsive breakpoints (760px mobile, 1024px tablet)
-```
+Domain modules share transactions rather than calling each other over HTTP.
+Go owns authorization, business state, approvals and audits. Specialists receive
+no database credentials.
 
-## Domain Modules
+## Persistence and concurrency
 
-| Module | Responsibility | Production analogue |
-|---|---|---|
-| Investigations | Triage lifecycle, determination, status, replay | `investigation.v2` |
-| Incidents | Alert/case records and aggregate statistics | `incident.v2` |
-| Artifacts | Evidence and entity graph | `artifact.v2` |
-| Detection Rules | Versioned rule configuration, registry, alert metrics, routing | detections control plane |
-| Hunts | Hunt definitions, executions, findings | threat-hunt BFF routes |
-| Connectors | Definitions, instances, configuration health | `connector.v1` |
-| Remediations | Proposed actions, approval, execution status | investigation actions/flow service |
-| Threat Intel Reports | Intelligence reports, IOC tracking, hunt launching | threat intel BFF |
-| Threat Indicators | IOC values (IP, domain, hash, CVE), hit counts | indicator store |
-| Dashboard | Read-only aggregate projections | BFF aggregation |
-| Alert pipeline | Normalized intake, deduplication, routing and resumable local processing | ingestion workflow |
-| API sources | Tenant-bound key issuance, expiry, rotation and revocation | integration gateway |
-| Skills | Versioned guidance, references, scope matching, feedback and outcomes | playbooks/knowledge |
+PostgreSQL uses typed columns, JSONB documents, composite tenant keys and scoped
+indexes. Mutations and audits commit together. Row locks serialize conflicting
+case/response/Skills updates; multi-query projections use repeatable-read snapshots
+where required. See the [physical and logical data model](DATA_MODEL.md).
 
-## SVG Icon System
+Investigation create/patch batch ordered SQL commands within their transactions.
+Audit failure still rolls back prior commands. Typed detail responses avoid an
+internal JSON encode/decode cycle. Skills aliases are loaded lazily and reused
+within one application call. Mutable cases, permissions and credentials are not
+cached across requests. pgx reuses prepared statements; durable commit and fsync
+remain enabled. See [performance evidence](migration/PERFORMANCE.md).
 
-The frontend uses an inline SVG icon system (`Icon` namespace in `main.jsx`) instead of an
-icon library. Each icon is a pure functional component accepting `size`, `color`, and spread
-props. This avoids external font/icon dependencies and keeps bundle size minimal.
+Intake atomically validates/deduplicates alerts, applies routing and creates
+case/job records. Three resumable phases record supplied evidence, compare
+tenant-local active indicators and record review outcomes. Failed phases retain
+committed progress and require explicit retry. Concurrent workers and SIGKILL
+recovery are tested. Processing remains deterministic and local.
 
-Available icons: `search`, `filter`, `bell`, `chevronDown`, `chevronRight`, `chevronLeft`,
-`arrowLeft`, `sort`, `grid`, `plus`, `settings`, `user`, `star`, `clock`, `play`, `refresh`,
-`eye`, `shield`, `zap`, `activity`, `alertCircle`, `check`, `x`, `externalLink`,
-`messageSquare`, `clipboard`, `calendar`, `target`, `layers`, `compass`.
+Specialist jobs use leases, attempts, bounded retries, cancellation and identity
+checks. Expired, cancelled, foreign or superseded attempts cannot commit. An
+already-running RPC remains bounded by its deadline; cancellation does not promise
+immediate interruption of every underlying operation.
 
-## CSS Architecture
+## Security and specialist limits
 
-- **Page transitions**: `.page-enter` class with `enter` keyframe animation (0.18s fade+slide)
-- **Focus ring**: Violet (`#6056e8`) focus-visible ring on buttons, inputs, selects
-- **Responsive**: Tablet breakpoint at 1024px (narrower tool rail), mobile at 760px (hide tool rail + account nav, horizontal table scroll)
-- **Custom scrollbars**: `.thin-scroll` for narrow 5px scrollbar tracks
-- **Metric typography**: `.metric-number` uses Review Condensed font for dashboard numbers
+- Local auth is for development. Token mode binds tenant identity to an operator
+  or session; source keys authorize intake only.
+- Browser mutations require CSRF/origin checks. Sessions are memory-backed and
+  invalidated on restart. SSO and granular RBAC remain future work.
+- Connector secrets use tenant/record-bound authenticated encryption. Recovery
+  needs the private key as well as the database dump.
+- RPC uses a credential on literal loopback, a five-second deadline and 64 KiB
+  input/output limits. Remote worker deployment requires a separate TLS design.
+- Rust provides hashing and embedded Wasmi with fuel, one-page memory and no host imports.
+- Python runs trusted allowlisted code in a limited child process, not arbitrary uploaded code.
 
-## Request Lifecycle
+## Frontend
 
-1. React calls the API client (`api.js`) through the same-origin `/api` proxy.
-2. Local mode uses the configured development tenant header. Token mode derives
-   tenant identity from operator credentials or browser session; source keys are
-   restricted to alert intake.
-3. A Fastify route validates parameters/body via TypeBox schemas.
-4. Fastify routes to `PlatformService`, `AlertPipeline`, `ApiSources`, or `Skills`.
-5. Services scope records by tenant and transact related SQLite writes.
-6. The durable local alert worker resumes queued jobs after restart.
-7. Skills matching snapshots published guidance and rationale into case transcripts
-   or hunt records. It records guidance for analyst review; it does not execute it.
-8. The route returns a stable JSON resource or action result.
+`frontend/src/main.jsx` owns shell/navigation/client routing. Dedicated components
+implement investigations, detection, Skills, API sources and response authoring.
+`src/api.js` is the transport boundary; `theme.js` and `app.css` define styling.
+Editable assets live in `public/`; generated bundles and `app.html` stay in `dist/`.
 
-## Future Production Adapters
+Vite proxies same-origin `/api` and `/health` to `AISOC_API_PROXY_TARGET`.
+API-backed workflows show persisted state. Some dashboard/Memory content remains
+demonstration-only. Stored queries and simulated actions are not live provider
+execution. Current browser/mobile limits are recorded in [testing](TESTING.md).
 
-- Replace SQLite repository with PostgreSQL without changing service APIs.
-- Add enterprise SSO and granular operator roles to existing token/session auth.
-- Generate ConnectRPC handlers from `.proto` files for service-to-service parity.
-- Add WebSocket/SSE event transport for investigation and hunt progress.
-- Move long-running actions to a workflow engine and queue.
+## Runtime and recovery
+
+| Stack | API | Frontend | Database |
+|---|---:|---:|---|
+| Active release | 3002 | 8080 | PostgreSQL 55436, `.run/go-runtime/` |
+| Optional development | 3003 | 8081 when started | PostgreSQL 55435, `.run/go-dev/` |
+| Optional Node comparison | 3004 | 8082 | Separate SQLite in `.run/node-compare/` |
+
+Only the release starts through `run.sh`. Stop preserves data. All 26 legacy
+tables reconciled at cutover. Post-write rollback reverse-exports current Go data
+into a new SQLite database; restarting the old snapshot loses acknowledged writes.
+
+[Operations](migration/OPERATIONS.md) covers settings, backups and rollback.
+[ADR 002](adr/002-go-backend-replacement.md) records the architecture choice;
+[ADR 003](adr/003-replacement-contract-decisions.md) defines compatibility limits.
+Live integrations and enterprise deployment remain [roadmap work](FEATURE_ROADMAP.md).

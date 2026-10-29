@@ -48,6 +48,8 @@ import CreateDetectionRule from "./CreateDetectionRule";
 import DetectionRegistry, { RuleWorkspace } from "./DetectionRegistry";
 import DetectionIntelligence from "./DetectionIntelligence";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
+import ResponsePlans from "./ResponsePlans";
+import ResponseWorkspace, { responseNavigation } from "./Response";
 import "./app.css";
 
 const I = ({ d, size = 14, color = "currentColor", ...props }) => (
@@ -115,6 +117,7 @@ const pathForView = {
   detectionIntelligence: "/detect/intelligence",
   investigations: "/investigations",
   respond: "/respond",
+  responseCases: "/respond/cases",
   responseActions: "/respond/actions",
   responseApprovals: "/respond/approvals",
   responseWorkflows: "/respond/workflows",
@@ -275,6 +278,7 @@ function TopNav({ view, setView }) {
   );
 }
 
+// Reserved for a future location with working toolbar actions.
 function ToolRail() {
   return (
     <Flex
@@ -322,19 +326,21 @@ function Breadcrumb({ section, title }) {
 }
 
 function Shell({ view, setView, children, breadcrumb }) {
-  const responseViews = ["respond", "responseActions", "responseApprovals", "responseWorkflows", "responseRunbooks", "responseActivity"];
-  const responseTabs = [
-    ["respond", "Overview"], ["responseActions", "Actions"], ["responseApprovals", "Approvals"],
-    ["responseWorkflows", "Workflows"], ["responseRunbooks", "Runbooks"], ["responseActivity", "Activity"],
-  ];
+  const responseViews = responseNavigation.map(([target]) => target);
+  const detectViews = ["detect", "detectionIntelligence", "detectionRuleDetail"];
+  const skillViews = ["skills", "skillTemplates", "skillSuggestions", "skillOutcomes", "skillCreate", "skillDetail"];
+  const section = responseViews.includes(view) ? "Response" : detectViews.includes(view) ? "Detect" : skillViews.includes(view) ? "Skills" : null;
+  const tabs = section === "Response" ? responseNavigation : section === "Detect"
+    ? [["detect", "Rule registry"], ["detectionIntelligence", "Intelligence"]]
+    : [["skills", "Library"], ["skillTemplates", "Starter templates"], ["skillSuggestions", "Environment suggestions"], ["skillOutcomes", "Outcomes"]];
+  const activeTab = view === "detectionRuleDetail" ? "detect" : ["skillCreate", "skillDetail"].includes(view) ? "skills" : view;
   return (
     <Box minH="100vh" bg={ui.page}>
       <TopNav view={view} setView={setView} />
-      {responseViews.includes(view) && <Flex className="response-subnav" px={{ base: "12px", md: "24px" }} gap={{ base: "2px", md: "8px" }} overflowX="auto" bg="white" borderBottom="1px solid" borderColor={ui.line}>
-        {responseTabs.map(([target, label]) => <Button key={target} variant="unstyled" flexShrink="0" h="42px" px={{ base: "10px", md: "14px" }} borderBottom="2px solid" borderColor={view === target ? ui.ink : "transparent"} color={view === target ? ui.ink : ui.muted} fontSize="11px" fontWeight={view === target ? "700" : "500"} onClick={() => setView(target)}>{label}</Button>)}
+      {section && <Flex as="nav" aria-label={section + " navigation"} className="section-subnav" px={{ base: "12px", md: "24px" }} gap={{ base: "2px", md: "8px" }} overflowX="auto" bg="white" borderBottom="1px solid" borderColor={ui.line}>
+        {tabs.map(([target, label]) => <Button aria-current={activeTab === target ? "page" : undefined} key={target} variant="unstyled" flexShrink="0" h="42px" px={{ base: "10px", md: "14px" }} borderBottom="2px solid" borderColor={activeTab === target ? ui.ink : "transparent"} color={activeTab === target ? ui.ink : ui.muted} fontSize="11px" fontWeight={activeTab === target ? "700" : "500"} onClick={() => setView(target)}>{label}</Button>)}
       </Flex>}
-      <ToolRail />
-      <Box className="main-content" ml="40px">
+      <Box className="main-content">
         <Breadcrumb
           section={breadcrumb?.[0] || "Respond"}
           title={breadcrumb?.[1] || "Operations Queue"}
@@ -1961,376 +1967,6 @@ function HuntSankey() {
   );
 }
 
-const fallbackRemediations = [
-  {
-    id: "REM-001",
-    investigation_id: "INV-4814",
-    title: "Revoke all active sessions",
-    description:
-      "Invalidate active browser and refresh tokens for the compromised identity.",
-    connector: "Microsoft Defender",
-    status: "pending",
-    action_type: "revoke_sessions",
-  },
-  {
-    id: "REM-002",
-    investigation_id: "INV-4814",
-    title: "Quarantine Setu.exe on OKAMI-FIN-074",
-    description:
-      "Isolate the endpoint and quarantine the confirmed malicious executable.",
-    connector: "Microsoft Defender",
-    status: "pending",
-    action_type: "isolate_device",
-  },
-  {
-    id: "REM-003",
-    investigation_id: "INV-4819",
-    title: "Reset identity credentials",
-    description: "Force a password reset after session revocation completes.",
-    connector: "Entra ID",
-    status: "completed",
-    action_type: "reset_credentials",
-  },
-  {
-    id: "REM-004",
-    investigation_id: "INV-4814",
-    title: "Block releases.cloudgateway.cc",
-    description: "Block the malicious C2 domain in DNS, proxy, and endpoint controls.",
-    connector: "Microsoft Defender",
-    status: "pending",
-    action_type: "block_domain",
-  },
-  {
-    id: "REM-005",
-    investigation_id: "INV-4819",
-    title: "Revoke OAuth app consent grant",
-    description: "Remove suspicious OAuth application that was granted mailbox access.",
-    connector: "Entra ID",
-    status: "pending",
-    action_type: "revoke_consent",
-  },
-];
-
-function RespondCenter({ setView, mode = "respond" }) {
-  const toast = useToast();
-  const [items, setItems] = useState(fallbackRemediations);
-  const [filter, setFilter] = useState("all");
-  const [running, setRunning] = useState(null);
-  const [confirmItem, setConfirmItem] = useState(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const cancelRef = useRef(null);
-
-  useEffect(() => {
-    let active = true;
-    api
-      .remediations()
-      .then((result) => active && setItems(result.items))
-      .catch(() => active && setLoadFailed(true));
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const execute = async (item) => {
-    setRunning(item.id);
-    try {
-      const updated = await api.executeRemediation(item.id);
-      setItems((current) =>
-        current.map((entry) => (entry.id === item.id ? updated : entry)),
-      );
-      toast({ title: "Simulation recorded", description: `${item.title}. No provider action was sent.`, status: "info", duration: 3500 });
-    } catch (error) {
-      toast({
-        title: "Action could not be completed",
-        description: error.message,
-        status: "error",
-        duration: 3000,
-      });
-    } finally {
-      setRunning(null);
-    }
-  };
-
-  const modeFilter = mode === "responseApprovals" ? "pending" : mode === "responseActivity" ? "completed" : filter;
-  const visible = modeFilter === "all" ? items : items.filter((item) => item.status === modeFilter);
-  const pending = items.filter((item) => item.status === "pending").length;
-  const completed = items.filter((item) => item.status === "completed").length;
-
-  return (
-    <Box className="page-enter" px={{ base: "12px", md: "24px" }} pb="28px">
-      <SampleDataNotice show={loadFailed} />
-      <Flex
-        align={{ base: "start", md: "center" }}
-        direction={{ base: "column", md: "row" }}
-        gap="12px"
-        mb="18px"
-      >
-        <Box>
-          <Heading fontSize={{ base: "22px", md: "28px" }} fontWeight="500">
-            {mode === "responseApprovals" ? "Approval queue" : mode === "responseActivity" ? "Response activity" : mode === "responseActions" ? "Response actions" : "Response center"}
-          </Heading>
-          <Text color={ui.muted} mt="3px">
-            Review proposed containment actions and keep every decision tied to its investigation.
-          </Text>
-        </Box>
-        <HStack ml={{ base: 0, md: "auto" }}>
-          <Button
-            variant="outline"
-            onClick={() => setView("investigationDetail", "INV-4814")}
-          >
-            View investigation
-          </Button>
-          <Button isDisabled={!pending} onClick={() => setConfirmItem({ id: "__bulk__", title: `all ${pending} pending action simulations`, connector: "local simulation" })} leftIcon={Icon.zap({ size: 13 })}>Review {pending} pending</Button>
-        </HStack>
-      </Flex>
-
-      <SimpleGrid columns={{ base: 2, md: 4 }} spacing="10px" mb="16px">
-        {[
-          [pending, "Awaiting action", ui.red],
-          [completed, "Completed", ui.green],
-          [items.length, "Tracked actions", ui.ink],
-          ["0", "Live provider actions", ui.violet],
-        ].map(([value, label, color]) => (
-          <Panel
-            key={label}
-            p={{ base: "14px", md: "18px" }}
-            borderTop="3px solid"
-            borderTopColor={color}
-          >
-            <Metric value={value} label={label} color={color} size="34px" />
-          </Panel>
-        ))}
-      </SimpleGrid>
-
-      <Grid
-        templateColumns={{
-          base: "1fr",
-          xl: "minmax(0, 2.2fr) minmax(270px, .8fr)",
-        }}
-        gap="12px"
-      >
-        <Panel overflow="hidden">
-          <Flex
-            px="16px"
-            py="13px"
-            borderBottom="1px solid"
-            borderColor={ui.line}
-            align="center"
-            gap="10px"
-            wrap="wrap"
-          >
-            <Box>
-              <Label>Remediation queue</Label>
-              <Text color={ui.muted} mt="2px">
-                Local demo actions only. Provider integrations are not connected.
-              </Text>
-            </Box>
-            <HStack ml={{ base: 0, md: "auto" }}>
-              {(mode === "respond" || mode === "responseActions") && ["all", "pending", "completed"].map((value) => (
-                <Button
-                  key={value}
-                  variant={filter === value ? "solid" : "ghost"}
-                  onClick={() => setFilter(value)}
-                  textTransform="capitalize"
-                >
-                  {value}
-                </Button>
-              ))}
-            </HStack>
-          </Flex>
-          <Stack spacing="0" divider={<Divider />}>
-              {visible.map((item) => (
-              <Grid
-                className="response-row"
-                key={item.id}
-                templateColumns={{
-                  base: "1fr",
-                  md: "34px minmax(180px, 1fr) minmax(220px, 1.4fr) 130px 92px",
-                }}
-                gap="12px"
-                alignItems="center"
-                p="15px 16px"
-              >
-                <Flex
-                  w="30px"
-                  h="30px"
-                  rounded="full"
-                  bg={item.status === "completed" ? "#e7f5ed" : "#fff0f1"}
-                  color={item.status === "completed" ? ui.green : ui.red}
-                  align="center"
-                  justify="center"
-                  fontWeight="700"
-                >
-                  {item.status === "completed" ? "OK" : "!"}
-                </Flex>
-                <Box>
-                  <Text fontWeight="700">{item.title}</Text>
-                  <Text color={ui.violet} mt="3px">
-                    {item.investigation_id}
-                  </Text>
-                </Box>
-                <Text color={ui.muted}>{item.description}</Text>
-                <Badge
-                  justifySelf={{ base: "start", md: "auto" }}
-                  variant="outline"
-                >
-                  {item.connector || "AISOC"}
-                </Badge>
-                {item.status === "completed" ? (
-                  <Badge
-                    justifySelf={{ base: "start", md: "end" }}
-                    bg="#e7f5ed"
-                    color="#26734d"
-                  >
-                    Completed
-                  </Badge>
-                ) : (
-                  <Button
-                    justifySelf={{ base: "start", md: "end" }}
-                    isLoading={running === item.id}
-                    onClick={() => setConfirmItem(item)}
-                  >
-                    Review
-                  </Button>
-                )}
-              </Grid>
-            ))}
-          </Stack>
-        </Panel>
-
-        <Stack spacing="12px">
-          <Panel p="16px">
-            <Label>Approval guardrails</Label>
-            <Stack mt="16px" spacing="14px">
-              {[
-                "Confirm the investigation verdict",
-                "Review the target and action scope",
-                "Record analyst approval",
-                "Verify provider response",
-              ].map((step, index) => (
-                <HStack key={step} align="start">
-                  <Flex
-                    flexShrink="0"
-                    w="24px"
-                    h="24px"
-                    rounded="full"
-                    bg={
-                      index < completed
-                        ? ui.green
-                        : index === completed
-                          ? ui.nav
-                          : ui.soft
-                    }
-                    color={index <= completed ? "white" : ui.muted}
-                    align="center"
-                    justify="center"
-                    fontSize="10px"
-                    fontWeight="700"
-                  >
-                    {index + 1}
-                  </Flex>
-                  <Box>
-                    <Text fontWeight="600">{step}</Text>
-                    <Text color={ui.muted}>
-                      {index < completed
-                        ? "Completed"
-                        : index === completed
-                          ? "Ready to execute"
-                          : "Waiting on dependency"}
-                    </Text>
-                  </Box>
-                </HStack>
-              ))}
-            </Stack>
-          </Panel>
-          <Panel p="16px" bg="#131722" color="white" borderColor="#131722">
-            <Label>Automation guardrail</Label>
-            <Heading mt="12px" fontSize="17px">
-              Human approval stays in the loop
-            </Heading>
-            <Text mt="8px" color="#b9c0cc">
-              This demo records local simulation state only. Real identity,
-              endpoint, email, and cloud actions require a connected provider,
-              explicit approval, and an auditable result.
-            </Text>
-          </Panel>
-        </Stack>
-      </Grid>
-
-      <AlertDialog
-        isOpen={Boolean(confirmItem)}
-        leastDestructiveRef={cancelRef}
-        onClose={() => setConfirmItem(null)}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="16px" fontWeight="600">
-              Review this response action
-            </AlertDialogHeader>
-            <AlertDialogBody fontSize="13px">
-              {confirmItem?.title} is a local AISOC demo simulation. No action
-              will be sent to {confirmItem?.connector || "a provider"}; no
-              identity, endpoint, email, or cloud state will change.
-            </AlertDialogBody>
-            <AlertDialogFooter>
-              <Button
-                ref={cancelRef}
-                variant="outline"
-                onClick={() => setConfirmItem(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                ml="8px"
-                onClick={() => {
-                  setConfirmItem(null);
-                  if (confirmItem?.id === "__bulk__") {
-                    items.filter((i) => i.status === "pending").forEach((i) => execute(i));
-                  } else {
-                    execute(confirmItem);
-                  }
-                }}
-              >
-                Record simulation
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </Box>
-  );
-}
-
-const responseWorkflowCards = [
-  { title: "Contain a compromised identity", trigger: "Malicious identity verdict", steps: ["Revoke active sessions", "Reset credentials", "Review OAuth grants"], tags: ["Identity", "Approval required"] },
-  { title: "Contain endpoint malware", trigger: "Confirmed malicious endpoint alert", steps: ["Isolate device", "Quarantine file", "Collect verification evidence"], tags: ["Endpoint", "Approval required"] },
-  { title: "Respond to malicious email", trigger: "Phishing verdict with recipient evidence", steps: ["Quarantine matching messages", "Block sender and URLs", "Notify affected users"], tags: ["Email", "Draft"] },
-];
-const responseRunbookCards = [
-  { title: "Identity compromise", owner: "Identity response", sections: ["Validate sign-in and device context", "Contain active sessions", "Recover credentials", "Document user confirmation"] },
-  { title: "Endpoint malware", owner: "Endpoint response", sections: ["Confirm file hash and process tree", "Approve host isolation", "Preserve forensic evidence", "Verify cleanup before reconnecting"] },
-  { title: "Cloud credential exposure", owner: "Cloud response", sections: ["Identify affected principal and scope", "Rotate or revoke exposed credentials", "Review audit activity", "Confirm dependent workloads recover"] },
-];
-
-function ResponseLibrary({ kind, setView }) {
-  const workflows = kind === "workflows";
-  const records = workflows ? responseWorkflowCards : responseRunbookCards;
-  return <Box className="page-enter" px={{ base: "12px", md: "24px" }} pb="28px">
-    <Flex align={{ base: "start", md: "center" }} direction={{ base: "column", md: "row" }} gap="12px" mb="18px">
-      <Box><Heading fontSize={{ base: "22px", md: "28px" }} fontWeight="500">{workflows ? "Response workflows" : "Response runbooks"}</Heading><Text color={ui.muted} mt="3px">{workflows ? "Review repeatable response patterns triggered by investigation verdicts." : "Keep analyst procedures next to the cases and actions they guide."}</Text></Box>
-      <Badge ml={{ base: 0, md: "auto" }} colorScheme="gray">{workflows ? "Design library · not executable" : "Reference procedures · local demo"}</Badge>
-    </Flex>
-    <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing="12px">
-      {records.map((record) => <Panel key={record.title} p={{ base: "16px", md: "20px" }} display="flex" flexDirection="column" minH="258px">
-        <Flex justify="space-between" align="start" gap="10px"><Box><Label>{workflows ? record.trigger : record.owner}</Label><Heading mt="8px" fontSize="17px" fontWeight="600">{record.title}</Heading></Box><Badge colorScheme={workflows ? "blue" : "purple"}>{workflows ? "Workflow" : "Runbook"}</Badge></Flex>
-        <Stack mt="18px" spacing="9px" flex="1">{(workflows ? record.steps : record.sections).map((step, index) => <HStack key={step} align="start"><Text color={ui.muted} fontSize="10px" minW="18px">{String(index + 1).padStart(2, "0")}</Text><Text fontSize="12px">{step}</Text></HStack>)}</Stack>
-        <Flex mt="18px" justify="space-between" align="center" gap="8px" wrap="wrap"><HStack>{(record.tags || ["Analyst maintained"]).map((tag) => <Badge key={tag} variant="subtle">{tag}</Badge>)}</HStack><Button size="sm" variant="outline" onClick={() => setView("responseActions")}>View actions</Button></Flex>
-      </Panel>)}
-    </SimpleGrid>
-    <Alert status="info" mt="14px" fontSize="11px"><AlertIcon />These are planning examples. AISOC does not execute workflows or connect to response providers yet.</Alert>
-  </Box>;
-}
-
 const fallbackMemory = [
   {
     id: "INV-4819",
@@ -3250,12 +2886,13 @@ function App() {
     detect: <DetectionRegistry setView={setView} templates={catalogRules} />,
     detectionIntelligence: <DetectionIntelligence setView={setView} />,
     detectionRuleDetail: <Box p={{ base: "12px", md: "20px" }}><RuleWorkspace key={ruleId} id={ruleId} standalone onClose={() => setView("detect")} onChanged={() => {}} onSelect={id => setView("detectionRuleDetail", id)} /></Box>,
-    respond: <RespondCenter setView={setView} />,
-    responseActions: <RespondCenter setView={setView} mode="responseActions" />,
-    responseApprovals: <RespondCenter setView={setView} mode="responseApprovals" />,
-    responseActivity: <RespondCenter setView={setView} mode="responseActivity" />,
-    responseWorkflows: <ResponseLibrary kind="workflows" setView={setView} />,
-    responseRunbooks: <ResponseLibrary kind="runbooks" setView={setView} />,
+    respond: <ResponseWorkspace key="respond" setView={setView} />,
+    responseCases: <ResponseWorkspace key="responseCases" setView={setView} mode="responseCases" />,
+    responseActions: <ResponseWorkspace key="responseActions" setView={setView} mode="responseActions" />,
+    responseApprovals: <ResponseWorkspace key="responseApprovals" setView={setView} mode="responseApprovals" />,
+    responseActivity: <ResponseWorkspace key="responseActivity" setView={setView} mode="responseActivity" />,
+    responseWorkflows: <ResponsePlans key="responseWorkflows" kind="workflow" setView={setView} />,
+    responseRunbooks: <ResponsePlans key="responseRunbooks" kind="runbook" setView={setView} />,
     hunt: <HuntDashboard setView={setView} />,
     threatIntel: <ThreatIntelDashboard setView={setView} />,
     threatIntelDetail: <ThreatIntelReportDetail id={reportId} setView={setView} />,
@@ -3280,6 +2917,7 @@ function App() {
     detectionIntelligence: ["Detect", "Detection Intelligence"],
     detectionRuleDetail: ["Detect", "Detection Rule Detail"],
     respond: ["Respond", "Response Center"],
+    responseCases: ["Respond", "Cases"],
     responseActions: ["Respond", "Actions"],
     responseApprovals: ["Respond", "Approvals"],
     responseActivity: ["Respond", "Activity"],

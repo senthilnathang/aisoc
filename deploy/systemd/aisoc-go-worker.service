@@ -1,0 +1,21 @@
+[Unit]
+Description=AISOC Go investigation worker
+Requires=aisoc-go-postgres.service
+After=aisoc-go-postgres.service
+
+[Service]
+Type=simple
+Slice=aisoc-go.slice
+WorkingDirectory=/opt/aisoc
+ExecStart=/usr/bin/python3 /opt/aisoc/scripts/runtime/service.py investigation-worker
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+MemoryMax=256M
+LimitNOFILE=4096
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,395 @@
+{
+  "note": "Lexical caller index, not a resolved dependency map. Includes shared wrappers; manual journey mapping is required.",
+  "callers": [
+    {
+      "file": "frontend/src/ApiSources.jsx",
+      "line": 25,
+      "source": "Promise.all([api.list(\"api-sources\"), api.detectionRules()]).then(([result, registry]) => {"
+    },
+    {
+      "file": "frontend/src/ApiSources.jsx",
+      "line": 32,
+      "source": "try { setReceipt(await api.create(\"api-sources\", draft)); setCreating(false); setVersion(v => v + 1); setDraft({ name: \"\", provider: \"custom\", rule_id: \"\", expires_in_days: 30 }); }"
+    },
+    {
+      "file": "frontend/src/ApiSources.jsx",
+      "line": 39,
+      "source": "const result = await api.action(\"api-sources\", confirm.source.id, confirm.action === \"rotate\" ? \"rotate-key\" : \"revoke\", confirm.action === \"rotate\" ? { expires_in_days: 30 } : undefined);"
+    },
+    {
+      "file": "frontend/src/ApiSources.jsx",
+      "line": 59,
+      "source": "const result = await api.request(`/api-sources/${encodeURIComponent(mappingSource.id)}/mapping/preview`, { method: \"POST\", body: { mapping, sample } });"
+    },
+    {
+      "file": "frontend/src/ApiSources.jsx",
+      "line": 67,
+      "source": "const result = await api.request(`/api-sources/${encodeURIComponent(mappingSource.id)}/mapping`, { method: \"PATCH\", body: { mapping: JSON.parse(mappingText) } });"
+    },
+    {
+      "file": "frontend/src/AuthGate.jsx",
+      "line": 13,
+      "source": "const accept = value => { api.setSession(value); setSession(value); };"
+    },
+    {
+      "file": "frontend/src/AuthGate.jsx",
+      "line": 16,
+      "source": "const expired = () => { api.setSession(null); setSession({ mode: \"token\", authenticated: false }); setError(\"Your session ended. Sign in again.\"); };"
+    },
+    {
+      "file": "frontend/src/AuthGate.jsx",
+      "line": 19,
+      "source": "api.request(\"/auth/session\").then(value => { if (active) accept(value); }).catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });"
+    },
+    {
+      "file": "frontend/src/AuthGate.jsx",
+      "line": 24,
+      "source": "try { accept(await api.request(\"/auth/login\", { method: \"POST\", headers: { Authorization: `Bearer ${token.trim()}` } })); }"
+    },
+    {
+      "file": "frontend/src/AuthGate.jsx",
+      "line": 30,
+      "source": "try { await api.request(\"/auth/logout\", { method: \"POST\" }); accept({ mode: \"token\", authenticated: false }); }"
+    },
+    {
+      "file": "frontend/src/CreateDetectionRule.jsx",
+      "line": 11,
+      "source": "try { const rule = await api.create(\"detection-rules\", draft); onCreated(rule); onClose(); }"
+    },
+    {
+      "file": "frontend/src/DetectionIntelligence.jsx",
+      "line": 22,
+      "source": "api.request(`/detection-intelligence?${new URLSearchParams({ days: String(days), ...(source ? { source } : {}), ...(severity ? { severity } : {}) })}`)"
+    },
+    {
+      "file": "frontend/src/DetectionRegistry.jsx",
+      "line": 24,
+      "source": "api.get(\"detection-rules\", id).then(result => { if (active) { setRule(result); setDraft(result); } }).catch(e => { if (active) setError(e.message); });"
+    },
+    {
+      "file": "frontend/src/DetectionRegistry.jsx",
+      "line": 34,
+      "source": "await api.update(\"detection-rules\", id, { ...Object.fromEntries(fields.map(key => [key, draft[key]])), mitre_techniques: (draft.techniques_text ?? draft.mitre_techniques.join(\",\")).split(\",\").map(v => v.trim()).filter(Boolean), expected_version: rule.version });"
+    },
+    {
+      "file": "frontend/src/DetectionRegistry.jsx",
+      "line": 35,
+      "source": "setRule(await api.get(\"detection-rules\", id)); setEditing(false); onChanged();"
+    },
+    {
+      "file": "frontend/src/DetectionRegistry.jsx",
+      "line": 46,
+      "source": "<Flex gap=\"6px\" wrap=\"wrap\" mb=\"14px\"><Button isDisabled={busy || editing} variant=\"outline\" onClick={() => act(async () => { await api.update(\"detection-rules\", id, { enabled: !rule.enabled, expected_version: rule.version }); setRule(await api.get(\"detection-rules\", id)); onChanged(); })}>{rule.enabled ? \"Disable\" : \"Enable\"}</Button><Button isDisabled={busy || editing} variant=\"outline\" onClick={() => act(async () => { const clone = await api.action(\"detection-rules\", id, \"clone\"); onChanged(); onSelect(clone.id); })}>Clone rule</Button><Button isDisabled={busy || editing} onClick={() => { setDraft(rule); setEditing(true); setConfirmDelete(false); }}>Edit rule</Button>{!standalone && <Button as=\"a\" variant=\"ghost\" href={`/detect/rules/${encodeURIComponent(id)}`}>Full page ↗</Button>}</Flex>"
+    },
+    {
+      "file": "frontend/src/DetectionRegistry.jsx",
+      "line": 63,
+      "source": "<Box mt=\"24px\" pt=\"14px\" borderTop=\"1px solid\" borderColor={ui.line}>{confirmDelete ? <><Text mb=\"10px\">Delete this rule? Rules referenced by alerts or API sources cannot be deleted.</Text><Flex gap=\"8px\"><Button colorScheme=\"red\" isLoading={busy} onClick={() => act(async () => { await api.remove(\"detection-rules\", id); onChanged(); onClose(); })}>Confirm delete</Button><Button variant=\"outline\" isDisabled={busy} onClick={() => setConfirmDelete(false)}>Cancel</Button></Flex></> : <Button variant=\"ghost\" color=\"red.600\" isDisabled={busy} onClick={() => setConfirmDelete(true)}>Delete rule</Button>}</Box>"
+    },
+    {
+      "file": "frontend/src/DetectionRegistry.jsx",
+      "line": 82,
+      "source": "const timer = setTimeout(() => api.list(\"detection-registry\", filters).then(result => {"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 28,
+      "source": "api.investigation(caseId).then(result => { if (current === generation.current) setRecord(result); })"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 38,
+      "source": "const updated = await api.investigation(caseId);"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 51,
+      "source": "const updated = await api.investigation(caseId);"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 68,
+      "source": "<Button isDisabled={busy || running} onClick={() => mutate(() => api.reinvestigate(caseId), record.alerts?.length ? \"Investigation queued\" : \"Case reopened for review\")}>{currentJob?.status === \"failed\" ? \"Retry investigation\" : \"Reinvestigate\"}</Button>"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 94,
+      "source": "<FormControl mt=\"16px\"><FormLabel fontSize=\"11px\">Analyst determination</FormLabel><Select aria-label=\"Analyst determination\" value={record.determination} isDisabled={busy || running} onChange={e => mutate(() => api.setDetermination(caseId, e.target.value), \"Determination saved\")}>"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 100,
+      "source": "<Card as=\"form\" onSubmit={e => { e.preventDefault(); mutate(() => api.action(\"investigations\", caseId, \"artifacts\", artifact), \"Artifact attached\", () => setArtifact({ type: \"entity\", value: \"\", label: \"\" })); }}><Heading fontSize=\"14px\" mb=\"16px\">Attach evidence</Heading><Grid templateColumns={{ base: \"1fr\", md: \"140px 1fr 1fr\" }} gap=\"12px\"><FormControl><FormLabel>Type</FormLabel><Select value={artifact.type} onChange={e => setArtifact({ ...artifact, type: e.target.value })}>{[\"entity\", \"ip\", \"domain\", \"file\", \"email\", \"url\"].map(type => <option key={type}>{type}</option>)}</Select></FormControl><FormControl isRequired><FormLabel>Value</FormLabel><Input maxLength={2000} value={artifact.value} onChange={e => setArtifact({ ...artifact, value: e.target.value })} /></FormControl><FormControl><FormLabel>Label</FormLabel><Input maxLength={200} value={artifact.label} onChange={e => setArtifact({ ...artifact, label: e.target.value })} /></FormControl></Grid><Button type=\"submit\" mt=\"16px\" isDisabled={busy || !artifact.value.trim()}>Attach artifact</Button></Card>"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 102,
+      "source": "{tab === \"Transcript\" && <Stack spacing=\"18px\">{record.skill_applications?.length > 0 && <Card><Heading fontSize=\"16px\" mb=\"14px\">Applied Skills</Heading><Stack spacing=\"12px\">{record.skill_applications.map(application => <Box key={application.id} p=\"12px\" bg={ui.soft} borderRadius=\"5px\"><Flex justify=\"space-between\" gap=\"8px\" wrap=\"wrap\"><Text fontWeight=\"600\">{application.snapshot.name} · v{application.skill_version}</Text><Text fontSize=\"10px\" color={ui.muted}>{new Date(application.created_at).toLocaleString()}</Text></Flex><Text mt=\"7px\" fontSize=\"11px\">{application.reason}</Text>{application.snapshot.description && <Text mt=\"7px\" color={ui.muted} fontSize=\"11px\">{application.snapshot.description}</Text>}{application.snapshot.content_markdown && <Box mt=\"10px\" whiteSpace=\"pre-wrap\" fontSize=\"11px\">{application.snapshot.content_markdown}</Box>}{application.snapshot.materials?.length > 0 && <Text mt=\"8px\" fontSize=\"10px\" color={ui.muted}>References: {application.snapshot.materials.map(material => material.name).join(\", \")}</Text>}{application.snapshot.insight_refs?.length > 0 && <Text mt=\"4px\" fontSize=\"10px\" color={ui.muted}>Enterprise context: {application.snapshot.insight_refs.join(\", \")}</Text>}<HStack mt=\"10px\"><Text fontSize=\"10px\" color={ui.muted}>Was this skill useful?</Text><Button size=\"xs\" variant=\"outline\" isDisabled={busy} onClick={() => mutate(() => api.request(`/skills/applications/${encodeURIComponent(application.id)}/feedback`, { method: \"POST\", body: { rating: \"helpful\" } }), \"Skill feedback saved\")}>Helpful</Button><Button size=\"xs\" variant=\"outline\" isDisabled={busy} onClick={() => mutate(() => api.request(`/skills/applications/${encodeURIComponent(application.id)}/feedback`, { method: \"POST\", body: { rating: \"not_helpful\" } }), \"Skill feedback saved\")}>Not helpful</Button>{application.feedback?.length > 0 && <Text fontSize=\"9px\" color={ui.muted}>{application.feedback.length} rating(s) saved</Text>}</HStack></Box>)}</Stack></Card>}{record.steps.length ? record.steps.map((step, i) => <Card key={step.id}><Text fontSize=\"10px\" color={ui.muted}>STEP {i + 1} / {step.tool}</Text><Heading fontSize=\"18px\" mt=\"8px\">{step.title}</Heading><Text mt=\"16px\">{step.conclusion}</Text><Box as=\"details\" mt=\"20px\"><Box as=\"summary\" cursor=\"pointer\" fontWeight=\"600\">Inspect tool request and response</Box><Text mt=\"16px\" mb=\"8px\">Request</Text><Json value={step.request} /><Text mt=\"16px\" mb=\"8px\">Response</Text><Json value={step.response} /></Box></Card>) : <Card><Empty>No tool steps recorded yet. Queued local runs will appear here as they progress.</Empty></Card>}</Stack>}"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 104,
+      "source": "{tab === \"Runbooks\" && <CaseRunbooks key={caseId} caseId={caseId} onChange={async () => { const current = generation.current; const updated = await api.investigation(caseId); if (current === generation.current) setRecord(updated); }} />}"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 105,
+      "source": "{tab === \"Remediation\" && <Card><Heading fontSize=\"16px\">Recommended response</Heading><Text color={ui.muted} mt=\"8px\">Simulation only. These actions update local records and do not change external systems.</Text>{record.remediations.length ? record.remediations.map(action => <Flex key={action.id} py=\"14px\" gap=\"12px\" align=\"center\" wrap=\"wrap\" borderBottom=\"1px solid\" borderColor={ui.line}><Box flex=\"1\"><Text fontWeight=\"600\">{action.title}</Text><Text fontSize=\"12px\" mt=\"4px\" color={ui.muted}>{action.description}</Text><Badge mt=\"8px\">{action.connector}</Badge></Box><Button variant=\"outline\" isDisabled={busy || action.status === \"completed\"} onClick={() => mutate(() => api.executeRemediation(action.id), \"Local simulation recorded\")}>{action.status === \"completed\" ? \"Simulated\" : \"Simulate action\"}</Button></Flex>) : <Empty>No response actions attached to this case.</Empty>}</Card>}"
+    },
+    {
+      "file": "frontend/src/InvestigationCase.jsx",
+      "line": 107,
+      "source": "{tab === \"Feedback\" && <Card><Heading fontSize=\"16px\" mb=\"16px\">Analyst feedback</Heading><Box as=\"form\" onSubmit={e => { e.preventDefault(); mutate(() => api.action(\"investigations\", caseId, \"feedback\", { comment }), \"Feedback saved\", () => setComment(\"\")); }}><FormControl><FormLabel>Review note</FormLabel><Textarea maxLength={4000} value={comment} onChange={e => setComment(e.target.value)} placeholder=\"Record your findings or explain a determination…\" /></FormControl><Button type=\"submit\" mt=\"12px\" isDisabled={busy || !comment.trim()}>Save feedback</Button></Box>{record.feedback.map(item => <Box key={item.id} mt=\"20px\" p=\"16px\" bg={ui.soft}><Text whiteSpace=\"pre-wrap\">{item.comment}</Text><Text mt=\"6px\" color={ui.muted} fontSize=\"10px\">{new Date(item.created_at).toLocaleString()}</Text></Box>)}</Card>}"
+    },
+    {
+      "file": "frontend/src/InvestigationQueue.jsx",
+      "line": 16,
+      "source": "const result = await api.create(\"alerts\", { ...draft, evidence: evidenceValue.trim() ? [{ type: evidenceType, value: evidenceValue.trim() }] : [] });"
+    },
+    {
+      "file": "frontend/src/InvestigationQueue.jsx",
+      "line": 59,
+      "source": "const [cases, received, registry] = await Promise.all([api.request(\"/investigation-queue\"), api.list(\"alerts\"), api.detectionRules()]);"
+    },
+    {
+      "file": "frontend/src/Response.jsx",
+      "line": 113,
+      "source": "Promise.all([api.remediations(), api.list(\"response-plans\")])"
+    },
+    {
+      "file": "frontend/src/Response.jsx",
+      "line": 169,
+      "source": "const updated = await api.executeRemediation(selected.id);"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 139,
+      "source": "setItems((await api.list(\"response-plans\")).items);"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 175,
+      "source": "api.get(\"response-plans\", plan.id),"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 176,
+      "source": "api.request(\"/response-plans/\" + plan.id + \"/history\"),"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 178,
+      "source": "? api.investigations({ limit: 500 })"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 218,
+      "source": "(await api.request(\"/response-plans/\" + plan.id + \"/history\")).items,"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 221,
+      "source": "setCases((await api.investigations({ limit: 500 })).items);"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 234,
+      "source": "? api.update(\"response-plans\", selected.id, {"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 238,
+      "source": ": api.create(\"response-plans\", draft),"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 717,
+      "source": "await api.request("
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 790,
+      "source": "api.action("
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 816,
+      "source": "api.action(\"response-plans\", selected.id, \"state\", {"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 860,
+      "source": "api.request(path),"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 861,
+      "source": "api.list(\"response-plans\"),"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 874,
+      "source": "Promise.all([api.request(path), api.list(\"response-plans\")])"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 940,
+      "source": "api.request(path, {"
+    },
+    {
+      "file": "frontend/src/ResponsePlans.jsx",
+      "line": 1088,
+      "source": "api.request(path + \"/\" + assignmentId, {"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 20,
+      "source": "const refresh = () => { setLoading(true); api.list(\"skills\", { search, state: state || undefined }).then(data => setItems(data.items || [])).catch(e => toast({ status: \"error\", title: e.message })).finally(() => setLoading(false)); };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 22,
+      "source": "const refreshSuggestions = async () => { if (!suggestions) return; setSuggestionLoading(true); try { const result = await api.list(\"skills/suggestions\", { status: \"pending\" }); setSuggestionItems(result.items || []); } catch (e) { toast({ status: \"error\", title: e.message }); } finally { setSuggestionLoading(false); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 24,
+      "source": "const changeEnabled = async id => { try { await api.action(\"skills\", id, \"toggle\"); refresh(); } catch (e) { toast({ status: \"error\", title: e.message }); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 25,
+      "source": "const suggestionAction = async (suggestion, action) => { try { const result = await api.action(\"skills/suggestions\", suggestion.id, action); if (action === \"accept\") { toast({ status: \"success\", title: \"Suggestion accepted as a draft\" }); setView(\"skillDetail\", result.skill.id); } else { toast({ status: \"success\", title: \"Suggestion dismissed\" }); refreshSuggestions(); } } catch (e) { toast({ status: \"error\", title: e.message }); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 40,
+      "source": "const refreshMaterials = async () => { if (!id) return; try { const result = await api.request(`/skills/${encodeURIComponent(id)}/materials`); setMaterials(result.items || []); } catch (e) { toast({ status: \"error\", title: e.message }); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 41,
+      "source": "useEffect(() => { if (editing) { api.get(\"skills\", id).then(s => { setRecord(s); setForm({ ...emptyForm, ...s, ...Object.fromEntries([\"connectors\", \"alert_types\", \"alert_categories\", \"source_entities\", \"runtime_entities\", \"insight_refs\", \"tags\"].map(k => [k, join(s[k])])) }); }).catch(e => toast({ status: \"error\", title: e.message })); api.request(`/skills/${encodeURIComponent(id)}/history`).then(h => setHistory(h.items || [])).catch(() => {}); refreshMaterials(); } else { const t = sessionStorage.getItem(\"aisoc-skill-template\"); if (t) { try { const value = JSON.parse(t); setForm({ ...emptyForm, ...value, connectors: join(value.connectors), alert_types: join(value.alert_types), tags: join(value.tags) }); } catch {} sessionStorage.removeItem(\"aisoc-skill-template\"); } } }, [id]);"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 44,
+      "source": "const save = async publish => { setBusy(true); try { let item = record; if (!item) item = await api.create(\"skills\", payload()); else item = await api.update(\"skills\", id, payload()); if (publish) item = await api.action(\"skills\", item.id, \"publish\"); setRecord(item); toast({ status: \"success\", title: publish ? \"Skill published\" : \"Draft saved\" }); if (!editing) setView(\"skillDetail\", item.id); } catch (e) { toast({ status: \"error\", title: e.message }); } finally { setBusy(false); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 45,
+      "source": "const toggle = async () => { try { const updated = await api.action(\"skills\", id, \"toggle\"); setRecord(updated); } catch (e) { toast({ status: \"error\", title: e.message }); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 57,
+      "source": "await api.request(`/skills/${encodeURIComponent(id)}/materials`, { method: \"POST\", body });"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 62,
+      "source": "const openMaterial = async material => { try { const [detail, versions] = await Promise.all([api.request(`/skills/${encodeURIComponent(id)}/materials/${encodeURIComponent(material.id)}`), api.request(`/skills/${encodeURIComponent(id)}/materials/${encodeURIComponent(material.id)}/versions`)]); setSelectedMaterial(detail); setMaterialVersions(versions.items || []); } catch (e) { toast({ status: \"error\", title: e.message }); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 63,
+      "source": "const saveMaterial = async () => { if (!selectedMaterial) return; setMaterialBusy(true); try { const updated = await api.request(`/skills/${encodeURIComponent(id)}/materials/${encodeURIComponent(selectedMaterial.id)}`, { method: \"PATCH\", body: { name: selectedMaterial.name, kind: selectedMaterial.kind, source_url: selectedMaterial.source_url || \"\", content: selectedMaterial.content } }); setSelectedMaterial(updated); await refreshMaterials(); const versions = await api.request(`/skills/${encodeURIComponent(id)}/materials/${encodeURIComponent(updated.id)}/versions`); setMaterialVersions(versions.items || []); toast({ status: \"success\", title: `Saved version ${updated.version}` }); } catch (e) { toast({ status: \"error\", title: e.message }); } finally { setMaterialBusy(false); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 64,
+      "source": "const archiveMaterial = async material => { try { await api.request(`/skills/${encodeURIComponent(id)}/materials/${encodeURIComponent(material.id)}`, { method: \"DELETE\" }); if (selectedMaterial?.id === material.id) setSelectedMaterial(null); await refreshMaterials(); toast({ status: \"success\", title: \"Material archived\" }); } catch (e) { toast({ status: \"error\", title: e.message }); } };"
+    },
+    {
+      "file": "frontend/src/Skills.jsx",
+      "line": 85,
+      "source": "useEffect(() => { api.request(\"/skills/outcomes\").then(setData).catch(e => setError(e.message)); }, []);"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1179,
+      "source": "api.detectionRules().then((result) => active && setRemoteRules(result.items)).catch(() => active && setLoadFailed(true));"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1193,
+      "source": "const updated = await api.toggleDetectionRule(rule.id);"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1202,
+      "source": "const created = await api.create(\"detection-rules\", { name: rule.name, description: rule.description, severity: rule.severity, mitre_techniques: rule.techniques, enabled: false });"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1210,
+      "source": "const updated = await api.update(\"detection-rules\", routingRule.id, { routing });"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1463,
+      "source": "api.get(\"detection-rules\", id)"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1474,
+      "source": "api.request(`/detection-rules/${encodeURIComponent(id)}/history`).then(result => { if (active) setHistory(result.items); }).catch(e => { if (active) toast({ title: \"Could not load history\", description: e.message, status: \"error\" }); });"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1482,
+      "source": "const updated = await api.toggleDetectionRule(id);"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1495,
+      "source": "const updated = await api.update(\"detection-rules\", id, Object.fromEntries(fields.filter(key => rule[key] !== undefined).map(key => [key, rule[key]])));"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1735,
+      "source": "api.hunts().then((result) => active && setHunts(result.items)).catch(() => active && setLoadFailed(true));"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1744,
+      "source": "const created = await api.create(\"hunts\", { name: huntQuery.trim().slice(0, 90), query: huntQuery.trim(), source: \"ad_hoc\", insight_refs: huntContext.split(\",\").map(value => value.trim()).filter(Boolean) });"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 1745,
+      "source": "const completed = await api.runHunt(created.id);"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 2325,
+      "source": "api.threatIntelReports()"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 2334,
+      "source": "const updated = await api.launchThreatHunt(report.id);"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 2505,
+      "source": "api.threatIntelReport(id || \"TIR-001\")"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 2524,
+      "source": "const updated = await api.launchThreatHunt(report.id);"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 2767,
+      "source": "const connector = await api.createConnector({"
+    },
+    {
+      "file": "frontend/src/main.jsx",
+      "line": 2772,
+      "source": "const tested = await api.testConnector(connector.id);"
+    }
+  ]
+}

@@ -1,0 +1,345 @@
+{
+  "note": "Original discovery mapping of 16 API-backed journeys. Scenario references identify HTTP assertions; the original gaps are retained as historical discovery notes. Current Go browser evidence covers 44 screen/viewport combinations plus auth/session, response authoring, Skills/materials and source-intake flows. See docs/migration/RELEASE_STATUS.md and ADR 003 for accepted scope and remaining platform extensions.",
+  "journeys": [
+    {
+      "id": "authentication",
+      "sources": [
+        "frontend/src/AuthGate.jsx",
+        "frontend/src/api.js"
+      ],
+      "endpoints": [
+        "GET /auth/session",
+        "POST /auth/login",
+        "POST /auth/logout"
+      ],
+      "scenarios": [
+        "authentication"
+      ],
+      "assertions": "Tenant binding, cookies, CSRF, origin rejection, logout invalidation",
+      "gaps": [
+        "Session expiry and browser redirect rendering"
+      ]
+    },
+    {
+      "id": "dashboard",
+      "sources": [
+        "frontend/src/main.jsx"
+      ],
+      "endpoints": [
+        "GET /dashboard"
+      ],
+      "scenarios": [
+        "other-domains"
+      ],
+      "assertions": "Dashboard loads for isolated tenant",
+      "gaps": [
+        "Exact aggregate deltas and empty-state rendering"
+      ]
+    },
+    {
+      "id": "investigation-queue-intake",
+      "sources": [
+        "frontend/src/InvestigationQueue.jsx"
+      ],
+      "endpoints": [
+        "GET /investigation-queue",
+        "GET /alerts",
+        "GET /detection-rules",
+        "POST /alerts"
+      ],
+      "scenarios": [
+        "other-domains",
+        "native-event-mapping",
+        "resource-lifecycles",
+        "skills-suggestions"
+      ],
+      "assertions": "List alerts/rules, ingest and poll completed jobs",
+      "gaps": [
+        "Queue filters, retry and suppressed/sampled UI journeys"
+      ]
+    },
+    {
+      "id": "case-review",
+      "sources": [
+        "frontend/src/InvestigationCase.jsx"
+      ],
+      "endpoints": [
+        "GET /investigations/:id",
+        "POST /investigations/:id/reinvestigate",
+        "POST /investigations/:id/determination",
+        "POST /investigations/:id/artifacts",
+        "POST /investigations/:id/feedback",
+        "POST /skills/applications/:id/feedback",
+        "POST /remediations/:id/execute"
+      ],
+      "scenarios": [
+        "case-lifecycle",
+        "resource-lifecycles",
+        "skills-matching-outcomes"
+      ],
+      "assertions": "Evidence, feedback, determination, manual replay count, simulation, pinned Skills feedback and tenant isolation",
+      "gaps": [
+        "Ingested replay, transcript step contents and polling failure UI"
+      ]
+    },
+    {
+      "id": "memory",
+      "sources": [
+        "frontend/src/main.jsx"
+      ],
+      "endpoints": [
+        "GET /investigations"
+      ],
+      "scenarios": [
+        "resource-lifecycles"
+      ],
+      "assertions": "Created investigation present in list",
+      "gaps": [
+        "Client-side filtering and selected record display"
+      ]
+    },
+    {
+      "id": "detection-registry-authoring",
+      "sources": [
+        "frontend/src/DetectionRegistry.jsx",
+        "frontend/src/CreateDetectionRule.jsx",
+        "frontend/src/main.jsx"
+      ],
+      "endpoints": [
+        "GET /detection-registry",
+        "GET /detection-rules",
+        "POST /detection-rules",
+        "GET /detection-rules/:id",
+        "PATCH /detection-rules/:id",
+        "DELETE /detection-rules/:id",
+        "POST /detection-rules/:id/clone",
+        "POST /detection-rules/:id/toggle",
+        "GET /detection-rules/:id/history"
+      ],
+      "scenarios": [
+        "registry-pagination-validation",
+        "detection-and-intake",
+        "resource-lifecycles"
+      ],
+      "assertions": "Filters, stable pages, literal wildcard, source choices, clone disabled, stale version rejected, toggle/history/delete",
+      "gaps": [
+        "Bound-rule deletion conflict and no-op version/audit checks"
+      ]
+    },
+    {
+      "id": "detection-intelligence",
+      "sources": [
+        "frontend/src/DetectionIntelligence.jsx"
+      ],
+      "endpoints": [
+        "GET /detection-intelligence"
+      ],
+      "scenarios": [
+        "detection-and-intake"
+      ],
+      "assertions": "Seven-day aggregate request succeeds",
+      "gaps": [
+        "Exact metrics, source/severity combinations and time boundaries"
+      ]
+    },
+    {
+      "id": "source-credentials-mapping",
+      "sources": [
+        "frontend/src/ApiSources.jsx"
+      ],
+      "endpoints": [
+        "GET /api-sources",
+        "GET /detection-rules",
+        "POST /api-sources",
+        "POST /api-sources/:id/rotate-key",
+        "POST /api-sources/:id/revoke",
+        "POST /api-sources/:id/mapping/preview",
+        "PATCH /api-sources/:id/mapping"
+      ],
+      "scenarios": [
+        "native-event-mapping",
+        "detection-and-intake",
+        "resource-lifecycles"
+      ],
+      "assertions": "Preview has no persistence, mapping validation/normalization, native and normalized ingestion, rotation/revocation",
+      "gaps": [
+        "Credential expiry, oversized payload and source-binding negatives"
+      ]
+    },
+    {
+      "id": "response-actions",
+      "sources": [
+        "frontend/src/Response.jsx",
+        "frontend/src/InvestigationCase.jsx"
+      ],
+      "endpoints": [
+        "GET /remediations",
+        "GET /response-plans",
+        "POST /remediations/:id/execute"
+      ],
+      "scenarios": [
+        "resource-lifecycles",
+        "response-restore",
+        "case-lifecycle"
+      ],
+      "assertions": "Lists actions/plans and records simulation completion",
+      "gaps": [
+        "Action filters and status presentation"
+      ]
+    },
+    {
+      "id": "response-plan-authoring",
+      "sources": [
+        "frontend/src/ResponsePlans.jsx"
+      ],
+      "endpoints": [
+        "GET /response-plans",
+        "GET /response-plans/:id",
+        "GET /response-plans/:id/history",
+        "POST /response-plans",
+        "PATCH /response-plans/:id",
+        "POST /response-plans/:id/duplicate",
+        "POST /response-plans/:id/state",
+        "GET /investigations",
+        "POST /investigations/:id/runbooks"
+      ],
+      "scenarios": [
+        "response-versions",
+        "response-restore",
+        "resource-lifecycles"
+      ],
+      "assertions": "Version conflict, duplicate, archive/restore and attachment pinning",
+      "gaps": [
+        "All plan kinds, authoring validation limits and simultaneous updates"
+      ]
+    },
+    {
+      "id": "case-runbooks",
+      "sources": [
+        "frontend/src/ResponsePlans.jsx",
+        "frontend/src/InvestigationCase.jsx"
+      ],
+      "endpoints": [
+        "GET /investigations/:id/runbooks",
+        "POST /investigations/:id/runbooks",
+        "PATCH /investigations/:id/runbooks/:assignmentId",
+        "GET /response-plans",
+        "GET /investigations/:id"
+      ],
+      "scenarios": [
+        "response-versions",
+        "response-restore",
+        "case-lifecycle"
+      ],
+      "assertions": "Pinned snapshot, duplicate attach conflict, approval check, step completion and stale step update",
+      "gaps": [
+        "Step reopen, note-only changes and responsive browser flow"
+      ]
+    },
+    {
+      "id": "skills-library-authoring",
+      "sources": [
+        "frontend/src/Skills.jsx"
+      ],
+      "endpoints": [
+        "GET /skills",
+        "GET /skills/:id",
+        "POST /skills",
+        "PATCH /skills/:id",
+        "GET /skills/:id/history",
+        "POST /skills/:id/publish",
+        "POST /skills/:id/toggle",
+        "GET /skills/:id/materials",
+        "POST /skills/:id/materials",
+        "GET /skills/:id/materials/:materialId",
+        "PATCH /skills/:id/materials/:materialId",
+        "DELETE /skills/:id/materials/:materialId",
+        "GET /skills/:id/materials/:materialId/versions"
+      ],
+      "scenarios": [
+        "skills-authoring-lifecycle",
+        "skills-matching-outcomes"
+      ],
+      "assertions": "Draft search, publish/toggle, history, material CRUD/version history and immutable applied content",
+      "gaps": [
+        "All scope dimensions, file import validation and starter template browser flow"
+      ]
+    },
+    {
+      "id": "skills-suggestions-outcomes",
+      "sources": [
+        "frontend/src/Skills.jsx"
+      ],
+      "endpoints": [
+        "GET /skills/suggestions",
+        "POST /skills/suggestions/:id/accept",
+        "POST /skills/suggestions/:id/dismiss",
+        "GET /skills/outcomes"
+      ],
+      "scenarios": [
+        "skills-suggestions",
+        "skills-matching-outcomes"
+      ],
+      "assertions": "Evidence-based suggestion fixture, acceptance idempotency, dismissal, replaced feedback and labeled outcomes",
+      "gaps": [
+        "Suggestion history filters and refresh behavior"
+      ]
+    },
+    {
+      "id": "hunting",
+      "sources": [
+        "frontend/src/main.jsx"
+      ],
+      "endpoints": [
+        "GET /hunts",
+        "POST /hunts",
+        "POST /hunts/:id/run"
+      ],
+      "scenarios": [
+        "resource-lifecycles",
+        "other-domains"
+      ],
+      "assertions": "Create/list/run local hunt",
+      "gaps": [
+        "Skill/context matching in hunt output and rerun semantics"
+      ]
+    },
+    {
+      "id": "threat-intelligence",
+      "sources": [
+        "frontend/src/main.jsx"
+      ],
+      "endpoints": [
+        "GET /threat-intel-reports",
+        "GET /threat-intel-reports/:id",
+        "POST /threat-intel-reports/:id/launch-hunt"
+      ],
+      "scenarios": [
+        "resource-lifecycles",
+        "other-domains"
+      ],
+      "assertions": "Report listing/detail, linked indicators and launch hunt",
+      "gaps": [
+        "Repeated launch counters and browser detail fallback"
+      ]
+    },
+    {
+      "id": "connector-setup",
+      "sources": [
+        "frontend/src/main.jsx"
+      ],
+      "endpoints": [
+        "POST /connectors",
+        "POST /connectors/:id/test"
+      ],
+      "scenarios": [
+        "resource-lifecycles",
+        "other-domains"
+      ],
+      "assertions": "Secret redaction and honest untested status",
+      "gaps": [
+        "Not-configured versus unsupported test-result body"
+      ]
+    }
+  ]
+}

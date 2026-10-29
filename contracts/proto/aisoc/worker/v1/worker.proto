@@ -1,0 +1,22 @@
+syntax = "proto3";
+package aisoc.worker.v1;
+option go_package = "aisoc/backend/internal/gen/worker/v1;workerv1";
+
+// Internal, bounded RPC. Workers never receive database credentials.
+service Worker { rpc Execute(ExecuteRequest) returns (ExecuteResponse); }
+message ExecuteRequest {
+  string tenant_id = 1;
+  string job_id = 2;
+  string attempt_id = 3;
+  string plugin_id = 4;
+  string plugin_version = 5;
+  bytes input = 6;
+}
+message ExecuteResponse {
+  string tenant_id = 1;
+  string job_id = 2;
+  string attempt_id = 3;
+  string plugin_id = 4;
+  string plugin_version = 5;
+  bytes output = 6;
+}

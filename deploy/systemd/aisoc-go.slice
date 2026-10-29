@@ -1,0 +1,8 @@
+[Unit]
+Description=AISOC local Go stack resource budget
+
+[Slice]
+CPUQuota=200%
+MemoryHigh=768M
+MemoryMax=1G
+TasksMax=256

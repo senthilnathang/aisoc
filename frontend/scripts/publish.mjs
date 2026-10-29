@@ -1,4 +1,4 @@
-import { copyFileSync, cpSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -10,14 +10,4 @@ if (!existsSync(generatedHtml)) {
 }
 
 copyFileSync(generatedHtml, resolve(dist, "app.html"));
-
-for (const directory of ["assets", "fonts", "vendor"]) {
-  const source = resolve(dist, directory);
-  if (!existsSync(source)) continue;
-  const target = resolve(root, directory);
-  mkdirSync(target, { recursive: true });
-  cpSync(source, target, { recursive: true, force: true });
-}
-
-const favicon = resolve(dist, "favicon.png");
-if (existsSync(favicon)) copyFileSync(favicon, resolve(root, "favicon.png"));
+// Build artifacts stay in dist/. Vite serves source assets from public/ in dev.

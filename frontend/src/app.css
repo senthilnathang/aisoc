@@ -66,13 +66,13 @@ select {
   background: #fafaff;
   transform: translateX(2px);
 }
-.response-subnav {
+.section-subnav {
   position: sticky;
   top: 48px;
   z-index: 19;
   scrollbar-width: none;
 }
-.response-subnav::-webkit-scrollbar { display: none; }
+.section-subnav::-webkit-scrollbar { display: none; }
 .metric-number {
   font-family: "Review Condensed", "Arial Narrow", sans-serif;
   font-weight: 400;
@@ -140,7 +140,7 @@ select {
 }
 .registry-row > * { min-width: 0; overflow-wrap: anywhere; }
 .registry-head { font-size: 10px; color: #677182; background: #f8f9fb; text-transform: uppercase; }
-.rule-workspace { position: sticky; top: 60px; max-height: calc(100vh - 76px); overflow-y: auto; }
+.rule-workspace { position: sticky; top: 102px; max-height: calc(100vh - 118px); overflow-y: auto; }
 @media (max-width: 1199px) {
   .rule-workspace { position: static; max-height: none; }
 }
@@ -190,9 +190,6 @@ select {
   .tool-rail {
     width: 32px !important;
   }
-  .main-content {
-    margin-left: 32px !important;
-  }
   .hide-tablet {
     display: none !important;
   }
@@ -208,10 +205,7 @@ select {
   .primary-nav {
     min-width: max-content;
   }
-  .main-content {
-    margin-left: 0 !important;
-  }
-  .response-subnav { top: 44px; }
+  .section-subnav { top: 44px; }
   .tool-rail {
     display: none !important;
   }
@@ -233,19 +227,14 @@ select {
 .skills-editor-layout .chakra-stack > * {
   min-width: 0;
 }
-.skills-subnav {
-  max-width: 100%;
-  scrollbar-width: thin;
-  scrollbar-color: #cbd0d9 transparent;
-}
 .skills-editor-aside {
   min-width: 0;
 }
 @media (min-width: 1200px) {
   .skills-editor-aside {
     position: sticky;
-    top: 60px;
-    max-height: calc(100vh - 72px);
+    top: 102px;
+    max-height: calc(100vh - 114px);
     overflow-y: auto;
     padding-right: 3px;
     scrollbar-width: thin;
@@ -267,9 +256,6 @@ select {
     gap: 8px !important;
     margin-bottom: 10px !important;
   }
-  .skills-page .skills-subnav {
-    margin-bottom: 12px !important;
-  }
   .skills-editor-actions {
     width: 100%;
     justify-content: flex-start !important;
@@ -284,4 +270,14 @@ select {
   .skills-editor-aside .chakra-form__label {
     margin-bottom: 3px !important;
   }
+}
+
+.response-metric { transition: border-color .16s ease, box-shadow .16s ease; }
+.response-metric:hover { border-color: #9ba8bd; box-shadow: 0 4px 16px #17243c0a; }
+.response-metric:focus-visible { outline: 2px solid #6056e8; outline-offset: 3px; }
+.response-action-row:last-child { border-bottom: 0; }
+.response-action-row:hover { background: #fafbfd; }
+@media (prefers-reduced-motion: reduce) {
+  .response-workspace.page-enter { animation: none; }
+  .response-metric { transition: none; }
 }

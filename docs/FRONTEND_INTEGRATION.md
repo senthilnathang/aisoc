@@ -4,7 +4,8 @@
 domain actions, error normalization, local tenant propagation, and auth/session
 handling. In token mode the backend binds tenant identity to the credential.
 
-During development, Vite proxies `/api` and `/health` to `http://localhost:3002`.
+The normal launcher proxies `/api` and `/health` to the active Go API on 3002.
+An isolated development frontend selects Go on 3003 through `AISOC_API_PROXY_TARGET`.
 Deployments can set `VITE_API_URL` to an absolute BFF URL.
 
 The application uses clean client-side routes. Production web servers must serve
@@ -90,5 +91,9 @@ accepts `size` (px), `color`, and spread props. No external icon library is requ
 6. ~~Replace hunt metrics/list data and submit ad-hoc hunts through create/run.~~  ✅
 7. ~~Load threat intel reports and wire hunt launching.~~  ✅
 
-Each screen retains its static fixture as a development fallback when the API is unavailable.
-Remove fallbacks once end-to-end tests cover that screen.
+API-backed case, detection and authoring workflows expose loading/error states;
+static demonstration content remains in some dashboard/Memory areas. Such content
+is not a substitute for persisted API results or evidence of live integrations.
+Shared HTTP scenarios and operator-driven browser checks are described in
+[testing](TESTING.md). Production bundles and the compatibility alias remain in
+`frontend/dist/`; source assets live in `frontend/public/`.

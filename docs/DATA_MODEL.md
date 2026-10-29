@@ -1,15 +1,23 @@
 # Data Model
 
+PostgreSQL is the active datastore as of 2026-10-29. The authoritative physical
+schema is in `backend-go/migrations/` (19 migrations, 28 tables). The entity catalog
+below retains legacy JSON-column names to explain the preserved HTTP/recovery
+contract. Go uses typed columns and JSONB documents, composite tenant keys and
+transactional audits; artifacts/feedback share `case_records`. Migration converts
+all 26 legacy tables and preserves IDs, history, credential hashes and job state.
+Connector secrets use authenticated encryption with a separately retained key.
+
 Operational records are tenant-scoped. Mutable resource tables generally carry
 `created_at` and `updated_at`; immutable version/application snapshots use their
 creation timestamp only. Operator credentials are file-backed and browser
-sessions are held in backend memory, not in SQLite.
+sessions are held in backend memory, not in the domain database.
 
 ## Entities
 
 ### investigations
 
-- `id` text primary key
+- `id` text; physical primary key is `(tenant_id, id)`
 - `tenant_id` text
 - `title`, `summary`, `source`, `category`
 - `severity`: low, medium, high, critical
@@ -131,7 +139,7 @@ later edit does not rewrite past guidance. These relationships are tenant-scoped
 
 ## Seed and sample data
 
-`demo` contains seeded cases, rules, connectors, remediations, threat reports,
+The migrated release's `demo` tenant contains legacy seeded cases, rules, connectors, remediations, threat reports,
 indicators, artifacts, and investigation steps for local UI review. These are
 examples, not live customer telemetry or validated performance metrics. New
 Skills are tenant-created; starter templates are frontend drafts until saved.
@@ -139,9 +147,29 @@ Environment suggestions require at least two closed/resolved cases with analyst
 determinations from the same observed source and category. Suggestions are
 pattern-based drafts, not AI findings.
 
+Fresh Go databases do not automatically seed the legacy demo dataset. The legacy
+SQLite seed process belongs to comparison fixtures; migration imports existing
+records without reseeding or duplicating templates.
+
+## Physical PostgreSQL additions
+
+The 28-table count includes 27 tables declared in SQL migrations plus
+`schema_migrations`, maintained by the migration runner. Legacy `artifacts` and
+`investigation_feedback` are represented by typed `case_records` rows with JSONB
+documents, rather than separate Go tables. `investigations.insight_refs` is JSONB;
+the `_json` names above describe the preserved legacy representation.
+
+`tenants` anchors domain ownership. `jobs` is the separate specialist lease/attempt
+queue, not `investigation_jobs`. `migration_imports` records snapshot provenance.
+Response definitions/versions and pinned case runbooks/events preserve immutable
+snapshots and checklist history. Composite foreign keys prevent cross-tenant
+relationships. See the [legacy-to-Go map](migration/DATA_MIGRATION_MAP.md) and
+the SQL migrations for exact types, indexes and deletion rules.
+
 ## Migration Notes
 
 - JSON text columns become PostgreSQL `jsonb`.
 - IDs remain application-generated strings to ease offline fixtures/imports.
 - Every future unique constraint includes `tenant_id` unless globally scoped.
-- Connector secrets move to a secrets manager; SQLite stores local placeholders only.
+- External secret-manager integration is a future extension; Go currently stores
+  authenticated encrypted envelopes, with the key outside PostgreSQL.

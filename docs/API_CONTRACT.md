@@ -1,5 +1,12 @@
 # HTTP API Contract
 
+The Go/PostgreSQL backend implements this contract after the 2026-10-29 cutover.
+Supported workflows are verified by shared HTTP and browser suites. Deliberate
+validation/security differences are recorded in
+[ADR 003](adr/003-replacement-contract-decisions.md).
+The [endpoint matrix](migration/ENDPOINT_MATRIX.md) lists all 97 registered legacy
+contracts. Go adds operational readiness/metrics outside that legacy inventory.
+
 ## Skills
 
 Skills are tenant-scoped. The API stores plain-language guidance and relevance
@@ -66,13 +73,13 @@ returns 403. Only local development mode accepts an untrusted tenant header.
 
 ## Authentication and hybrid API intake
 
-Local development defaults to login-free mode for app validation. Initialize
-credentials using `npm --prefix backend run auth:init` if not already initialized.
-To enable login, restart with `AUTH_MODE=token ./run.sh start backend`. For
-direct server startup, set `AUTH_MODE=token` and `AUTH_OPERATORS_FILE` to that
-JSON file. It contains an array of `{id, tenant_id, token_hash}` records, where
-`token_hash` is the SHA-256 hex digest of a high-entropy token. The bootstrap
-command creates private files and refuses to overwrite existing credentials.
+Local development defaults to login-free mode. Direct Go startup uses
+`AISOC_GO_AUTH_MODE=token` and `AISOC_GO_OPERATORS_FILE` pointing to a private
+JSON array of `{id, tenant_id, token_hash}`; the hash is lowercase SHA-256 hex
+of a high-entropy operator token. The initialized release reads `auth_mode` and
+`operators_file` from its private settings. Node's `AUTH_MODE` is not a Go setting.
+See [authentication configuration](migration/OPERATIONS.md#authentication-configuration)
+for credential bootstrap and release restart instructions.
 
 | Method | URL (relative to `/api/v1`) | Access / purpose |
 |---|---|---|
@@ -125,8 +132,10 @@ senders must normalize vendor payloads themselves; no vendor polling is implied.
 
 Browser mutations require `X-CSRF-Token` from session metadata. Sessions expire
 after eight hours and are invalidated by logout or backend restart. Deploy the
-browser and `/api` under the same origin. Production requires `NODE_ENV=production`,
-token mode, HTTPS termination, and exact HTTPS `APP_ORIGINS` (comma separated).
+browser and `/api` under the same origin. Direct Go production configuration uses
+`AISOC_GO_ENV=production`, token mode, secure cookies, HTTPS termination and exact
+HTTPS `AISOC_GO_APP_ORIGINS` (comma separated). The release launcher maps the
+equivalent private settings; operational endpoints remain loopback-only.
 Operator credentials grant workspace administration; enterprise SSO and granular
 operator roles are not implemented. Change operator hashes and restart to revoke
 operator access and existing sessions. Source-key revocation requires no restart.
@@ -135,7 +144,9 @@ operator access and existing sessions. Source-key revocation requires no restart
 
 | Method | URL | Purpose |
 |---|---|---|
-| GET | `/health` | Liveness, database status, version |
+| GET | `/health` | Process liveness and datastore/version metadata; not a database probe |
+| GET | `/ready` | PostgreSQL connectivity and migration-checksum readiness |
+| GET | `/metrics` | Private aggregate HTTP, Go heap, pool and investigation-queue metrics |
 | GET | `/api/v1/dashboard` | Queue metrics and recent activity |
 
 ## Investigations
@@ -261,7 +272,7 @@ Secrets are accepted for local testing but are never returned by list/detail end
   Each step contains its persisted tool name, request, response, and conclusion.
   New cases have no invented steps or evidence. Demo seed records identify their
   provenance. Deleting a case cascades its artifacts, feedback, and steps.
-- Record mutations and their audit writes share a SQLite transaction. Historical
+- Record mutations and their audit writes share a PostgreSQL transaction. Historical
   audit events survive resource deletion; current-resource history routes return
   404 after deletion. Audit details include changed field names, not connector
   secret values.
@@ -311,8 +322,9 @@ it does not evaluate a detection rule's query.
 latest job status and tenant-scoped counts (received alerts, active runs, open cases).
 Investigation details include `alerts` and the latest 20 `jobs`, newest first.
 
-The worker advances one local phase per 1.5-second tick, inside a SQLite write
-transaction. Each phase and its transcript/audit commit together. Restart resumes
+The Go worker checks for work every 100 ms and commits one local phase per claimed
+job inside a PostgreSQL transaction. Row locks with `SKIP LOCKED` coordinate
+workers. Each phase and its transcript/audit commit together. Restart resumes
 the next uncommitted phase. A failed phase rolls back its partial writes and marks
 the run failed; it is not automatically retried. Reinvestigate queues a new run,
 preserving existing steps and deduplicating imported artifacts. An active run
@@ -328,3 +340,43 @@ Alerts retain references to their rules/cases for durable deduplication. Deletin
 a referenced rule or case returns **409 ALERT_REFERENCE_EXISTS**; disable the rule
 or close the case instead. `X-Tenant-Id` is still a local-development selector,
 not authenticated tenant authority. Do not expose intake as a production webhook.
+
+### Response plans and case runbooks
+
+All response endpoints use the authenticated tenant and existing operator/session
+authorization. Definitions do not execute external actions.
+
+- `GET /api/v1/response-plans` lists the tenant's active and archived plans.
+- `POST /api/v1/response-plans` creates a versioned plan.
+- `GET /api/v1/response-plans/:id` reads the current definition.
+- `PATCH /api/v1/response-plans/:id` saves a full definition with
+  `expected_version`. Stale saves return 409 without changing history.
+- `POST /api/v1/response-plans/:id/duplicate` creates an active independent copy.
+- `POST /api/v1/response-plans/:id/state` takes `expected_version` and
+  `state` (`active` or `archived`). Archived plans cannot be edited or newly
+  attached; existing case checklists remain available.
+- `GET /api/v1/response-plans/:id/history` returns version snapshots, actor,
+  timestamp, and change type.
+
+Plan definitions contain `kind` (`workflow` or `runbook`), `title`,
+`description`, `domain`, `trigger`, and 1–50 ordered `steps`. Each step has
+`title`, `instructions`, and `approval_required`. For runbooks, `trigger`
+describes the owner or usage condition. Workflow triggers are descriptive
+configuration, not an active scheduler.
+
+- `GET /api/v1/investigations/:id/runbooks` returns attached snapshots, progress,
+  and activity history.
+- `POST /api/v1/investigations/:id/runbooks` takes `plan_id` and
+  `expected_version`. Only active runbooks can be attached, once per case.
+  The attachment pins the exact plan version and ordered steps.
+- `PATCH /api/v1/investigations/:id/runbooks/:assignmentId` takes the attachment's
+  `expected_version`, zero-based `step_index`, `completed`, `note`, and
+  `approval_confirmed`. Completing an approval-gated step requires explicit
+  confirmation; this is the recording analyst's attestation, not a separate
+  second-person authorization. Notes and actor/timestamp changes are audited.
+  Steps can be reopened without losing earlier activity.
+
+Definition updates and checklist changes save their history transactionally.
+Cross-tenant and cross-case IDs return 404. The legacy SQLite migration seeded
+demo plans once; those records were preserved by the PostgreSQL import. Fresh Go
+databases and new tenants do not automatically seed response templates.

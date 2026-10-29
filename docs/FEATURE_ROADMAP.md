@@ -6,6 +6,10 @@ workflows and responsive behavior. Local development remains login-free by
 default; optional token authentication is available for validating secured flows.
 Each phase adds to the current UI rather than replacing it.
 
+Updated 2026-10-29: Go/PostgreSQL migration and optional Rust/WASM/Python runtime
+foundations are complete. See [delivery status](ROADMAP.md) for current operational
+follow-up; the phases below describe product capabilities beyond local migration.
+
 ## Current foundation
 
 - **Cases and investigations:** case detail, evidence, free-form analyst comments,
@@ -40,15 +44,16 @@ The local prototype foundation is implemented: cases, evidence and history;
 detection registry and alert intelligence; normalized alert intake, source-key
 lifecycle and durable local processing; and Skills authoring, materials, matching,
 suggestions and outcomes. `docs/TESTING.md` lists the specific automated API
-coverage. The current suite does not yet have automated UI or end-to-end tests.
+coverage. Shared real-HTTP end-to-end scenarios and operator-driven Playwright
+scripts exist; comprehensive browser/visual regression automation in CI remains work.
 
 Next work, in dependency order:
 
 1. Complete one real, read-only provider adapter after a test tenant and API
    credentials are available. Connector health now stays `untested` unless a
    live adapter verifies it; seeded integrations no longer claim to be
-   operational. The next slice is secure credential storage and a CrowdStrike
-   OAuth/read-only alerts adapter, followed by bounded alert sync, freshness,
+   operational. Tenant-bound encrypted credential storage is implemented. The
+   next slice is a CrowdStrike OAuth/read-only alerts adapter, followed by bounded alert sync, freshness,
    provenance and tenant-isolation validation.
 2. Add source-backed read-only case tools and evidence citations to the existing
    transcript. Preserve the deterministic worker as a fallback and keep plans
@@ -202,13 +207,13 @@ the same filters as the screen, and each metric includes its definition and peri
 
 - Add production identity and role-based access, tenant provisioning, managed
   secret storage, HTTPS, rate limiting, database backups, and restore procedures.
-- Move long-running work to a durable queue/worker with cancellation, concurrency
-  limits, retries, backpressure, and workload isolation.
+- Extend the existing durable Go workers with production backpressure, workload
+  isolation and provider-specific retry/recovery policies.
 - Add load tests and capacity targets before making claims about multi-million
-  alert processing. Partition or move persistence to PostgreSQL when measurements
-  require it; archive large evidence in object storage.
-- Add service health/readiness, request correlation, audit export, metrics, alerts,
-  and operational runbooks.
+  alert processing. PostgreSQL is already active; partition only when measurements
+  justify it and archive large evidence in object storage when needed.
+- Extend existing health/readiness, request correlation, local metrics and
+  operational runbooks with production telemetry, audit export and alerts.
 
 **Done when:** restore, tenant isolation, worker recovery, and target throughput
 are demonstrated in a production-like environment before enabling cloud onboarding.

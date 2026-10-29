@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {argumentsFor,target,client,output} from './harness.mjs';
+const options=argumentsFor(),server=await target(options),events=[];
+const tenant='rules-'+randomUUID(),req=client(server.url,tenant,events),base='/api/v1/detection-rules';
+try{
+ const input={name:'New detection',severity:'high'};
+ const rule=await req('POST',base,input,201),path=base+'/'+rule.id;
+ assert.match(rule.id,/^RULE-/);assert.equal(rule.enabled,true);assert.equal(rule.execution_mode,'scheduled');assert.equal(rule.routing,'Investigate');assert.equal(rule.schedule,'Every 5 minutes');assert.equal(rule.lookback_window,'15 minutes');assert.deepEqual(rule.mitre_techniques,[]);assert.equal(rule.version,undefined);
+ const initial=await req('GET',path);assert.equal(initial.version,1);assert.equal(initial.versions.length,1);assert.equal(initial.false_positive_rate,null);assert.equal(initial.detections,0);assert.deepEqual(initial.bindings,[]);assert.equal(initial.history[0].action,'created');
+ const updated=await req('PATCH',path,{description:'Changed description',mitre_techniques:['T1059'],routing:'Escalate',expected_version:1,unknown:'removed'});
+ assert.equal(updated.description,'Changed description');assert.equal(updated.version,undefined);
+ let detail=await req('GET',path);assert.equal(detail.version,2);assert.equal(detail.versions[1].snapshot.description,'');assert.equal(detail.versions[0].snapshot.description,'Changed description');assert.deepEqual(detail.history[0].details.fields,['description','mitre_techniques','routing','expected_version']);
+ const conflict=await req('PATCH',path,{name:'Stale',expected_version:1},409);assert.equal(conflict.error.code,'VERSION_CONFLICT');assert.equal(conflict.error.message,'This rule changed. Reload it before saving.');
+ await req('PATCH',path,{description:'Changed description',expected_version:2});
+ detail=await req('GET',path);assert.equal(detail.version,2);assert.equal(detail.versions.length,2);assert.equal(detail.history.length,3);
+ const before=detail.updated_at;await req('PATCH',path,{unknown:'removed'});detail=await req('GET',path);assert.equal(detail.updated_at,before);assert.deepEqual(detail.history[0].details.fields,[]);assert.equal(detail.version,2);
+ const toggled=await req('POST',path+'/toggle');assert.equal(toggled.enabled,false);detail=await req('GET',path);assert.equal(detail.version,3);
+ const clone=await req('POST',path+'/clone',undefined,201);assert.equal(clone.name,rule.name+' (copy)');assert.equal(clone.enabled,false);assert.deepEqual(clone.mitre_techniques,['T1059']);assert.notEqual(clone.id,rule.id);
+ const cloned=await req('GET',base+'/'+clone.id);assert.equal(cloned.version,1);assert.equal(cloned.history[0].action,'cloned');assert.equal(cloned.history[0].details.source_rule_id,rule.id);
+ const filtered=await req('GET',base+'?search=Changed&severity=high&limit=1');assert.equal(filtered.items.length,1);
+ assert.deepEqual((await req('GET',base+'?severity=low')).items,[]);
+ const race=await Promise.all(['Winner A','Winner B'].map(async name=>{const r=await fetch(server.url+path,{method:'PATCH',headers:{'content-type':'application/json','x-tenant-id':tenant},body:JSON.stringify({name,expected_version:3})});return r.status;}));assert.deepEqual(race.sort(),[200,409]);
+ detail=await req('GET',path);assert.equal(detail.version,4);assert.equal(detail.versions.length,4);
+ const toggles=await Promise.all([req('POST',path+'/toggle'),req('POST',path+'/toggle')]);assert.deepEqual(toggles.map(r=>r.enabled).sort(),[false,true]);assert.equal((await req('GET',path)).version,6);
+ for(const [method,suffix,body] of [['GET','',undefined],['GET','/history',undefined],['PATCH','',{name:'foreign'}],['POST','/toggle',undefined],['POST','/clone',undefined],['DELETE','',undefined]])await req(method,path+suffix,body,404,{'x-tenant-id':tenant+'-foreign'});
+ for(const body of [{},{name:' ',severity:'high'},{...input,enabled:'yes'},{...input,routing:'invalid'},{...input,mitre_techniques:[{}]}])await req('POST',base,body,400);
+ await req('PATCH',path,{expected_version:0},400);await req('GET',base+'?limit=0',undefined,400);
+ await req('DELETE',path,undefined,204);await req('GET',path,undefined,404);await req('GET',path+'/history',undefined,404);
+ assert.equal((await req('GET',base+'/'+clone.id)).version,1);
+ await output(options.output||'output/backend-parity/detection-rules.json',{passed:true,backend:options.label||(server.owned?'node':'external'),request_count:events.length,persistence_fixture:{tenant,rule_id:clone.id},checks:['defaults and raw/detail shapes','partial edits and immutable versions','unchanged edits audit without version','unknown-field stripping','optimistic conflicts','atomic concurrent toggles','disabled clone','tenant isolation','validation','delete independent of clone'],scope:'New rules only; no ingestion/source dependencies'});
+ console.log('PASS detection rule authoring');
+}finally{await server.close();}

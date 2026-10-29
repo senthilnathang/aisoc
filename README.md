@@ -1,87 +1,123 @@
-# AISOC Local Replica
+# AISOC
 
-Local, screenshot-driven React replica with a SQLite-backed service.
+Local security-operations application: React frontend, Go API and investigation
+worker, PostgreSQL persistence, and optional Rust/WASM and Python specialist
+workers. The Node/SQLite backend was replaced on **2026-10-29**. All 97 legacy
+routes are implemented for supported workflows; deliberate differences are in
+[ADR 003](docs/adr/003-replacement-contract-decisions.md).
 
-## Workspace
-
-- `frontend/` - React, Chakra UI, Vite
-- `backend/` - TypeScript, Fastify, Node SQLite
-- `docs/` - architecture, API, developer setup, data model, test strategy, and roadmap
-- `screenshots/` - visual references
-
-## Development
+## Run the initialized application
 
 ```bash
-npm --prefix backend ci
-npm --prefix frontend ci
-./run.sh start           # Start and health-check both services
-./run.sh status
+./run.sh start both
+./run.sh status both
 ./run.sh logs backend
-./run.sh stop            # Stop only this launcher's process groups
+./run.sh stop both
 ```
 
-`run.sh` follows the service-management pattern in `/opt/AgentGuard/run.sh`,
-adapted to this repository's Node/SQLite backend and Vite frontend. Targets are
-`all`, `backend`, and `frontend`. Runtime logs and PID files live in `.run/`.
-After backend source changes, run `./run.sh stop backend` followed by
-`./run.sh start backend`. Frontend changes reload through Vite.
+| Service | Address |
+|---|---|
+| Frontend | http://localhost:8080 |
+| Go API | http://127.0.0.1:3002 |
+| Readiness | http://127.0.0.1:3002/ready |
+| Release PostgreSQL | 127.0.0.1:55436 |
 
-Default URLs:
+`run.sh` defaults to Go. A private `.run/backend-mode` override supports explicit
+rollback. Backend startup starts PostgreSQL, the Go API and investigation worker;
+it does not start optional specialists. The optimized API/worker binaries are
+installed in the release. Comparison and development stacks are stopped by default.
 
-- Frontend: `http://localhost:8080`
-- Backend: `http://localhost:3002`
-- Health: `http://localhost:3002/health`
+The launcher requires initialized `.run/go-runtime/` data, private settings and
+verified binaries, which are intentionally not committed. For a **fresh checkout**,
+follow [development setup](docs/DEVELOPMENT.md) to create an isolated Go database
+and start a frontend against port 3003. Do not rerun historical cutover to start development.
 
-Local development opens directly without login so the app can be validated.
-To enable operator authentication later, initialize credentials once with
-`npm --prefix backend run auth:init`, stop the backend, then start it with
-`AUTH_MODE=token ./run.sh start backend`. This workspace already has credentials.
-When token mode is enabled, sign in with
-the private token in `.run/auth/operator-token`; never commit or share that file.
-Browser sessions use HttpOnly cookies and CSRF protection. Restarting the backend
-signs out browser sessions. Development defaults to local mode with `X-Tenant-Id`;
-production requires token mode and HTTPS configuration.
+## Implemented workflows
 
-Open **Build → API sources** to connect any cloud, on-premises, or custom sender.
-Choose a detection rule and issue a scoped key. The sender maps its native event
-using the configurable field mapper and sample preview, or sends normalized JSON
-directly to the source endpoint. Keys are shown
-once, stored as hashes, expire, and can be rotated or revoked immediately.
-Source keys cannot read cases or administer the workspace. See
-[the API contract](docs/API_CONTRACT.md) for endpoints and deployment settings.
+- Investigation cases, evidence, feedback, audit history, determination and retry.
+- Detection authoring, versions, registry filters, alert intelligence and routing.
+- Scoped API-source keys, normalized/native intake, mapping preview and deduplication.
+- Durable three-phase local investigations with restart and crash recovery.
+- Versioned response plans, pinned runbooks, checklists and approval recording.
+- Skills authoring, material versions, suggestions, matching snapshots and outcomes.
+- Connector configuration, threat intelligence and local hunt/response simulations.
 
-Detection rules support creation, catalog template import, query/schedule editing,
-enable/disable, routing preferences, and recorded change history. Investigation
-details load case-specific summaries, evidence, tool transcripts, feedback, and
-history from SQLite. These records survive service restarts.
+The worker records supplied evidence, checks tenant-local indicators and records
+review results. It does not execute SIEM queries, call security providers, perform
+containment or run autonomous LLM investigations. Skills record advisory guidance.
+Provider adapters, enterprise identity and hosting are separate [roadmap work](docs/ROADMAP.md).
 
-Open **Skills** for tenant-scoped investigation and hunting guidance. Skills can
-be drafted, published, scoped to modules/providers/alert context, and attached to
-versioned reference materials. Matching saves the skill version and rationale on
-cases or hunts for analyst review. Suggestions are derived from repeated reviewed
-cases; outcome reporting shows sample counts and does not imply causal improvement.
-See the [developer guide](docs/DEVELOPMENT.md), [architecture](docs/ARCHITECTURE.md),
-[API contract](docs/API_CONTRACT.md), and [testing strategy](docs/TESTING.md).
+## Authentication and data
 
-Open **Investigate → Submit alert → Use example alert** to exercise the local
-pipeline. Incoming alerts are deduplicated by tenant, source, and source alert ID.
-Rule routing determines whether an investigation is created. A durable background
-worker records supplied evidence, compares local indicators, and records a review
-outcome. The UI refreshes progress automatically. Reinvestigating an ingested
-alert queues another run while retaining its earlier evidence and transcript.
+Local mode is login-free and accepts the development tenant header. Token mode
+binds tenants to operators; browser sessions use HttpOnly cookies, CSRF and exact
+origins. Source credentials authorize intake only. Go uses `AISOC_GO_*` settings;
+the release launcher reads equivalent fields from private settings. Node variables
+`AUTH_MODE` and `WORKER_ENABLED` do not configure Go. See
+[authentication configuration](docs/migration/OPERATIONS.md#authentication-configuration).
 
-The local worker starts with the backend; `WORKER_ENABLED=false ./run.sh start backend`
-disables it for manual development. Stop a running backend before changing this
-setting. Pending phases resume on restart; failed runs require an explicit retry.
+PostgreSQL holds active data. Connector credentials use encryption with a separate
+key; recovery needs both database backup and key. Retain private snapshots, backups
+and Node reference code through at least the seven-day rollback window. Post-write
+rollback must export current Go data, never restart stale SQLite. See
+[operations and recovery](docs/migration/OPERATIONS.md).
 
-This is a local prototype: detection queries are stored, not executed against a
-SIEM. The worker is deterministic, not an LLM agent, and does not run external
-tools. Catalog templates are imported disabled, without query logic. Remediation,
-connector tests, and hunts remain local simulations. Manual/seed cases without
-an ingested alert retain the earlier manual review behavior.
+## Verification and comparison
 
-Reference and implementation screenshots are in `output/playwright/`.
-See [the delivery roadmap](docs/ROADMAP.md) for completed work and remaining scope.
-See the [AI SOC feature roadmap](docs/FEATURE_ROADMAP.md) for the staged plan
-covering connectors, investigations, detection, agents, response, hunting, and
-reporting.
+```bash
+python3 scripts/framework/check.py
+node --test tests/backend-parity/*.test.mjs tests/backend-performance/*.test.mjs tests/frontend/*.test.mjs
+npm --prefix frontend run build
+python3 scripts/check_markdown_links.py
+```
+
+Install [verification prerequisites](docs/DEVELOPMENT.md#verification) first.
+Framework checks use disposable PostgreSQL and specialist processes. Tests must
+not write to the release; the HTTP harness rejects active ports 3002/8080.
+
+For an independent Node comparison application:
+
+```bash
+python3 scripts/runtime/node-compare.py start   # API 3004, frontend 8082
+python3 scripts/runtime/node-compare.py status
+python3 scripts/runtime/node-compare.py stop
+```
+
+It uses separate seeded SQLite data and never switches the release. Browser data
+is independent; use fresh matched fixtures for measured performance:
+
+```bash
+python3 scripts/framework/benchmark.py --controlled --postgres-diagnostics --output-dir output/backend-performance/new-campaign
+```
+
+Use a new output directory per campaign. Stacks run sequentially with matching
+token auth, two-CPU affinity, eight clients, 3,000 requests and three repeats per
+small/large dataset. Final optimized median Node/Go throughput was **197/273
+requests/s** on small and **180/221 requests/s** on large, with zero errors and no
+per-operation p95/p99 regression above 10%. These shared-host results are not
+production capacity guarantees. [Performance evidence](docs/migration/PERFORMANCE.md)
+records the earlier anomaly, before/after measurements and resource costs.
+
+## Repository layout
+
+| Path | Purpose |
+|---|---|
+| `frontend/src/`, `frontend/public/` | React application and editable static assets |
+| `backend-go/` | Active API, workers, domain modules and PostgreSQL migrations |
+| `services/` | Optional Rust/WASM and Python runtimes |
+| `backend/` | Retained Node reference for comparisons and rollback |
+| `contracts/` | Route inventory, journey mapping and protobuf/plugin contracts |
+| `scripts/` | Framework checks, migration and runtime management |
+| `tests/` | HTTP compatibility, performance and build-tool regression tests |
+| `deploy/` | Optional service and backup timer templates |
+| `docs/` | Architecture, API, model, development, testing, roadmap and decisions |
+| `docs/reference/` | Historical assessment and original visual references |
+
+Build output stays in component `dist/`, `bin/` or `target/` directories.
+Private runtime state stays in ignored `.run/`; generated evidence in `output/`.
+Lockfiles, migrations, contracts and environment examples remain tracked.
+Frontend builds no longer copy generated bundles into the source root.
+
+Start with [architecture](docs/ARCHITECTURE.md), [developer setup](docs/DEVELOPMENT.md),
+[API](docs/API_CONTRACT.md), [data model](docs/DATA_MODEL.md),
+[testing](docs/TESTING.md), or [migration completion](docs/migration/RELEASE_STATUS.md).

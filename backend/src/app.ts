@@ -10,16 +10,19 @@ import { PlatformService } from "./services/platform-service.js";
 import { AlertPipeline } from "./services/alert-pipeline.js";
 import { ApiSources } from "./services/api-sources.js";
 import { Skills } from "./services/skills.js";
+import { ResponsePlans, registerResponseRoutes } from "./response.js";
 import { installAuth } from "./auth.js";
 
-export async function buildApp(overrides: Partial<AppConfig> = {}): Promise<FastifyInstance> {
+export async function buildApp(overrides: Partial<AppConfig> = {}, configure?: (app: FastifyInstance) => void): Promise<FastifyInstance> {
   const config = loadConfig(overrides);
   const database = openDatabase(config.databasePath);
   const store = new Store(database);
+  const responsePlans = new ResponsePlans(database);
   const skills = new Skills(database, store);
   const pipeline = new AlertPipeline(database, store, skills);
   const service = new PlatformService(store, pipeline, skills);
   const app = Fastify({ logger: process.env.NODE_ENV === "test" ? false : { redact: ["req.headers.authorization", "req.headers.cookie", "req.headers.x-csrf-token", "res.headers.set-cookie"] } });
+  configure?.(app);
   const sources = new ApiSources(database, store);
 
   await app.register(cors, { origin: config.appOrigins, credentials: true });
@@ -44,6 +47,7 @@ export async function buildApp(overrides: Partial<AppConfig> = {}): Promise<Fast
     }
   });
   app.addHook("onClose", async () => { if (workerTimer) clearInterval(workerTimer); store.close(); });
+  registerResponseRoutes(app, responsePlans, config.defaultTenantId);
   await registerRoutes(app, service, config.defaultTenantId, pipeline, sources, skills);
   return app;
 }

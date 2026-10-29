@@ -6,6 +6,9 @@ RUN="$ROOT/.run"
 mkdir -p "$RUN"
 command_name=${1:-start}
 target=${2:-all}
+backend_mode=go
+if [[ -f "$RUN/backend-mode" ]]; then read -r backend_mode < "$RUN/backend-mode"; fi
+case "$backend_mode" in node|go) ;; *) echo 'Invalid .run/backend-mode; expected node or go' >&2; exit 2;; esac
 case "$target" in all|both) services=(backend frontend);; backend|frontend) services=("$target");; *) echo 'Target must be backend, frontend, or all' >&2; exit 2;; esac
 owned_pid() {
   local service=$1 pid
@@ -16,11 +19,35 @@ owned_pid() {
   printf '%s' "$pid"
 }
 for service in "${services[@]}"; do
+  if [[ "$service" == backend && "$backend_mode" == go ]]; then
+    case "$command_name" in
+      start) python3 "$ROOT/scripts/runtime/manage.py" start --workers;;
+      stop|status) python3 "$ROOT/scripts/runtime/manage.py" "$command_name";;
+      logs) tail -n 60 "$RUN/go-runtime/api.log";;
+      *) echo 'Usage: ./run.sh {start|stop|status|logs} [all|backend|frontend]' >&2; exit 2;;
+    esac
+    continue
+  fi
   case "$command_name" in
     start)
       if pid=$(owned_pid "$service"); then echo "$service already running (PID $pid)"; continue; fi
       [[ -d "$ROOT/$service/node_modules" ]] || { echo "Run npm ci in $service first" >&2; exit 1; }
+      if [[ "$service" == frontend ]]; then
+        if [[ "$backend_mode" == go ]]; then
+          release_port=$(python3 -c 'import json,sys; print(int(json.load(open(sys.argv[1]))["api_port"]))' "$RUN/go-runtime/settings.json")
+          export AISOC_API_PROXY_TARGET="http://127.0.0.1:$release_port"
+        else
+          export AISOC_API_PROXY_TARGET="http://127.0.0.1:3002"
+        fi
+      fi
       if [[ "$service" == backend ]]; then
+        if [[ -f "$RUN/node-database-path" ]]; then
+          read -r restored_database < "$RUN/node-database-path"
+          restored_database=$(readlink -f "$restored_database")
+          case "$restored_database" in "$RUN/"*) ;; *) echo 'Rollback database must be inside .run' >&2; exit 2;; esac
+          [[ -f "$restored_database" ]] || { echo 'Rollback database is missing' >&2; exit 2; }
+          export DATABASE_PATH="$restored_database"
+        fi
         # Keep local app validation login-free; authentication remains opt-in.
         if [[ "${NODE_ENV:-}" == production ]]; then
           export AUTH_MODE="${AUTH_MODE:-token}"

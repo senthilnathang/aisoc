@@ -1,0 +1,1116 @@
+[
+  {
+    "name": "missing all",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'kind'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "kind"
+            },
+            "message": "must have required property 'kind'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing kind",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'kind'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "kind"
+            },
+            "message": "must have required property 'kind'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing title",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'title'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "title"
+            },
+            "message": "must have required property 'title'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing description",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'description'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "description"
+            },
+            "message": "must have required property 'description'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing domain",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'domain'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "domain"
+            },
+            "message": "must have required property 'domain'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing trigger",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'trigger'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "trigger"
+            },
+            "message": "must have required property 'trigger'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing steps",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'steps'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "steps"
+            },
+            "message": "must have required property 'steps'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "title \"\"",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/title must NOT have fewer than 1 characters",
+        "details": [
+          {
+            "instancePath": "/title",
+            "schemaPath": "#/properties/title/minLength",
+            "keyword": "minLength",
+            "params": {
+              "limit": 1
+            },
+            "message": "must NOT have fewer than 1 characters"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "title \" \"",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/title must match pattern \"\\S\"",
+        "details": [
+          {
+            "instancePath": "/title",
+            "schemaPath": "#/properties/title/pattern",
+            "keyword": "pattern",
+            "params": {
+              "pattern": "\\S"
+            },
+            "message": "must match pattern \"\\S\""
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "title \"xxxxxxxxxxxxxxxxxxx",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/title must NOT have more than 200 characters",
+        "details": [
+          {
+            "instancePath": "/title",
+            "schemaPath": "#/properties/title/maxLength",
+            "keyword": "maxLength",
+            "params": {
+              "limit": 200
+            },
+            "message": "must NOT have more than 200 characters"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "title {}",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/title must be string",
+        "details": [
+          {
+            "instancePath": "/title",
+            "schemaPath": "#/properties/title/type",
+            "keyword": "type",
+            "params": {
+              "type": "string"
+            },
+            "message": "must be string"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "title []",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/title must be string",
+        "details": [
+          {
+            "instancePath": "/title",
+            "schemaPath": "#/properties/title/type",
+            "keyword": "type",
+            "params": {
+              "type": "string"
+            },
+            "message": "must be string"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "title null",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/title must NOT have fewer than 1 characters",
+        "details": [
+          {
+            "instancePath": "/title",
+            "schemaPath": "#/properties/title/minLength",
+            "keyword": "minLength",
+            "params": {
+              "limit": 1
+            },
+            "message": "must NOT have fewer than 1 characters"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "bad kind",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/kind must be equal to constant, body/kind must be equal to constant, body/kind must match a schema in anyOf",
+        "details": [
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf/0/const",
+            "keyword": "const",
+            "params": {
+              "allowedValue": "workflow"
+            },
+            "message": "must be equal to constant"
+          },
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf/1/const",
+            "keyword": "const",
+            "params": {
+              "allowedValue": "runbook"
+            },
+            "message": "must be equal to constant"
+          },
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf",
+            "keyword": "anyOf",
+            "params": {},
+            "message": "must match a schema in anyOf"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "object kind",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/kind must be string, body/kind must be equal to constant, body/kind must be string, body/kind must be equal to constant, body/kind must match a schema in anyOf",
+        "details": [
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf/0/type",
+            "keyword": "type",
+            "params": {
+              "type": "string"
+            },
+            "message": "must be string"
+          },
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf/0/const",
+            "keyword": "const",
+            "params": {
+              "allowedValue": "workflow"
+            },
+            "message": "must be equal to constant"
+          },
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf/1/type",
+            "keyword": "type",
+            "params": {
+              "type": "string"
+            },
+            "message": "must be string"
+          },
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf/1/const",
+            "keyword": "const",
+            "params": {
+              "allowedValue": "runbook"
+            },
+            "message": "must be equal to constant"
+          },
+          {
+            "instancePath": "/kind",
+            "schemaPath": "#/properties/kind/anyOf",
+            "keyword": "anyOf",
+            "params": {},
+            "message": "must match a schema in anyOf"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "steps []",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps must NOT have fewer than 1 items",
+        "details": [
+          {
+            "instancePath": "/steps",
+            "schemaPath": "#/properties/steps/minItems",
+            "keyword": "minItems",
+            "params": {
+              "limit": 1
+            },
+            "message": "must NOT have fewer than 1 items"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "steps null",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps/0 must be object",
+        "details": [
+          {
+            "instancePath": "/steps/0",
+            "schemaPath": "#/properties/steps/items/type",
+            "keyword": "type",
+            "params": {
+              "type": "object"
+            },
+            "message": "must be object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "steps {}",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps must be array",
+        "details": [
+          {
+            "instancePath": "/steps",
+            "schemaPath": "#/properties/steps/type",
+            "keyword": "type",
+            "params": {
+              "type": "array"
+            },
+            "message": "must be array"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "steps [null]",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps/0 must be object",
+        "details": [
+          {
+            "instancePath": "/steps/0",
+            "schemaPath": "#/properties/steps/items/type",
+            "keyword": "type",
+            "params": {
+              "type": "object"
+            },
+            "message": "must be object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "steps [{}]",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps/0 must have required property 'title'",
+        "details": [
+          {
+            "instancePath": "/steps/0",
+            "schemaPath": "#/properties/steps/items/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "title"
+            },
+            "message": "must have required property 'title'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "steps [{\"title\":\"x\",\"instructions\":\"\"}]",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps/0 must have required property 'approval_required'",
+        "details": [
+          {
+            "instancePath": "/steps/0",
+            "schemaPath": "#/properties/steps/items/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "approval_required"
+            },
+            "message": "must have required property 'approval_required'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "steps [{\"title\":\"x\",\"instructions\":\"\",\"approval_required\":\"yes\"}]",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps/0/approval_required must be boolean",
+        "details": [
+          {
+            "instancePath": "/steps/0/approval_required",
+            "schemaPath": "#/properties/steps/items/properties/approval_required/type",
+            "keyword": "type",
+            "params": {
+              "type": "boolean"
+            },
+            "message": "must be boolean"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "long instructions",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps/0/instructions must NOT have more than 4000 characters",
+        "details": [
+          {
+            "instancePath": "/steps/0/instructions",
+            "schemaPath": "#/properties/steps/items/properties/instructions/maxLength",
+            "keyword": "maxLength",
+            "params": {
+              "limit": 4000
+            },
+            "message": "must NOT have more than 4000 characters"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "too many steps",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/steps must NOT have more than 50 items",
+        "details": [
+          {
+            "instancePath": "/steps",
+            "schemaPath": "#/properties/steps/maxItems",
+            "keyword": "maxItems",
+            "params": {
+              "limit": 50
+            },
+            "message": "must NOT have more than 50 items"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "patch required priority",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'expected_version'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "expected_version"
+            },
+            "message": "must have required property 'expected_version'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "state required",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'expected_version'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "expected_version"
+            },
+            "message": "must have required property 'expected_version'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "state enum",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/state must be equal to constant, body/state must be equal to constant, body/state must match a schema in anyOf",
+        "details": [
+          {
+            "instancePath": "/state",
+            "schemaPath": "#/properties/state/anyOf/0/const",
+            "keyword": "const",
+            "params": {
+              "allowedValue": "active"
+            },
+            "message": "must be equal to constant"
+          },
+          {
+            "instancePath": "/state",
+            "schemaPath": "#/properties/state/anyOf/1/const",
+            "keyword": "const",
+            "params": {
+              "allowedValue": "archived"
+            },
+            "message": "must be equal to constant"
+          },
+          {
+            "instancePath": "/state",
+            "schemaPath": "#/properties/state/anyOf",
+            "keyword": "anyOf",
+            "params": {},
+            "message": "must match a schema in anyOf"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "version 0",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/expected_version must be >= 1",
+        "details": [
+          {
+            "instancePath": "/expected_version",
+            "schemaPath": "#/properties/expected_version/minimum",
+            "keyword": "minimum",
+            "params": {
+              "comparison": ">=",
+              "limit": 1
+            },
+            "message": "must be >= 1"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "version -1",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/expected_version must be >= 1",
+        "details": [
+          {
+            "instancePath": "/expected_version",
+            "schemaPath": "#/properties/expected_version/minimum",
+            "keyword": "minimum",
+            "params": {
+              "comparison": ">=",
+              "limit": 1
+            },
+            "message": "must be >= 1"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "version 1.5",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/expected_version must be integer",
+        "details": [
+          {
+            "instancePath": "/expected_version",
+            "schemaPath": "#/properties/expected_version/type",
+            "keyword": "type",
+            "params": {
+              "type": "integer"
+            },
+            "message": "must be integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "version \"no\"",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/expected_version must be integer",
+        "details": [
+          {
+            "instancePath": "/expected_version",
+            "schemaPath": "#/properties/expected_version/type",
+            "keyword": "type",
+            "params": {
+              "type": "integer"
+            },
+            "message": "must be integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "version {}",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/expected_version must be integer",
+        "details": [
+          {
+            "instancePath": "/expected_version",
+            "schemaPath": "#/properties/expected_version/type",
+            "keyword": "type",
+            "params": {
+              "type": "integer"
+            },
+            "message": "must be integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "version null",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/expected_version must be >= 1",
+        "details": [
+          {
+            "instancePath": "/expected_version",
+            "schemaPath": "#/properties/expected_version/minimum",
+            "keyword": "minimum",
+            "params": {
+              "comparison": ">=",
+              "limit": 1
+            },
+            "message": "must be >= 1"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "root null",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must be object",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/type",
+            "keyword": "type",
+            "params": {
+              "type": "object"
+            },
+            "message": "must be object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "root []",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must be object",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/type",
+            "keyword": "type",
+            "params": {
+              "type": "object"
+            },
+            "message": "must be object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "root 1",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must be object",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/type",
+            "keyword": "type",
+            "params": {
+              "type": "object"
+            },
+            "message": "must be object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "root \"text\"",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must be object",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/type",
+            "keyword": "type",
+            "params": {
+              "type": "object"
+            },
+            "message": "must be object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "attach required",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'plan_id'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "plan_id"
+            },
+            "message": "must have required property 'plan_id'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "step required",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must have required property 'expected_version'",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "expected_version"
+            },
+            "message": "must have required property 'expected_version'"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "step index -1",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/step_index must be >= 0",
+        "details": [
+          {
+            "instancePath": "/step_index",
+            "schemaPath": "#/properties/step_index/minimum",
+            "keyword": "minimum",
+            "params": {
+              "comparison": ">=",
+              "limit": 0
+            },
+            "message": "must be >= 0"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "step index 50",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/step_index must be <= 49",
+        "details": [
+          {
+            "instancePath": "/step_index",
+            "schemaPath": "#/properties/step_index/maximum",
+            "keyword": "maximum",
+            "params": {
+              "comparison": "<=",
+              "limit": 49
+            },
+            "message": "must be <= 49"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "step index 1.5",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/step_index must be integer",
+        "details": [
+          {
+            "instancePath": "/step_index",
+            "schemaPath": "#/properties/step_index/type",
+            "keyword": "type",
+            "params": {
+              "type": "integer"
+            },
+            "message": "must be integer"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "parameter whitespace",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "params/id must match pattern \"\\S\"",
+        "details": [
+          {
+            "instancePath": "/id",
+            "schemaPath": "#/properties/id/pattern",
+            "keyword": "pattern",
+            "params": {
+              "pattern": "\\S"
+            },
+            "message": "must match pattern \"\\S\""
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "parameter length",
+    "status": 414,
+    "body": {
+      "error": "Bad Request",
+      "code": "FST_ERR_MAX_PARAM_LENGTH",
+      "message": "'/api/v1/response-plans/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' is exceeding the max param length",
+      "statusCode": 414
+    }
+  },
+  {
+    "name": "empty JSON",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "Body cannot be empty when content-type is set to 'application/json'",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "unsupported media",
+    "status": 415,
+    "body": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "Unsupported Media Type",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "malformed JSON",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "Body is not valid JSON but content-type is set to 'application/json'",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "trailing JSON",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "Body is not valid JSON but content-type is set to 'application/json'",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "whitespace JSON",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "Body is not valid JSON but content-type is set to 'application/json'",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "plain text",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body must be object",
+        "details": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/type",
+            "keyword": "type",
+            "params": {
+              "type": "object"
+            },
+            "message": "must be object"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "prototype key",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "Body is not valid JSON but content-type is set to 'application/json'",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "constructor prototype",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "Body is not valid JSON but content-type is set to 'application/json'",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "hex version",
+    "status": 404,
+    "body": {
+      "error": {
+        "code": "NOT_FOUND",
+        "message": "Response plan not found",
+        "details": null
+      }
+    }
+  },
+  {
+    "name": "singleton empty title",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "body/title must NOT have fewer than 1 characters",
+        "details": [
+          {
+            "instancePath": "/title",
+            "schemaPath": "#/properties/title/minLength",
+            "keyword": "minLength",
+            "params": {
+              "limit": 1
+            },
+            "message": "must NOT have fewer than 1 characters"
+          }
+        ]
+      }
+    }
+  }
+]

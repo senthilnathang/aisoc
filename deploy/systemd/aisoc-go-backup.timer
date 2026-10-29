@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily AISOC backup and restore verification
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=15min
+Persistent=true
+Unit=aisoc-go-backup.service
+
+[Install]
+WantedBy=timers.target
