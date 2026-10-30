@@ -43,6 +43,7 @@ Install dependencies from the repository root:
 npm --prefix frontend ci
 npm --prefix backend ci
 python3 -m venv services/python-worker/.venv
+services/python-worker/.venv/bin/python -m pip install --upgrade 'pip==26.2'
 services/python-worker/.venv/bin/pip install -r services/python-worker/requirements.txt
 ```
 

@@ -87,10 +87,14 @@ func (m *Manager) operator(value string) (Principal, bool) {
 	return Principal{}, false
 }
 func (m *Manager) origin(r *http.Request) bool {
-	origin := r.Header.Get("Origin")
-	if origin == "" {
+	values := r.Header.Values("Origin")
+	if len(values) == 0 {
 		return true
 	}
+	if len(values) != 1 || values[0] == "" {
+		return false
+	}
+	origin := values[0]
 	for _, allowed := range m.config.Origins {
 		if origin == allowed {
 			return true
@@ -114,6 +118,13 @@ func bind(w http.ResponseWriter, r *http.Request, p Principal) bool {
 
 func (m *Manager) Protect(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// CORS response headers do not prevent simple browser requests from
+		// reaching mutation handlers. Enforce the origin boundary in local mode
+		// too, before any public handler or credential-specific branch.
+		if !m.origin(r) {
+			deny(w, 403, "ORIGIN_DENIED", "This browser origin is not allowed.")
+			return
+		}
 		// Only operational endpoints and the two public auth handlers bypass auth.
 		public := r.URL.Path == "/health" || r.URL.Path == "/ready" || r.URL.Path == "/metrics" || r.URL.Path == "/api/v1/auth/login" || r.URL.Path == "/api/v1/auth/session"
 		if r.Header.Get("Origin") != "" && m.origin(r) {

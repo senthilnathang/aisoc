@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -36,6 +37,38 @@ class BenchmarkImportTests(unittest.TestCase):
         self.report.write_text(json.dumps(report))
         with self.assertRaises(ValueError): importer.prepare(self.report, self.bundle)
         self.assertFalse(self.bundle.exists())
+
+    def test_receipt_replaces_links_without_modifying_target(self):
+        target = self.root/'private.json'
+        target.write_text('preserve me')
+        for kind in ('symlink', 'hardlink'):
+            receipt = self.root/kind
+            if kind == 'symlink': receipt.symlink_to(target)
+            else: os.link(target, receipt)
+            importer.write_json(receipt, {'passed': True})
+            self.assertEqual('preserve me', target.read_text())
+            self.assertFalse(receipt.is_symlink())
+            self.assertEqual({'passed': True}, json.loads(receipt.read_text()))
+            self.assertEqual(0o600, receipt.stat().st_mode & 0o777)
+
+    def test_artifact_rejects_links_fifo_oversize_and_duplicate_keys(self):
+        link = self.root/'link'
+        link.symlink_to(self.report)
+        with self.assertRaises(OSError): importer.read_json(link, 10000)
+        fifo = self.root/'fifo'
+        os.mkfifo(fifo)
+        with self.assertRaises(ValueError): importer.read_json(fifo, 10000)
+        with self.assertRaises(ValueError): importer.read_json(self.report, 1)
+        duplicate = self.root/'duplicate.json'
+        duplicate.write_text('{"tenant_id":"a","tenant_id":"b"}')
+        with self.assertRaises(ValueError): importer.read_json(duplicate, 1000)
+
+    def test_streamed_digest_matches_and_enforces_size(self):
+        source = self.root/'large.jsonl'
+        raw = b'x' * 150000
+        source.write_bytes(raw)
+        self.assertEqual(importer.digest(raw), importer.artifact_digest(source, len(raw)))
+        with self.assertRaises(ValueError): importer.artifact_digest(source, len(raw)-1)
 
     def test_tampering_and_path_escape_rejected(self):
         importer.prepare(self.report, self.bundle)

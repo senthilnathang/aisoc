@@ -160,6 +160,10 @@ immediate interruption of every underlying operation.
 
 - Local auth is for development. Token mode binds tenant identity to an operator
   or session; source keys authorize intake only.
+- Requests carrying Origin must match the configured allowlist before authentication
+  or public handlers, including local mode; empty/duplicate Origin headers are rejected.
+  Requests without Origin remain supported for non-browser clients. This is not a
+  replacement for authentication, TLS, or host/network access controls.
 - Browser mutations require CSRF/origin checks. Sessions are memory-backed and
   invalidated on restart. SSO and granular RBAC remain future work.
 - Connector secrets use tenant/record-bound authenticated encryption. Recovery

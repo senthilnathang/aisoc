@@ -6,6 +6,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import stat
+import tempfile
 
 from demo import ROOT, SCOPES, request
 
@@ -14,10 +16,63 @@ def digest(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def open_artifact(path, limit):
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    source = os.fdopen(descriptor, 'rb')
+    metadata = os.fstat(source.fileno())
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > limit:
+        source.close()
+        raise ValueError('Require a bounded regular artifact file')
+    return source
+
+
+def read_bytes(path, limit):
+    with open_artifact(path, limit) as source:
+        raw = source.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError('Artifact exceeds size limit')
+    return raw
+
+
+def unique_object(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError('Duplicate JSON field')
+        value[key] = item
+    return value
+
+
 def read_json(path, limit):
-    if path.is_symlink() or path.stat().st_size > limit:
-        raise ValueError('Invalid or oversized artifact')
-    return json.loads(path.read_bytes())
+    return json.loads(read_bytes(path, limit), object_pairs_hook=unique_object)
+
+
+def artifact_digest(path, limit):
+    # Hash large provenance input incrementally rather than loading it in RAM.
+    hashed = hashlib.sha256()
+    total = 0
+    with open_artifact(path, limit) as source:
+        while chunk := source.read(min(65536, limit + 1 - total)):
+            total += len(chunk)
+            if total > limit:
+                raise ValueError('Artifact exceeds size limit')
+            hashed.update(chunk)
+    return hashed.hexdigest()
+
+
+def write_json(path, value):
+    # Replace the destination entry atomically; never open a bundle-supplied
+    # receipt symlink/hardlink for writing or truncate its external target.
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.receipt-', delete=False) as output:
+            temporary = Path(output.name)
+            json.dump(value, output, indent=2)
+            output.write('\n')
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def scope(index):
@@ -29,7 +84,8 @@ def scope(index):
 
 
 def prepare(report_path, directory):
-    report = read_json(report_path, 10 << 20)
+    report_raw = read_bytes(report_path, 10 << 20)
+    report = json.loads(report_raw, object_pairs_hook=unique_object)
     count = report.get('events', 0)
     if (type(count) is not int or not 100 <= count <= 60000 or count % 100 or
             report.get('correctness_passed') is not True or
@@ -37,12 +93,10 @@ def prepare(report_path, directory):
             report.get('unacked') != 0):
         raise ValueError('Require a complete, successful bounded load report')
     source = Path(str(report_path) + '.events.jsonl')
-    if source.is_symlink() or source.stat().st_size > 128 << 20:
-        raise ValueError('Invalid export')
-    raw = source.read_bytes()
+    raw = read_bytes(source, 128 << 20)
     if digest(raw) != report.get('event_export_sha256'):
         raise ValueError('Export does not match successful report')
-    events = [json.loads(line) for line in raw.splitlines()]
+    events = [json.loads(line, object_pairs_hook=unique_object) for line in raw.splitlines()]
     if len(events) != count:
         raise ValueError('Export count differs from report')
     for i, event in enumerate(events):
@@ -50,7 +104,7 @@ def prepare(report_path, directory):
             raise ValueError('Unexpected benchmark input identity')
     directory.mkdir(parents=True, exist_ok=False)
     (directory / 'benchmark-events.jsonl').write_bytes(raw)
-    (directory / 'benchmark-report.json').write_bytes(report_path.read_bytes())
+    (directory / 'benchmark-report.json').write_bytes(report_raw)
     entries = []
     for offset in range(0, count, 1000):
         grant = scope(offset // 1000 + 1)
@@ -65,7 +119,7 @@ def prepare(report_path, directory):
         (directory / name).write_bytes(payload)
         entries.append(dict(scope=grant['id'], file=name, events=len(batch), sha256=digest(payload)))
     manifest = dict(schema_version='1.0', mode='synthetic-local-demo', events=count,
-                    source_sha256=digest(raw), report_sha256=digest(report_path.read_bytes()),
+                    source_sha256=digest(raw), report_sha256=digest(report_raw),
                     transformations=['tenant/connector rebound to local demo scopes',
                                      'unique synthetic principal per event for bounded correlation'],
                     privileged_actions_enabled=False, files=entries)
@@ -81,7 +135,7 @@ def validate(directory):
     for name, key, limit in [('benchmark-events.jsonl', 'source_sha256', 128 << 20),
                              ('benchmark-report.json', 'report_sha256', 10 << 20)]:
         path = directory / name
-        if path.is_symlink() or path.stat().st_size > limit or digest(path.read_bytes()) != manifest[key]:
+        if artifact_digest(path, limit) != manifest[key]:
             raise ValueError('Benchmark provenance checksum mismatch')
     entries = manifest['files']
     if not 1 <= len(entries) <= 60:
@@ -93,8 +147,9 @@ def validate(directory):
         if entry['scope'] != grant['id'] or entry['file'] != grant['id'] + '.json':
             raise ValueError('Invalid scope or file path')
         path = directory / entry['file']
-        page = read_json(path, 2 << 20)
-        if digest(path.read_bytes()) != entry['sha256'] or page.get('schema_version') != '1.0':
+        raw = read_bytes(path, 2 << 20)
+        page = json.loads(raw, object_pairs_hook=unique_object)
+        if digest(raw) != entry['sha256'] or page.get('schema_version') != '1.0':
             raise ValueError('Payload checksum/schema mismatch')
         events = page['events']
         if len(events) != entry['events'] or not 1 <= len(events) <= 1000:
@@ -153,7 +208,7 @@ def ingest(directory, manifest, pages, receipt_name='import-receipt.json'):
                   inserted=inserted, duplicates=manifest['events']-inserted,
                   scopes=[grant['id'] for grant, _ in pages],
                   benchmark_performance_measurement=False)
-    (directory / receipt_name).write_text(json.dumps(result, indent=2) + '\n')
+    write_json(directory / receipt_name, result)
     return result
 
 
@@ -185,7 +240,7 @@ def main():
                 unhealthy.append(grant['id'])
         result = dict(passed=not unhealthy and not any(counts[k] for k in
                       ('pending', 'dead_letters', 'publication_failed')), counts=counts, unhealthy=unhealthy)
-        (args.bundle/'verification.json').write_text(json.dumps(result, indent=2)+'\n')
+        write_json(args.bundle/'verification.json', result)
         print(json.dumps(result))
         if not result['passed']: raise SystemExit(1)
     else:

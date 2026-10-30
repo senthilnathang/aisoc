@@ -5,6 +5,9 @@ tests remain a legacy reference; they are not the only backend verification.
 
 ## Current release checks and demo test cases
 
+The [security review](SECURITY_REVIEW.md) records Origin-boundary and import-file
+regressions, dependency audits, and the bounded-memory hashing measurement.
+
 The final receipt lock-ordering fix passed the complete Go/PostgreSQL/Redis/Python/
 Rust framework suite. Concurrent opposite-order publication batches are covered;
 the more complex single-statement receipt experiment was reverted. Stable 1,000 EPS

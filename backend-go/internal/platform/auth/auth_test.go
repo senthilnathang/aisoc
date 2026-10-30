@@ -89,3 +89,39 @@ func TestSuppliedInvalidCredentialNeverFallsBackToLocal(t *testing.T) {
 		t.Fatal("local tenant binding", err)
 	}
 }
+
+func TestOriginRejectedBeforeLocalOrPublicHandlers(t *testing.T) {
+	for _, mode := range []string{"local", "token"} {
+		m, _ := testManager()
+		m.config.Mode = mode
+		calls := 0
+		h := m.Protect(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls++; w.WriteHeader(204) }))
+		for _, path := range []string{"/protected", "/api/v1/auth/login", "/api/v1/auth/session"} {
+			for _, origins := range [][]string{{"https://untrusted.example"}, {"null"}, {""}, {"http://localhost:8080", "https://untrusted.example"}} {
+				r := httptest.NewRequest("POST", path, strings.NewReader(`{"name":"untrusted"}`))
+				r.Header.Set("Content-Type", "text/plain")
+				for _, origin := range origins {
+					r.Header.Add("Origin", origin)
+				}
+				w := httptest.NewRecorder()
+				h.ServeHTTP(w, r)
+				if w.Code != 403 || calls != 0 {
+					t.Fatalf("%s %s reached handler: %d", mode, path, w.Code)
+				}
+			}
+		}
+	}
+	m, _ := testManager()
+	m.config.Mode = "local"
+	for _, origin := range []string{"", "http://localhost:8080"} {
+		r := httptest.NewRequest("POST", "/protected", nil)
+		if origin != "" {
+			r.Header.Set("Origin", origin)
+		}
+		w := httptest.NewRecorder()
+		m.Protect(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) })).ServeHTTP(w, r)
+		if w.Code != 204 {
+			t.Fatal("trusted browser or non-browser client denied", w.Code)
+		}
+	}
+}
