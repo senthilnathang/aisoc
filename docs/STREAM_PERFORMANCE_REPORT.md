@@ -427,3 +427,25 @@ Evidence is retained locally in `output/backend-framework/60k-final-default.json
 `report.json` passes Go race/vet, Python/Rust, authenticated gRPC, migration,
 tenant/policy, replay, worker-crash, Redis recovery and transaction rollback gates.
 Correctness passing does not make the throughput gate pass.
+
+## Retained-input repeat
+
+The subsequent measurement-only repeat completed 60,000/60,000 events at
+613.326 elapsed-time EPS (613.912 final-commit/ACK EPS), with scheduled-to-ACK
+p95 50.805 seconds and zero unacknowledged entries. Runtime code and durability
+settings were unchanged; the test now exports synthetic input after timing ends.
+This repeats the host variability and does not establish a speedup or meet 1,000 EPS.
+The previous full regression result remains applicable to unchanged runtime code;
+this measurement does not rerun that entire suite.
+
+The report and exact input are preserved in `output/demo-import/benchmark-60k/`.
+The derived demo import completed separately through the Go API: 60,000 inserted,
+60,000 completed, zero pending/dead letters/publication failures. Replaying inserted
+zero. Import duration is not benchmark throughput. See [import instructions](BENCHMARK_DATA_IMPORT.md).
+
+The expanded multi-source demo exposed Redis pool acquisition retries: blocking
+readers shared four connections. The sandbox consumer now uses a bounded pool of
+16, within the unchanged 32-client server cap; the default transport pool remains
+four. Concurrent-reader and full regression tests passed. After restart, all 60
+imported sources reported running workers without errors and zero pending events.
+This operational fix is separate from the two-consumer throughput measurement.

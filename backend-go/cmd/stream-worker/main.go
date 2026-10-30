@@ -46,7 +46,9 @@ func run() error {
 		return err
 	}
 	defer pub.Close()
-	consumer, err := streams.New(streams.Config{Address: os.Getenv("AISOC_STREAM_REDIS_ADDR"), Username: "aisoc-consumer", Password: os.Getenv("AISOC_STREAM_REDIS_CONSUMER_PASSWORD")})
+	// Many independent sandbox scopes share blocking reads. Keep their pool
+	// bounded and leave room under Redis's 32-client cap for publishing/control.
+	consumer, err := streams.New(streams.Config{Address: os.Getenv("AISOC_STREAM_REDIS_ADDR"), Username: "aisoc-consumer", Password: os.Getenv("AISOC_STREAM_REDIS_CONSUMER_PASSWORD"), Connections: 16})
 	if err != nil {
 		return err
 	}

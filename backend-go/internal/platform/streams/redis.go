@@ -29,7 +29,11 @@ var (
 
 // Plaintext is confined to literal loopback for the sandbox. Remote workers must
 // gain authenticated TLS support before this boundary permits remote addresses.
-type Config struct{ Address, Username, Password string }
+type Config struct {
+	Address, Username, Password string
+	// Connections bounds shared blocking readers; zero preserves the default.
+	Connections int
+}
 type Client struct{ redis *redis.Client }
 type Delivery struct {
 	ID               string
@@ -46,11 +50,17 @@ type Claimed struct {
 }
 
 func New(c Config) (*Client, error) {
+	if c.Connections < 0 || c.Connections > 16 {
+		return nil, ErrInvalid
+	}
+	if c.Connections == 0 {
+		c.Connections = 4
+	}
 	if config.Loopback(c.Address) != nil || !namePattern.MatchString(c.Username) || len(c.Password) < 32 || strings.ContainsAny(c.Password, "\r\n") {
 		return nil, ErrInvalid
 	}
 	r := redis.NewClient(&redis.Options{Addr: c.Address, Username: c.Username, Password: c.Password,
-		Protocol: 2, DisableIdentity: true, MaxRetries: -1, PoolSize: 4, MaxActiveConns: 4,
+		Protocol: 2, DisableIdentity: true, MaxRetries: -1, PoolSize: c.Connections, MaxActiveConns: c.Connections,
 		DialTimeout: time.Second, ReadTimeout: 2 * time.Second, WriteTimeout: time.Second,
 		PoolTimeout: time.Second, ContextTimeoutEnabled: true})
 	return &Client{redis: r}, nil

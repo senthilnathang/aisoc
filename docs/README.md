@@ -12,6 +12,7 @@ Current architecture and local migration status: 2026-10-29.
 | [Data model](DATA_MODEL.md) | Logical entities and physical PostgreSQL mapping |
 | [Frontend integration](FRONTEND_INTEGRATION.md) | Routes, API transport and UI boundaries |
 | [Testing](TESTING.md) | Suite coverage, commands, browser evidence and limits |
+| [Benchmark data import](BENCHMARK_DATA_IMPORT.md) | Retained test JSON, checksummed demo bundles and replay-safe Go API import |
 | [Delivery roadmap](ROADMAP.md) | Completed work and prioritized follow-up |
 | [Feature roadmap](FEATURE_ROADMAP.md) | Product acceptance criteria beyond migration |
 | [Migration completion](GO_BACKEND_MIGRATION_PLAN.md) | Completed phases and recovery constraints |

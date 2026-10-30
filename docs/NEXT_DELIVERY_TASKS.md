@@ -12,7 +12,7 @@ deployment/vendor/model-quality boundaries. No production activation is requeste
 | Work | Acceptance | Status |
 |---|---|---|
 | Persistent showcase | 10,000 synthetic events, replay-safe seed, scoped API pagination and browser evidence | Loaded: ten demo sources, ten synced investigations |
-| P1 performance | Reduce SQL/locking costs while preserving idempotency and faults; repeat comparable load tests | Final 60,000/60,000 completed at 745 EPS, p95 29.987 s; stable 1,000 EPS gate remains open |
+| P1 performance | Reduce SQL/locking costs while preserving idempotency and faults; repeat comparable load tests | Latest repeat: 60,000/60,000 completed at 613 EPS, p95 50.805 s; stable 1,000 EPS gate remains open |
 | P1 integrations | Versioned source adapters, bounded polling/replay and fixture contracts | QRadar, allowlisted Ariel and Sentinel readers fixture-tested; live mapping/polling/write-back not certified |
 | P1 inference | Preserve typed gRPC; configurable model adapter and local evidence evaluation | Go/Python/JSON service contract tested; real model quality and production scheduling not enabled |
 | P2 continuous ingestion | Bounded correlation windows, verified retention/replay and dedup preservation | Verified payload offload frees hot capacity; identities/dedup retained; bounded metadata ceiling |
@@ -26,6 +26,13 @@ through `demo-showcase-10`. Each source retains 1,000 synthetic events and one
 suspicious-login investigation with a mock SOAR note. The telemetry table reads
 through Go API 3003, uses keyset pagination and reveals the stored JSON on demand.
 The prior four-event fixture is also retained under `mock-qradar`.
+
+An additional 60,000 synthetic events from the subsequent completed benchmark are
+persisted in `benchmark-import-01` through `benchmark-import-60`; all completed,
+and replay inserted zero. These failed-login events do not create new investigations.
+The [import bundle](BENCHMARK_DATA_IMPORT.md) preserves original input and documents
+the bounded demo projection. This repeat measured 613 EPS and p95 50.805 seconds;
+it does not close the stable 1,000 EPS gate.
 
 There is one main frontend. `run.sh` reads the private `.run/runtime-profile`, now
 `foundation`, and starts the supervised Go/Python/Streams stack on API 3003.

@@ -25,7 +25,7 @@ func setup(t *testing.T) (*Client, *Client, *Client, telemetry.Binding, telemetr
 	}
 	clients := make([]*Client, 0, 3)
 	for _, role := range []string{"publisher", "consumer", "admin"} {
-		c, err := New(Config{address, "aisoc-" + role, os.Getenv("AISOC_TEST_REDIS_" + strings.ToUpper(role) + "_PASSWORD")})
+		c, err := New(Config{Address: address, Username: "aisoc-" + role, Password: os.Getenv("AISOC_TEST_REDIS_" + strings.ToUpper(role) + "_PASSWORD")})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -47,13 +47,18 @@ func setup(t *testing.T) (*Client, *Client, *Client, telemetry.Binding, telemetr
 }
 
 func TestValidationDoesNotNeedRedis(t *testing.T) {
+	for _, connections := range []int{-1, 17} {
+		if _, err := New(Config{Address: "127.0.0.1:16379", Username: "publisher", Password: strings.Repeat("x", 32), Connections: connections}); !errors.Is(err, ErrInvalid) {
+			t.Fatal("unbounded connection pool accepted", err)
+		}
+	}
 	for _, address := range []string{"0.0.0.0:6379", "example.com:6379", "127.0.0.1:0"} {
-		if c, err := New(Config{address, "publisher", strings.Repeat("x", 32)}); err == nil {
+		if c, err := New(Config{Address: address, Username: "publisher", Password: strings.Repeat("x", 32)}); err == nil {
 			c.Close()
 			t.Fatal("unsafe address accepted")
 		}
 	}
-	c, err := New(Config{"127.0.0.1:16379", "publisher", strings.Repeat("x", 32)})
+	c, err := New(Config{Address: "127.0.0.1:16379", Username: "publisher", Password: strings.Repeat("x", 32)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,6 +89,31 @@ func TestValidationDoesNotNeedRedis(t *testing.T) {
 	}
 }
 
+func TestSharedBlockingReadersStayWithinBoundedPool(t *testing.T) {
+	_, _, _, b, _ := setup(t)
+	c, err := New(Config{Address: os.Getenv("AISOC_TEST_REDIS_ADDR"), Username: "aisoc-consumer", Password: os.Getenv("AISOC_TEST_REDIS_CONSUMER_PASSWORD"), Connections: 16})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	ctx := context.Background()
+	if err = c.EnsureGroup(ctx, b, "shared-readers"); err != nil {
+		t.Fatal(err)
+	}
+	errs := make(chan error, 60)
+	for i := 0; i < cap(errs); i++ {
+		go func() { _, err := c.Read(ctx, b, "shared-readers", "reader", 1, 100*time.Millisecond); errs <- err }()
+	}
+	for i := 0; i < cap(errs); i++ {
+		if err = <-errs; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if c.redis.PoolStats().TotalConns > 16 {
+		t.Fatal("connection bound exceeded")
+	}
+}
+
 func TestACLsPublishReadAndExplicitAck(t *testing.T) {
 	p, c, a, b, e := setup(t)
 	ctx := context.Background()
@@ -101,7 +131,7 @@ func TestACLsPublishReadAndExplicitAck(t *testing.T) {
 	if err := a.redis.Set(ctx, "unrelated-service-key", "x", 0).Err(); err == nil {
 		t.Fatal("admin escaped AISOC keys")
 	}
-	bad, err := New(Config{os.Getenv("AISOC_TEST_REDIS_ADDR"), "aisoc-publisher", strings.Repeat("wrong", 8)})
+	bad, err := New(Config{Address: os.Getenv("AISOC_TEST_REDIS_ADDR"), Username: "aisoc-publisher", Password: strings.Repeat("wrong", 8)})
 	if err != nil {
 		t.Fatal(err)
 	}

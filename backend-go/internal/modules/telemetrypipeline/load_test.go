@@ -2,11 +2,14 @@ package telemetrypipeline
 
 import (
 	"aisoc/backend/internal/modules/telemetry"
+	"bufio"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"io"
 	"math"
 	"os"
 	"runtime"
@@ -120,10 +123,7 @@ func TestStreamLoadReport(t *testing.T) {
 				maxScheduleLag.Store(lag)
 			}
 			for i := range events {
-				e := template
-				e.SourceEventID = fmt.Sprintf("load-%04d", batch*100+i)
-				e.EventID = e.SourceEventID
-				e.EvidenceRef = "mock:" + e.SourceEventID
+				e := loadEvent(template, batch*100+i)
 				events[i] = e
 				starts.Store(e.Identity(), now)
 				scheduled.Store(e.Identity(), due)
@@ -372,6 +372,31 @@ func TestStreamLoadReport(t *testing.T) {
 	report["profile_notes"] = "Client elapsed SQL includes transport, lock and server time; not server CPU. Concurrent query totals overlap; pool-acquire and batch totals must not be added to statement totals. No SQL argument values recorded."
 	report["achieved_at_least_offered_eps"] = float64(count)/elapsed.Seconds() >= float64(workload.eps)
 	report["production_ready"] = false
+	// Export the exact generated input after the timed interval. Keep its hash
+	// in the successful report so a failed/stale run cannot be imported as new.
+	export, err := os.OpenFile(path+".events.jsonl", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.New()
+	writer := bufio.NewWriter(io.MultiWriter(export, digest))
+	encoder := json.NewEncoder(writer)
+	for i := 0; i < workload.events; i++ {
+		e := loadEvent(template, i)
+		if err = encoder.Encode(e); err != nil {
+			export.Close()
+			t.Fatal(err)
+		}
+	}
+	if err = writer.Flush(); err != nil {
+		export.Close()
+		t.Fatal(err)
+	}
+	if err = export.Close(); err != nil {
+		t.Fatal(err)
+	}
+	report["event_export_sha256"] = fmt.Sprintf("%x", digest.Sum(nil))
+	report["event_export_format"] = "jsonl; exact synthetic input, excludes setup event; export outside measured interval"
 	raw, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -379,4 +404,12 @@ func TestStreamLoadReport(t *testing.T) {
 	if err = os.WriteFile(path, append(raw, '\n'), 0600); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func loadEvent(template telemetry.Event, index int) telemetry.Event {
+	e := template
+	e.SourceEventID = fmt.Sprintf("load-%04d", index)
+	e.EventID = e.SourceEventID
+	e.EvidenceRef = "mock:" + e.SourceEventID
+	return e
 }

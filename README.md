@@ -17,6 +17,9 @@ foundation on 3003. Open [Stream operations](http://localhost:8080/build/stream-
 (also available at `/build-operations`) and select `demo-showcase-01` through
 `demo-showcase-10`: each contains 1,000 persisted events and one investigation.
 The extra demo frontend on 8082 has been stopped.
+An additional 60,000 synthetic benchmark events are available under
+`benchmark-import-01` through `benchmark-import-60`. Their reusable JSON bundle
+and replay-safe import commands are documented in [benchmark data import](docs/BENCHMARK_DATA_IMPORT.md).
 
 `run.sh` reads `.run/runtime-profile` (`foundation` on this installation). A fresh
 checkout defaults to `release`; select foundation explicitly with
