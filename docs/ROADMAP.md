@@ -33,8 +33,9 @@ scope changes, service restarts and verification.
 
 The current local foundation uses migration 030, a supervised Go/Python stack,
 fixture-tested configurable source readers, mock responses and archive-inclusive
-restore validation. Average throughput now exceeds 1,000 EPS in three consecutive
-60k runs; latency stability remains unmet. See [current evidence](PERFORMANCE_GATE.md).
+restore validation. Three consecutive 60k runs exceeded 1,000 EPS, but a later
+diagnostic baseline fell to 823 EPS. Repeatable throughput and latency stability
+remain unmet. See [current evidence](PERFORMANCE_GATE.md).
 See [local release gates](LOCAL_RELEASE_GATES.md) and the [delivery tracker](NEXT_DELIVERY_TASKS.md).
 Remote deployment and vendor/model validation remain outside the selected local scope.
 

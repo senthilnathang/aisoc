@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-30",
+  "scope": "Local synthetic transport; no live provider, model or response execution",
+  "offered_eps": 1100,
+  "producer_batch": 500,
+  "consumer_batch": 500,
+  "stable_1000_eps_verified": false,
+  "decision": "Combined publication claim/reconciliation SQL reverted; no reliable improvement demonstrated. Diagnostics and regression test retained.",
+  "runs": [
+    {
+      "probe": "latency-diagnostics-baseline",
+      "sha256": "8199f3098a246c78c048aedf48155e7cf02dd8d77e50159e74bb7062bbae2f9f",
+      "resources_sha256": "5078f9ad519e4c84942b47db7e417f397d40d902b73e5816b993af6a591aca1a",
+      "metrics": {
+        "accepted": 60000,
+        "completed": 60000,
+        "unacked": 0,
+        "commit_ack_eps": 822.965224559874,
+        "achieved_eps": 808.9169471804532,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 675.261,
+          "p95": 23891.541,
+          "p99": 24258.452
+        },
+        "max_producer_schedule_lag_ms": 15321.082,
+        "postgres_runtime": {
+          "fsync": "on",
+          "synchronous_commit": "on",
+          "full_page_writes": "on",
+          "shared_buffers": "512MB",
+          "work_mem": "32MB",
+          "wal_sync_method": "fsync",
+          "wal_init_zero": "off",
+          "commit_delay_us": 0,
+          "commit_siblings": 0
+        }
+      }
+    },
+    {
+      "probe": "latency-claim-candidate",
+      "sha256": "2cce0ef560f0ebbbb6979879275e6f2635ab22bd700f520db0b78f0d02ef0d1e",
+      "resources_sha256": "e722ed1a35ea3388dc5de4c30659ba2652b6c30cfef8b9e3c23ab857feeca2a4",
+      "metrics": {
+        "accepted": 60000,
+        "completed": 60000,
+        "unacked": 0,
+        "commit_ack_eps": 978.3944415642707,
+        "achieved_eps": 956.5801553566372,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 705.865,
+          "p95": 8682.279,
+          "p99": 8955.662
+        },
+        "max_producer_schedule_lag_ms": 3239.182,
+        "postgres_runtime": {
+          "fsync": "on",
+          "synchronous_commit": "on",
+          "full_page_writes": "on",
+          "shared_buffers": "512MB",
+          "work_mem": "32MB",
+          "wal_sync_method": "fsync",
+          "wal_init_zero": "off",
+          "commit_delay_us": 0,
+          "commit_siblings": 0
+        }
+      }
+    }
+  ],
+  "failed_attempt": {
+    "file": "output/backend-framework/latency-claim-candidate-timeout.log",
+    "sha256": "aa97ad48fde0c681fe9258386982ed523bda564265f1718e0a773972be1e5a00",
+    "outcome": "database read timeout; no valid throughput result"
+  },
+  "excluded": "Overlapping probe interrupted; not included as measurement"
+}

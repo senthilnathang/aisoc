@@ -99,7 +99,7 @@ def main():
             env['AISOC_STREAM_LOAD_DISPOSABLE']='1'
             try:
                 pgpid=int((temp/'pg/postmaster.pid').read_text().splitlines()[0])
-                with ResourceProbe(pgpid, report/'stream-load.json.resources.json'):
+                with ResourceProbe(pgpid, report/'stream-load.json.resources.json', temp/'pg'):
                     run(['go','test','-count=1','-run','^TestStreamLoadReport$','-v','./internal/modules/telemetrypipeline'],ROOT/'backend-go')
                 measured=json.loads((report/'stream-load.json').read_text())
                 measured['postgres_runtime']={name:sql('SHOW '+name) for name in ('fsync','synchronous_commit','full_page_writes','shared_buffers','work_mem','wal_sync_method','wal_init_zero')}

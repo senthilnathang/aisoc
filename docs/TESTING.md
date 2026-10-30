@@ -19,6 +19,13 @@ The final profile passed the full framework suite. Separately, three consecutive
 latency gate; `performance_gate.py` correctly exits 1 for that series. The profile
 parser rejects attempts to disable durability or inject arbitrary PostgreSQL options.
 
+A subsequent diagnostic baseline completed 60k events at 823 EPS/p95 23.9 s;
+repeatable throughput remains open. A combined claim/reconciliation SQL experiment
+timed out once and completed another run at 978 EPS/p95 8.68 s, then was reverted.
+The retained regression checks exhausted leases alongside fresh work and rejects
+stale publication. Diagnostic tests cover bounded slow-query recording and Linux
+disk counter parsing. See [follow-up evidence](PERFORMANCE_GATE.md#latency-diagnostic-follow-up).
+
 | Case | Expected result | Coverage |
 |---|---|---|
 | `import-demo all --dry-run` | Validate showcase/bundle selection; no service/config/data mutation | CLI and local validation |

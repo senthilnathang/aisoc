@@ -9,6 +9,35 @@ import (
 	"testing"
 )
 
+func TestBatchClaimReconcilesExhaustedAlongsideFreshWork(t *testing.T) {
+	s, b, e := setup(t)
+	ctx := context.Background()
+	accepted := accept(t, s, b, Checkpoint{}, "first", e)
+	old, err := s.Claim(ctx, b)
+	if err != nil || old == nil {
+		t.Fatal("initial lease", err)
+	}
+	if _, err := s.Pool.Exec(ctx, `UPDATE stream_outbox SET attempts=max_attempts,lease_until=now()-interval '1 second' WHERE tenant_id=$1 AND event_key=$2`, b.TenantID, old.EventKey); err != nil {
+		t.Fatal(err)
+	}
+	e.SourceEventID = "fresh-event"
+	accept(t, s, b, accepted.Checkpoint, "second", e)
+	leases, err := s.ClaimBatch(ctx, b, 2)
+	if err != nil || len(leases) != 1 || leases[0].EventKey == old.EventKey || leases[0].Attempts != 1 {
+		t.Fatal("fresh claim", leases, err)
+	}
+	var state, code string
+	if err := s.Pool.QueryRow(ctx, `SELECT state,error_code FROM stream_outbox WHERE tenant_id=$1 AND event_key=$2`, b.TenantID, old.EventKey).Scan(&state, &code); err != nil {
+		t.Fatal(err)
+	}
+	if state != "failed" || code != "ATTEMPTS_EXHAUSTED" {
+		t.Fatal(state, code)
+	}
+	if err := s.MarkPublished(ctx, b, *old, "1-0"); !errors.Is(err, ErrLease) {
+		t.Fatal("exhausted lease accepted", err)
+	}
+}
+
 func TestBatchAdmissionAndUniqueConcurrentLeases(t *testing.T) {
 	s, b, template := setup(t)
 	ctx := context.Background()

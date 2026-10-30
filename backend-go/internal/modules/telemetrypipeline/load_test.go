@@ -56,7 +56,7 @@ func TestStreamLoadReport(t *testing.T) {
 	if err := r.Poll(context.Background(), "filtered", noop); err != nil {
 		t.Fatal(err)
 	}
-	profile := &queryProfile{}
+	profile := &queryProfile{started: time.Now()}
 	diagnosticsPool := r.Store.Pool
 	config := r.Store.Pool.Config()
 	config.ConnConfig.Tracer = profile
@@ -315,6 +315,7 @@ func TestStreamLoadReport(t *testing.T) {
 	report["backlog_monitor_interval_ms"] = workload.monitorMS
 	report["publisher_empty_claim_delay_ms"] = workload.idlePollMS
 	report["database_client_profile"] = profile.snapshot()
+	report["slow_query_timeline"] = profile.slowSnapshot()
 	for _, row := range profile.snapshot() {
 		if row.Stage == "" && strings.HasPrefix(row.SQL, "WITH states AS") {
 			// Compare both shapes against the same retained fixture outside the timed

@@ -11,8 +11,9 @@ The development framework includes an independent
 service health and lifecycle; Go dispatches bounded work through gRPC.
 
 [Local performance validation](docs/PERFORMANCE_GATE.md) completed three 60,000-event
-runs at 1,063–1,104 EPS. Average throughput exceeds 1,000 EPS; latency stability
-still fails the two-second p95 gate. These are synthetic transport results, not
+runs at 1,063–1,104 EPS. A subsequent diagnostic baseline fell to 823 EPS;
+throughput is not consistently repeatable and latency still fails the two-second
+p95 gate. These are synthetic transport results, not
 live-provider or AI investigation capacity.
 
 ## Run the initialized application

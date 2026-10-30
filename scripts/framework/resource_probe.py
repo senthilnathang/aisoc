@@ -12,14 +12,45 @@ def process_stat(raw):
     return int(fields[19]), int(fields[11]) + int(fields[12]), int(fields[21])
 
 
+def block_devices(path):
+    device = Path(path).stat().st_dev
+    number = f'{os.major(device)}:{os.minor(device)}'
+    result = {number}
+    sys_path = Path('/sys/dev/block')/number
+    if sys_path.exists():
+        resolved = sys_path.resolve()
+        if (resolved/'partition').exists():
+            result.add((resolved.parent/'dev').read_text().strip())
+    return result
+
+
+def disk_counters(raw, devices):
+    result = {}
+    for line in raw.splitlines():
+        fields = line.split()
+        if len(fields) < 3 or f'{fields[0]}:{fields[1]}' not in devices:
+            continue
+        values = [int(value) for value in fields[3:]]
+        if len(values) < 11:
+            raise ValueError('Incomplete block-device counters')
+        result[fields[2]] = dict(reads=values[0], read_sectors=values[2], read_ms=values[3],
+            writes=values[4], write_sectors=values[6], write_ms=values[7],
+            in_flight=values[8], busy_ms=values[9], weighted_busy_ms=values[10])
+        if len(values) >= 17:
+            result[fields[2]].update(flushes=values[15], flush_ms=values[16])
+    return result
+
+
 class ResourceProbe:
-    def __init__(self, pid, output):
+    def __init__(self, pid, output, data_path=None):
         self.pid, self.output = pid, Path(output)
         self.stop = threading.Event()
         self.samples, self.errors, self.last, self.base = [], [], {}, {}
         self.started = time.monotonic()
+        self.started_wall = time.time()
         self.hz = os.sysconf('SC_CLK_TCK')
         self.page = os.sysconf('SC_PAGE_SIZE')
+        self.devices = block_devices(data_path or self.output.parent)
 
     def sample(self, initial=False):
         pending, seen, rss = [self.pid], set(), 0
@@ -41,7 +72,7 @@ class ResourceProbe:
         memory = {}
         for line in Path('/proc/meminfo').read_text().splitlines():
             name, value = line.split(':', 1)
-            if name in ('MemAvailable', 'MemTotal'):
+            if name in ('MemAvailable', 'MemTotal', 'Dirty', 'Writeback'):
                 memory[name + '_bytes'] = int(value.split()[0]) * 1024
         self.samples.append({
             'elapsed_seconds': time.monotonic() - self.started,
@@ -49,6 +80,7 @@ class ResourceProbe:
             'postgres_sum_rss_bytes': rss,
             'host_load_average': list(os.getloadavg()),
             'host_memory': memory,
+            'host_block_devices': disk_counters(Path('/proc/diskstats').read_text(), self.devices),
         })
 
     def __enter__(self):
@@ -70,7 +102,9 @@ class ResourceProbe:
         self.sample()
         self.output.write_text(json.dumps({
             'scope': 'Disposable PostgreSQL tree and host during go test invocation, including compilation/setup/cleanup; wider than timed event drain',
-            'limits': 'Observed CPU is a lower bound if processes exit between samples. Summed RSS double-counts shared pages; not physical memory consumption. Host load/memory include unrelated workloads. No process command lines, environment or other process trees read.',
+            'limits': 'Observed CPU is a lower bound if processes exit between samples. Summed RSS double-counts shared pages; not physical memory consumption. Host load/memory/disk counters include unrelated workloads. Partition and parent-device counters overlap and must not be summed. Disk sectors are 512 bytes; counters are cumulative and need interval deltas. No process command lines, environment or other process trees read.',
+            'block_device_numbers': sorted(self.devices),
+            'started_at_unix_seconds': self.started_wall,
             'interval_seconds': 1,
             'measurement_command_succeeded': exc_type is None,
             'sampling_errors': self.errors,

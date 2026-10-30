@@ -7,6 +7,16 @@ See the [performance gate](PERFORMANCE_GATE.md) for repeated 1,000 EPS validatio
 and the optional, allowlisted local PostgreSQL profile. Average throughput and
 latency stability are evaluated separately; one fast run does not pass the gate.
 
+Load reports include a bounded slow-query timeline (100 ms minimum, 256 entries,
+with an overflow count) and PostgreSQL aggregate timings. Resource companions
+record dirty/writeback memory and cumulative block-device counters. Align SQL
+`started_at` plus `end_ms` with resource `started_at_unix_seconds` plus elapsed
+seconds. Query identifiers hash normalized SQL; arguments are not recorded.
+Host counters include other workloads; partition and parent-disk counters overlap
+and must not be summed. These measurements can locate stalls, not prove device
+failure. The first diagnostic baseline predates the resource wall-clock origin
+and cannot be aligned precisely with SQL timestamps.
+
 ## Local demo import workflow
 
 Initialize with `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. The selected

@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 )
 
@@ -25,8 +26,33 @@ type queryStats struct {
 	MaxMS   float64 `json:"max_ms"`
 }
 type queryProfile struct {
-	mu   sync.Mutex
-	rows map[string]*queryStats
+	mu      sync.Mutex
+	rows    map[string]*queryStats
+	started time.Time
+	slow    []slowQuery
+	dropped int
+}
+
+type slowQuery struct {
+	QueryID    string  `json:"query_id"`
+	Stage      string  `json:"stage"`
+	EndMS      int64   `json:"end_ms"`
+	DurationMS float64 `json:"duration_ms"`
+}
+
+func TestSlowQueryTimelineIsBounded(t *testing.T) {
+	p := &queryProfile{started: time.Now()}
+	p.add("accept", "SELECT $1", 99*time.Millisecond)
+	for i := 0; i < 260; i++ {
+		p.add("accept", "SELECT $1", 100*time.Millisecond)
+	}
+	s := p.slowSnapshot()
+	if len(s["queries"].([]slowQuery)) != 256 || s["dropped"] != 4 {
+		t.Fatal("unbounded or missing slow queries", s["dropped"])
+	}
+	if p.snapshot()[0].Count != 261 {
+		t.Fatal("timeline cap truncated aggregate measurements")
+	}
 }
 
 func (p *queryProfile) add(stage, sql string, elapsed time.Duration) {
@@ -48,6 +74,20 @@ func (p *queryProfile) add(stage, sql string, elapsed time.Duration) {
 	if ms > r.MaxMS {
 		r.MaxMS = ms
 	}
+	if ms >= 100 && !p.started.IsZero() {
+		if len(p.slow) < 256 {
+			p.slow = append(p.slow, slowQuery{id, stage, time.Since(p.started).Milliseconds(), ms})
+		} else {
+			p.dropped++
+		}
+	}
+}
+
+func (p *queryProfile) slowSnapshot() map[string]any {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return map[string]any{"started_at": p.started, "threshold_ms": 100, "dropped": p.dropped,
+		"queries": append([]slowQuery(nil), p.slow...), "query_id_format": "stage:sha256(normalized SQL); no arguments recorded"}
 }
 func (p *queryProfile) TraceQueryStart(ctx context.Context, _ *pgx.Conn, d pgx.TraceQueryStartData) context.Context {
 	stage, _ := ctx.Value(profileKey("stage")).(string)

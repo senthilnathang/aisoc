@@ -102,8 +102,8 @@ The database snapshot additionally includes one setup event per run.
 | 2 | 1,104.14 | 1,103.69 | 6.052 s | 7.060 s | 2.340 s |
 | 3 | 1,094.92 | 1,082.31 | 3.498 s | 4.435 s | 0.939 s |
 
-**Average 1,000 EPS throughput is verified for this bounded local workload.
-The strict stability gate fails.** All three p95 values exceed two seconds; two
+**This historical series met average 1,000 EPS throughput; subsequent probes
+did not reproduce it consistently. The strict stability gate fails.** All three p95 values exceed two seconds; two
 runs exceed the one-second producer-lag threshold. The evaluator returns
 `average_throughput_passed: true`, `passed: false`, exit status 1. No threshold
 was relaxed to turn a slow run into a pass. These results do not complete a stable
@@ -142,3 +142,36 @@ The local foundation now uses the example PostgreSQL profile and optimized binar
 Post-restart API verification preserved all 70,000 demo events, with no pending
 events or unhealthy benchmark scopes. A 500-event API replay inserted zero records;
 501 events were rejected with HTTP 400. `/build-operations` on port 8080 returned 200.
+
+## Latency diagnostic follow-up
+
+The same offered load, batches and PostgreSQL profile produced these later probes:
+
+| Probe | Completed | Commit/ACK EPS | p95 | Maximum producer lag |
+|---|---:|---:|---:|---:|
+| Diagnostic baseline | 60,000 | 822.97 | 23.892 s | 15.321 s |
+| Combined claim/reconciliation statement | 60,000 | 978.39 | 8.682 s | 3.239 s |
+
+The candidate also hit a database read timeout in its first attempt. Its SQL change
+was reverted: these observations do not demonstrate a repeatable benefit. Both
+completed probes had zero unacknowledged entries. No durability or gate threshold
+was relaxed. An accidentally overlapping probe was interrupted and excluded.
+
+Retained diagnostics add slow-query timing and disk/dirty-memory samples. The
+baseline observed prolonged disk activity with low write throughput; counters
+include unrelated workloads, and the baseline lacks a resource wall-clock origin,
+so this is evidence of host I/O pressure, not attribution of individual stalls or
+a device-fault diagnosis. Later resource reports include that origin for alignment.
+
+Raw artifacts are `output/backend-framework/latency-diagnostics-baseline.json`,
+`latency-claim-candidate.json` and their `.resources.json` companions; the failed
+attempt is `latency-claim-candidate-timeout.log`. Compact measurements and hashes
+are in [diagnostic evidence](benchmarks/latency-diagnostics-2026-10-30.json).
+Stable 1,000 EPS remains unverified. Controlled durable storage remains the next
+validation dependency; no dedicated storage was supplied in this session.
+
+After reverting the SQL experiment, the full isolated Go/PostgreSQL/Redis/Rust/
+Python framework suite passed, including Go race checks and the new mixed
+exhausted/fresh lease regression. The two resource-parser tests and 323 relative
+documentation links passed. These correctness checks do not pass the performance
+gate.
