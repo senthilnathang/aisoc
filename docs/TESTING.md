@@ -19,6 +19,13 @@ empty tenant/source/connector scopes, and completed-over-dead precedence. The
 scoped-join query experiment was reverted after a load-test statement timeout;
 passing functional tests alone did not justify adopting it.
 
+The later integer-state aggregate retains the same grouping and passed the full
+framework suite, including the mixed-state and isolation checks above. A 60k
+temporary-table comparison returned equal counts (40k completed, 5k dead without
+completion, 15k pending) and lower query times in two paired trials. This isolated
+query result does not establish the stream latency SLO; repeated load evidence
+remains in [the performance gate report](PERFORMANCE_GATE.md).
+
 The final profile passed the full framework suite. Separately, three consecutive
 60k load runs passed the average-throughput requirement but failed the strict
 latency gate; `performance_gate.py` correctly exits 1 for that series. The profile

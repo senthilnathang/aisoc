@@ -1,7 +1,8 @@
 # S10 measured sandbox results — 2026-10-29
 
-**Latest update, 2026-10-30:** three consecutive 60,000-event runs now exceed
-1,000 EPS on average. The latency-stability gate still fails (p95 3.50–6.05 s).
+**Latest update, 2026-10-31:** the status query now uses one integer-state aggregate.
+Average throughput has exceeded 1,000 EPS in multiple runs, but repeat tests still
+show multi-second WAL/commit stalls and fail the latency-stability gate.
 See the [current gate report](PERFORMANCE_GATE.md) for the exact results, changes
 and reproduction command. The observations below are retained historical evidence.
 

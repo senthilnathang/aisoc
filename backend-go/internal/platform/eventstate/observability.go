@@ -27,14 +27,16 @@ func (s Store) Snapshot(ctx context.Context, b telemetry.Binding, processor stri
 	}
 	// Aggregate scoped sets once. Completed still wins over dead; unknown work
 	// cannot become acceptance. Avoid a growing multi-column nested-loop join.
+	// One bitwise aggregate tracks accepted=1, completed=2 and dead=4. Require
+	// the accepted bit before counting; mask 6 makes completion win over death.
 	err := s.Pool.QueryRow(ctx, `WITH states AS MATERIALIZED (
- SELECT event_key,min(created_at) AS created_at,bool_or(completed) AS completed,bool_or(dead) AS dead FROM (
- SELECT event_key,created_at,false AS completed,false AS dead,true AS accepted FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3
- UNION ALL SELECT event_key,NULL,true,false,false FROM stream_inbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4
- UNION ALL SELECT substring(work_key from 7),NULL,false,true,false FROM stream_consumer_work WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4 AND state='dead' AND work_key LIKE 'event:%'
- ) records GROUP BY event_key HAVING bool_or(accepted))
- SELECT count(*),count(*) FILTER(WHERE completed),count(*) FILTER(WHERE NOT completed AND dead),count(*) FILTER(WHERE NOT completed AND NOT dead),
- COALESCE(GREATEST(0,extract(epoch FROM clock_timestamp()-min(created_at) FILTER(WHERE NOT completed AND NOT dead))),0),
+ SELECT event_key,min(created_at) AS created_at,bit_or(flags) AS flags FROM (
+ SELECT event_key,created_at,1 AS flags FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3
+ UNION ALL SELECT event_key,NULL,2 FROM stream_inbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4
+ UNION ALL SELECT substring(work_key from 7),NULL,4 FROM stream_consumer_work WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4 AND state='dead' AND work_key LIKE 'event:%'
+ ) records GROUP BY event_key HAVING (bit_or(flags)&1)=1)
+ SELECT count(*),count(*) FILTER(WHERE (flags&2)=2),count(*) FILTER(WHERE (flags&6)=4),count(*) FILTER(WHERE (flags&6)=0),
+ COALESCE(GREATEST(0,extract(epoch FROM clock_timestamp()-min(created_at) FILTER(WHERE (flags&6)=0))),0),
  (SELECT count(*) FROM stream_outbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND state='failed'),
  (SELECT count(*) FROM stream_replay_gaps WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4),
  (SELECT count(*) FROM stream_dead_letters WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4),

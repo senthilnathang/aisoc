@@ -7,6 +7,11 @@ live providers, production retention, replicated failover or power-loss recovery
 
 ## Acceptance
 
+Latest follow-up (2026-10-31): the integer-state snapshot aggregate reduced
+isolated query cost, but the three-run end-to-end gate still fails. See
+[the current results](#integer-state-aggregate-follow-up) below; earlier series
+are retained historical evidence.
+
 `scripts/framework/performance_gate.py` requires three independent, identically
 configured runs of at least 60,000 events and 50 seconds of scheduled input (with
 one millisecond allowed for timer quantization).
@@ -191,3 +196,40 @@ Future failed load tests save `.failure.json` beside the requested report, with
 partial counts, query timings and a bounded five-second EXPLAIN attempt before
 the disposable database is removed. EXPLAIN does not execute the failed query.
 Failure artifacts are not successful or importable benchmark reports.
+
+### Integer-state aggregate follow-up
+
+The retained change uses one `bit_or` aggregate for accepted/completed/dead
+membership instead of three Boolean aggregates. It retains the grouped query
+shape, tenant and processor filters, completed-over-dead precedence, pending age
+and single SQL snapshot. No schema, cache, timeout or durability changes apply.
+
+Two synthetic 60k temporary-table comparisons ran original/candidate/candidate/
+original to expose warm-cache effects. Trial 1 measured 269/244 ms for the original
+and 222/229 ms for the candidate; trial 2 measured 434/328 ms and 237/250 ms.
+Counts matched: 60k accepted, 40k completed, 5k dead without completion, 15k pending.
+These unindexed synthetic fixtures establish a query-cost improvement only.
+The [SQL fixture](../tests/backend-performance/snapshot-query.sql) reproduces the
+comparison in a dedicated local connection with session-local temporary tables.
+
+Three consecutive durable transport runs used the unchanged 1,100 EPS offered
+load, 500-event batches and PostgreSQL profile. All 180,000 events completed,
+with zero final unacknowledged events and no failure/backlog counts.
+
+| Run | Commit/ACK EPS | Scheduled-to-ACK p95 | Maximum producer lag |
+|---|---:|---:|---:|
+| 1 | 1,102.65 | 0.343 s | 0.006 s |
+| 2 | 1,101.88 | 14.216 s | 12.558 s |
+| 3 | 948.44 | 2.950 s | 2.624 s |
+
+The evaluator returns `passed: false`, `average_throughput_passed: false`:
+run 3 misses throughput, and runs 2/3 miss latency and producer-lag limits.
+Run 2 recorded approximately 28.4 seconds of WAL synchronization and commit
+calls around five seconds. The status-query change does not solve these stalls.
+No production capacity or stable 1,000 EPS claim is justified.
+
+Raw reports are `output/backend-framework/snapshot-flags-load-0{1,2,3}.json`
+and their resource companions. [Compact evidence](benchmarks/snapshot-flags-2026-10-31.json)
+records metrics and hashes. The full framework suite with the new query passed
+Go race, recovery, isolation, Rust/Python and gRPC checks before the two additional
+measurement-only repeats. The local backend was restarted with the retained change.

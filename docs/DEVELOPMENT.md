@@ -23,6 +23,13 @@ plan without re-executing it. Capture is best effort if the database is unavaila
 the original test failure remains authoritative. Do not import or evaluate this
 artifact as a successful throughput run.
 
+Stream status uses one grouped integer state aggregate: accepted=1, completed=2,
+dead=4. Only accepted keys count; the completed bit takes precedence over dead.
+This replaces three Boolean aggregates without changing scope, retention or
+durability. The [temporary-table comparison](../tests/backend-performance/snapshot-query.sql)
+reproduces the query experiment in a dedicated local PostgreSQL connection. It
+does not access application records or measure end-to-end throughput.
+
 ## Local demo import workflow
 
 Initialize with `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. The selected

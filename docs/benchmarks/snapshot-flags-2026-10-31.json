@@ -1,0 +1,206 @@
+{
+  "date": "2026-10-31",
+  "scope": "Local synthetic transport; not live-provider or AI capacity",
+  "gate": {
+    "passed": false,
+    "average_throughput_passed": false,
+    "scope": "local synthetic durable transport only; average throughput does not imply stable latency or production capacity",
+    "runs": 3,
+    "failures": [
+      "run 2: producer fell more than 1 second behind",
+      "run 2: scheduled-to-ACK p95 exceeds 2 seconds",
+      "run 3: final commit/ACK throughput below 1,000 EPS",
+      "run 3: producer fell more than 1 second behind",
+      "run 3: scheduled-to-ACK p95 exceeds 2 seconds"
+    ]
+  },
+  "runs": [
+    {
+      "run": 1,
+      "sha256": "354075141733b60aa39a411dc9725878866e7e67e58c0d94e3125de7954c8697",
+      "resources_sha256": "f499263d4e514079a482301db3108534fd71ae73a9a8128ccc26f2a002c1fa86",
+      "metrics": {
+        "accepted": 60000,
+        "completed": 60000,
+        "unacked": 0,
+        "commit_ack_eps": 1102.6487095012253,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 267.53,
+          "p95": 342.556,
+          "p99": 367.749
+        },
+        "max_producer_schedule_lag_ms": 5.955,
+        "postgres_runtime": {
+          "fsync": "on",
+          "synchronous_commit": "on",
+          "full_page_writes": "on",
+          "shared_buffers": "512MB",
+          "work_mem": "32MB",
+          "wal_sync_method": "fsync",
+          "wal_init_zero": "off",
+          "commit_delay_us": 0,
+          "commit_siblings": 0
+        },
+        "postgres_snapshot_including_one_setup_event": {
+          "accepted": 60001,
+          "completed": 60001,
+          "dead_without_disposition": 0,
+          "pending": 0,
+          "oldest_pending_seconds": 0,
+          "publication_failed": 0,
+          "historical_gap_observations": 0,
+          "dead_letters": 0,
+          "archived": 0
+        }
+      }
+    },
+    {
+      "run": 2,
+      "sha256": "6b35ad9b1637a2a6ec0b2db74fcb58d083ccad790c242209103ab7b0e3f50040",
+      "resources_sha256": "7a91a695984ba3101adf73a60ebc27a67c95fcd90fc81c1d571e6ef77003c510",
+      "metrics": {
+        "accepted": 60000,
+        "completed": 60000,
+        "unacked": 0,
+        "commit_ack_eps": 1101.8781754131746,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 1890.292,
+          "p95": 14216.094,
+          "p99": 15943.624
+        },
+        "max_producer_schedule_lag_ms": 12557.922,
+        "postgres_runtime": {
+          "fsync": "on",
+          "synchronous_commit": "on",
+          "full_page_writes": "on",
+          "shared_buffers": "512MB",
+          "work_mem": "32MB",
+          "wal_sync_method": "fsync",
+          "wal_init_zero": "off",
+          "commit_delay_us": 0,
+          "commit_siblings": 0
+        },
+        "postgres_snapshot_including_one_setup_event": {
+          "accepted": 60001,
+          "completed": 60001,
+          "dead_without_disposition": 0,
+          "pending": 0,
+          "oldest_pending_seconds": 0,
+          "publication_failed": 0,
+          "historical_gap_observations": 0,
+          "dead_letters": 0,
+          "archived": 0
+        }
+      }
+    },
+    {
+      "run": 3,
+      "sha256": "7379b559170bf8b26d034c4e0d4a0998365ce3dbc1be529205a4e952eaa7f303",
+      "resources_sha256": "eeafb7150ecac440e299a2532c72586b08cdf168c2dabcab9395a411c6879667",
+      "metrics": {
+        "accepted": 60000,
+        "completed": 60000,
+        "unacked": 0,
+        "commit_ack_eps": 948.4357074699244,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 287.712,
+          "p95": 2949.6,
+          "p99": 4216.42
+        },
+        "max_producer_schedule_lag_ms": 2624.165,
+        "postgres_runtime": {
+          "fsync": "on",
+          "synchronous_commit": "on",
+          "full_page_writes": "on",
+          "shared_buffers": "512MB",
+          "work_mem": "32MB",
+          "wal_sync_method": "fsync",
+          "wal_init_zero": "off",
+          "commit_delay_us": 0,
+          "commit_siblings": 0
+        },
+        "postgres_snapshot_including_one_setup_event": {
+          "accepted": 60001,
+          "completed": 60001,
+          "dead_without_disposition": 0,
+          "pending": 0,
+          "oldest_pending_seconds": 0,
+          "publication_failed": 0,
+          "historical_gap_observations": 0,
+          "dead_letters": 0,
+          "archived": 0
+        }
+      }
+    }
+  ],
+  "query_comparisons": [
+    {
+      "file": "snapshot-flags-probe-01.json",
+      "sha256": "2a9b1a2667408bde4a0e562f4bfa98a3358f820003df3553edb6828ebd7b99b9",
+      "timings": [
+        {
+          "flags": false,
+          "execution_ms": 269.075
+        },
+        {
+          "flags": true,
+          "execution_ms": 221.703
+        },
+        {
+          "flags": true,
+          "execution_ms": 228.56
+        },
+        {
+          "flags": false,
+          "execution_ms": 243.977
+        }
+      ],
+      "counts": {
+        "accepted": 60000,
+        "completed": 40000,
+        "dead": 5000,
+        "pending": 15000,
+        "age": 0,
+        "publication_failed": 0,
+        "gaps": 0,
+        "dead_letters": 0,
+        "archived": 0
+      },
+      "counts_equal": true
+    },
+    {
+      "file": "snapshot-flags-probe.json",
+      "sha256": "cbbe16c981cfc78812b961a42d13d99b4ea31e36425a368c82a35a2b35743877",
+      "timings": [
+        {
+          "flags": false,
+          "execution_ms": 433.647
+        },
+        {
+          "flags": true,
+          "execution_ms": 237.332
+        },
+        {
+          "flags": true,
+          "execution_ms": 250.497
+        },
+        {
+          "flags": false,
+          "execution_ms": 327.752
+        }
+      ],
+      "counts": {
+        "accepted": 60000,
+        "completed": 40000,
+        "dead": 5000,
+        "pending": 15000,
+        "age": 0,
+        "publication_failed": 0,
+        "gaps": 0,
+        "dead_letters": 0,
+        "archived": 0
+      },
+      "counts_equal": true
+    }
+  ]
+}
