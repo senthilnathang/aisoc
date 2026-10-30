@@ -21,6 +21,18 @@ An additional 60,000 synthetic benchmark events are available under
 `benchmark-import-01` through `benchmark-import-60`. Their reusable JSON bundle
 and replay-safe import commands are documented in [benchmark data import](docs/BENCHMARK_DATA_IMPORT.md).
 
+```bash
+./run.sh import-demo all --dry-run   # validate selection, no writes
+./run.sh import-demo all             # showcase + default benchmark bundle
+./run.sh import-demo showcase        # built-in 10,000-event showcase only
+./run.sh import-demo files output/demo-import/benchmark-60k/benchmark-import-01.json
+```
+
+Imports require the foundation profile; on a fresh checkout use
+`AISOC_RUNTIME_PROFILE=foundation`. `all` requires the prepared bundle and fails
+before importing if it is missing; `showcase` needs no benchmark artifacts.
+Existing records deduplicate. New source grants trigger a foundation restart.
+
 `run.sh` reads `.run/runtime-profile` (`foundation` on this installation). A fresh
 checkout defaults to `release`; select foundation explicitly with
 `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. Stop the frontend before

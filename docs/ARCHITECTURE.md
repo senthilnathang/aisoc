@@ -5,8 +5,12 @@ and rollback. The frontend remains React/Chakra/Vite.
 
 ```mermaid
 flowchart LR
-  UI[React frontend :8080] -->|HTTP JSON /api| API[Go API :3002]
-  API --> PG[(PostgreSQL :55436)]
+  UI[React frontend :8080] -->|HTTP JSON /api| API[Go foundation API :3003]
+  CLI[run.sh import-demo / validated JSON] -->|scoped mock-import API| API
+  API --> PG[(PostgreSQL :55435)]
+  Stream[Go stream worker] -->|outbox / inbox / checkpoints| PG
+  Stream <-->|bounded delivery / explicit ACK| Redis[(Redis Streams :16379)]
+  Stream -->|finding admission / mock SOAR reconciliation| PG
   IW[Go investigation worker] --> PG
   SW[Optional Go specialist dispatcher] --> PG
   SW -->|versioned gRPC| Rust[Rust / embedded Wasmi]
@@ -14,9 +18,11 @@ flowchart LR
   HTTP[FastAPI health and capabilities] -->|shared lifecycle| Python
 ```
 
-Normal investigations use the local domain worker; specialist jobs use separate
-optional services. Ordinary routes need neither Rust nor Python. Specialist jobs
-remain disabled in the release during the legacy rollback window.
+This diagram describes the selected local foundation. The preserved release uses
+API 3002 and PostgreSQL 55436; switching profiles never merges data. Normal domain
+investigations use the local Go worker. The L1 sandbox dispatches typed mock inference
+to the independent Python FastAPI/gRPC service. Rust remains an optional specialist;
+there is no measured reason to move this bounded login correlation into Rust.
 
 ## Code and process boundaries
 
@@ -25,6 +31,7 @@ remain disabled in the release during the legacy rollback window.
 | `backend-go/cmd/api` | HTTP lifecycle, readiness and domain API |
 | `backend-go/cmd/investigation-worker` | Durable local investigation phases |
 | `backend-go/cmd/worker` | Optional job leases and RPC dispatch |
+| `backend-go/cmd/stream-worker` | Bounded source delivery, recovery, correlation and mock SOAR synchronization |
 | `backend-go/cmd/migrate` | Checksum-verified PostgreSQL migrations |
 | `backend-go/cmd/data-migrate` | Snapshot import, reconciliation and reverse export |
 | `backend-go/internal/transport/httpapi` | Parameter/body validation and HTTP errors |
@@ -33,6 +40,7 @@ remain disabled in the release during the legacy rollback window.
 | `contracts/proto`, `contracts/plugins.json` | Worker wire contract and resource limits |
 | `services/wasm-worker`, `services/python-worker` | Optional specialists |
 | `scripts/runtime` | Lifecycle, monitoring, backup/restore and rollback |
+| `scripts/framework/import_demo.py` | Validated all/selected demo imports via Go; no direct SQL insertion |
 
 Domain modules share transactions rather than calling each other over HTTP.
 Go owns authorization, business state, approvals and audits. Specialists receive
@@ -40,15 +48,15 @@ no database credentials.
 
 ## Persistence and concurrency
 
-The S02 streaming persistence module is implemented but not connected to live
-intake. Additive migration 020 supplies source checkpoints, retained envelopes,
-publication outbox and processing inbox. It has been verified on disposable
-PostgreSQL only; running services still use their existing schema. See
-[streaming persistence](STREAMING_PERSISTENCE.md) and the
-[implementation tasks](IMPLEMENTATION_TASKS.md). S03 adds an optional
-[Redis adapter and local runtime](REDIS_STREAMS.md), verified against disposable
-Redis/PostgreSQL. It is not connected to live intake and core startup still needs
-no Redis.
+The local foundation runs migrations through 030 (48 tables), including durable
+source checkpoints, retained envelopes, outbox/inbox, retries/DLQ, investigation
+state, archive references and transactional payload-budget counters. Redis buffers
+delivery; PostgreSQL commits effects before ACK. Publication receipts use bounded
+pipelined updates with consistent row-lock ordering and lease fencing. The single
+SQL receipt experiment was reverted after inconsistent benchmark results.
+See [streaming persistence](STREAMING_PERSISTENCE.md), [Redis transport](REDIS_STREAMS.md)
+and [measured performance](STREAM_PERFORMANCE_REPORT.md). Live provider polling and
+production response activation remain outside this local scope.
 
 PostgreSQL uses typed columns, JSONB documents, composite tenant keys and scoped
 indexes. Mutations and audits commit together. Row locks serialize conflicting
@@ -111,8 +119,8 @@ execution. Current browser/mobile limits are recorded in [testing](TESTING.md).
 | Preserved release | 3002 | 8080 only when release profile selected | PostgreSQL 55436, `.run/go-runtime/` |
 | Optional Node comparison | 3004 | 8082 | Separate SQLite in `.run/node-compare/` |
 
-The development foundation starts with
-`python3 scripts/framework/dev.py start --investigation-worker --python-worker`.
+The supervised development foundation starts with
+`AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`.
 Its Python service listens on HTTP 8001 and gRPC 50051, with the Go specialist
 dispatcher sharing the development database. Python receives no database or
 connector credentials. Rust is not started by this option. The main frontend uses
@@ -129,6 +137,19 @@ into a new SQLite database; restarting the old snapshot loses acknowledged write
 [ADR 002](adr/002-go-backend-replacement.md) records the architecture choice;
 [ADR 003](adr/003-replacement-contract-decisions.md) defines compatibility limits.
 Live integrations and enterprise deployment remain [roadmap work](FEATURE_ROADMAP.md).
+
+## Demo import boundary
+
+`run.sh import-demo all` loads the 10,000-event showcase plus the configured
+benchmark bundle (currently 60,000 events). `showcase` loads only the built-in
+showcase; `files` selects manifest-listed JSON files. `--dry-run` validates without
+starting services or changing grants/data. The importer checks bundle hashes and
+bindings before mutations, preserves existing grants and adds only selected scopes.
+New grants require an automatic foundation restart; existing grants do not. Files
+are sent in 100-event batches through Go with current checkpoints and durable dedup.
+Scope configuration stays private under `.run/`; artifacts stay in ignored `output/`.
+The importer never enables live providers or privileged response execution.
+See [demo commands and format](BENCHMARK_DATA_IMPORT.md).
 
 S04 adds [stream recovery primitives](STREAMING_RECOVERY.md): durable retries/DLQ,
 bounded publication, consumer fencing and retained-event reconciliation. These are

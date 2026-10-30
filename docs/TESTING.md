@@ -1,7 +1,43 @@
 # Testing and verification
 
-Current as of 2026-10-29. Go/PostgreSQL is the active backend. Node/Fastify/SQLite
+Current as of 2026-10-30. Go/PostgreSQL is the active backend. Node/Fastify/SQLite
 tests remain a legacy reference; they are not the only backend verification.
+
+## Current release checks and demo test cases
+
+The final receipt lock-ordering fix passed the complete Go/PostgreSQL/Redis/Python/
+Rust framework suite. Concurrent opposite-order publication batches are covered;
+the more complex single-statement receipt experiment was reverted. Stable 1,000 EPS
+is not a passed gate: [measurement evidence](STREAM_PERFORMANCE_REPORT.md) retains
+successful runs, variance and the timeout with the expanded demo active.
+
+| Case | Expected result | Coverage |
+|---|---|---|
+| `import-demo all --dry-run` | Validate showcase/bundle selection; no service/config/data mutation | CLI and local validation |
+| `import-demo showcase` | Replay deterministic 10,000 events; duplicates insert zero | Existing showcase/API replay |
+| `import-demo files FILE...` | Only selected manifest-listed sources imported | Launcher unit and live local replay |
+| Quoted paths containing spaces | Preserve complete file argument | Shell dispatch regression |
+| Missing, duplicate, tampered or nonmanifest files | Reject before import execution | Importer/launcher tests |
+| Release profile | Refuse demo mutation | Shell dispatch regression |
+| Conflicting existing grants | Refuse replacement | Launcher preflight |
+| Partial import or repeated bundle | Read current checkpoint; accepted events deduplicate | Importer unit and live replay |
+| Expanded source set | Bounded Redis pool; healthy workers after completion | Concurrent-reader test and API verification |
+
+```bash
+bash -n run.sh
+python3 -m unittest discover -s scripts/framework -p 'test_*import*.py'
+python3 scripts/check_markdown_links.py
+./run.sh import-demo all --dry-run
+python3 scripts/framework/benchmark_import.py verify --bundle output/demo-import/benchmark-60k
+```
+
+The milestone records below describe earlier checks; they do not override current
+runtime/schema status or certify live providers and model quality.
+
+Launcher validation passed ten importer/launcher tests and Bash syntax checks.
+The live selected-file replay covered 2,000 events with zero inserts; `all` replayed
+the 10,000-event showcase and 60,000-event benchmark bundle with zero inserts.
+These checks validate import behavior, not throughput or model quality.
 
 Migration/documentation baseline: full framework passed (including Go race/vet
 and specialist tests), 34 legacy backend tests, 16 tooling regression tests and
@@ -36,7 +72,8 @@ Streaming milestone S01 adds Go telemetry/finding contract validation tests unde
 `backend-go/internal/modules/telemetry`. Race tests and vet passed, as did a
 ten-second decoder fuzz run with 66,968 executions. Schema syntax and mock telemetry
 format validation passed. These tests do not establish Redis capacity or delivery
-guarantees; no stream pipeline is connected yet. See the
+guarantees; at the S01 milestone no stream pipeline was connected. The current
+foundation includes the later delivery and L1 stages. See the
 [contract guide](../contracts/events/README.md) for commands and boundary rules.
 
 Python FastAPI/gRPC boundary tests live in `services/python-worker/test_service.py`:

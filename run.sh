@@ -6,6 +6,19 @@ RUN="$ROOT/.run"
 mkdir -p "$RUN"
 command_name=${1:-start}
 target=${2:-all}
+usage() {
+  cat <<'USAGE'
+Usage:
+  ./run.sh {start|stop|status|logs} [all|both|backend|frontend]
+  ./run.sh import-demo all [--bundle DIRECTORY] [--dry-run]
+  ./run.sh import-demo showcase [--dry-run]
+  ./run.sh import-demo files FILE.json [FILE.json ...] [--dry-run]
+
+Demo imports require the foundation profile and a previously initialized foundation.
+Selected files must belong to a validated benchmark bundle. Imports are replay-safe.
+USAGE
+}
+case "$command_name" in help|-h|--help) usage; exit 0;; esac
 backend_mode=go
 runtime_profile=release
 if [[ -f "$RUN/runtime-profile" ]]; then read -r runtime_profile < "$RUN/runtime-profile"; fi
@@ -14,6 +27,12 @@ case "$runtime_profile" in release|foundation) ;; *) echo 'Runtime profile must 
 if [[ -f "$RUN/backend-mode" ]]; then read -r backend_mode < "$RUN/backend-mode"; fi
 case "$backend_mode" in node|go) ;; *) echo 'Invalid .run/backend-mode; expected node or go' >&2; exit 2;; esac
 if [[ "$runtime_profile" == foundation && "$backend_mode" != go ]]; then echo 'Foundation requires the Go backend' >&2; exit 2; fi
+if [[ "$command_name" == import-demo ]]; then
+  [[ "$runtime_profile" == foundation && "$backend_mode" == go ]] || { echo 'Demo imports require AISOC_RUNTIME_PROFILE=foundation and the Go backend' >&2; exit 2; }
+  shift
+  exec python3 "$ROOT/scripts/framework/import_demo.py" "$@"
+fi
+case "$command_name" in start|stop|status|logs) ;; *) usage >&2; exit 2;; esac
 case "$target" in all|both) services=(backend frontend);; backend|frontend) services=("$target");; *) echo 'Target must be backend, frontend, or all' >&2; exit 2;; esac
 owned_pid() {
   local service=$1 pid

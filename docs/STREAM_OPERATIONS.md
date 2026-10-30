@@ -1,6 +1,12 @@
 # Streaming operations, retention and release gates (S10)
 
 This is a sandbox operations boundary, not production throughput approval.
+The local foundation runs on 3003 behind the main frontend on 8080. Demo data can
+be loaded with `./run.sh import-demo all`, `showcase`, or `files FILE.json...`;
+`--dry-run` validates without import. See [bundle and launcher instructions](BENCHMARK_DATA_IMPORT.md).
+The 60 benchmark scopes plus ten showcase scopes use durable Go API data. A source
+at its configured 1,000-event cap can display `mock_source_capacity` while all work
+is completed; this is distinct from pending work, failed publication or worker retries.
 Run `python3 scripts/framework/check.py --with-streams --stream-load` for the full
 correctness suite and opt-in measurements. It creates disposable PostgreSQL/Redis;
 existing release/foundation services are not restarted or migrated.

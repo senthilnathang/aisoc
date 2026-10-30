@@ -3,6 +3,32 @@
 Current backend: Go/PostgreSQL. The retained TypeScript/SQLite implementation is
 for comparison and rollback, not normal application startup.
 
+## Local demo import workflow
+
+Initialize with `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. The selected
+installation serves the frontend on 8080 and the Go foundation API on 3003, with
+independent Python HTTP 8001/gRPC 50051 and Redis 16379. Foundation schema is 030;
+the preserved release database remains separate.
+
+```bash
+AISOC_RUNTIME_PROFILE=foundation ./run.sh import-demo showcase
+./run.sh import-demo all --bundle output/demo-import/benchmark-60k --dry-run
+./run.sh import-demo all --bundle output/demo-import/benchmark-60k
+./run.sh import-demo files output/demo-import/benchmark-60k/benchmark-import-01.json output/demo-import/benchmark-60k/benchmark-import-02.json
+```
+
+Use the foundation environment prefix on subsequent commands if that profile is
+not saved in `.run/runtime-profile`. Files must belong to validated bundles; these
+commands are not arbitrary vendor JSON loaders. All requested files are checked
+before scope or data changes. Missing grants are added without replacing existing
+ones, and the foundation restarts only to load those additions. A local lock prevents
+two launcher imports from overlapping. Resume partial imports by repeating the same
+command; current checkpoints and content hashes protect accepted data.
+
+Run `python3 -m unittest discover -s scripts/framework -p 'test_*import*.py'` and
+`bash -n run.sh` after importer changes. See [bundle preparation](BENCHMARK_DATA_IMPORT.md)
+for format, receipts, verification and the distinction between benchmark and demo data.
+
 ## Prerequisites
 
 - Go toolchain required by `backend-go/go.mod` (currently 1.26.10).

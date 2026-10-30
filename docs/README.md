@@ -1,6 +1,8 @@
 # Documentation index
 
-Current architecture and local migration status: 2026-10-29.
+Current architecture and local migration status: 2026-10-30. The selected foundation
+uses API 3003/schema 030, with a 70,000-event local demo. The release on 3002 is
+preserved separately. Historical migration reports and ADR dates remain unchanged.
 
 | Document | Purpose |
 |---|---|

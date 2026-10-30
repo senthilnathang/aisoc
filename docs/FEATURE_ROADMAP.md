@@ -6,9 +6,17 @@ workflows and responsive behavior. Local development remains login-free by
 default; optional token authentication is available for validating secured flows.
 Each phase adds to the current UI rather than replacing it.
 
-Updated 2026-10-29: Go/PostgreSQL migration and optional Rust/WASM/Python runtime
+Updated 2026-10-30: Go/PostgreSQL migration and optional Rust/WASM/Python runtime
 foundations are complete. See [delivery status](ROADMAP.md) for current operational
 follow-up; the phases below describe product capabilities beyond local migration.
+
+The local L1 foundation now includes Redis delivery/recovery, typed mock Python
+investigation, QA/escalation, mock SOAR notes, archive-backed recovery and sandbox
+session revocation. Configurable QRadar/Ariel/Sentinel readers are fixture-tested;
+live polling/write-back and actual model quality remain open. The 70,000-event demo
+can be replayed through `run.sh import-demo all` or selected files; see
+[demo imports](BENCHMARK_DATA_IMPORT.md). These local capabilities do not certify
+production autonomy, retention scale or sustained 1,000 EPS.
 
 ## Current foundation
 

@@ -1,6 +1,11 @@
 # HTTP API Contract
 
 The Go/PostgreSQL backend implements this contract after the 2026-10-29 cutover.
+
+The selected foundation serves these routes on 3003; the preserved release uses
+3002. `run.sh import-demo` adds no public API endpoints: it calls the existing
+scoped stream mock-import route in batches of at most 100, with current checkpoints,
+tenant/source validation and durable deduplication. See [demo import commands](BENCHMARK_DATA_IMPORT.md).
 Supported workflows are verified by shared HTTP and browser suites. Deliberate
 validation/security differences are recorded in
 [ADR 003](adr/003-replacement-contract-decisions.md).

@@ -128,7 +128,7 @@ def configure(pages):
     temporary.replace(SCOPES)
 
 
-def ingest(directory, manifest, pages):
+def ingest(directory, manifest, pages, receipt_name='import-receipt.json'):
     # Preflight all grants before the first mutation; Go independently validates
     # every envelope and current checkpoint. Restarting safely replays duplicates.
     configured = read_json(SCOPES, 1 << 20)
@@ -151,8 +151,9 @@ def ingest(directory, manifest, pages):
         print(f"{grant['id']}: {added} newly inserted", flush=True)
     result = dict(passed=True, mode='local-demo-import', events=manifest['events'],
                   inserted=inserted, duplicates=manifest['events']-inserted,
+                  scopes=[grant['id'] for grant, _ in pages],
                   benchmark_performance_measurement=False)
-    (directory / 'import-receipt.json').write_text(json.dumps(result, indent=2) + '\n')
+    (directory / receipt_name).write_text(json.dumps(result, indent=2) + '\n')
     return result
 
 

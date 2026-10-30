@@ -3,6 +3,14 @@
 Scope confirmed: JSON mock data, local foundation/sandbox only. Live vendor/model
 validation and production response activation are outside this release.
 
+Current demo usability: `./run.sh import-demo all` replays the showcase plus the
+prepared benchmark bundle; `showcase` and `files FILE.json...` select subsets.
+Dry-run validates inputs, and repeated imports insert no duplicates. The local
+database holds 70,000 demo events plus the original fixture. See
+[import instructions](BENCHMARK_DATA_IMPORT.md) and the current
+[performance report](STREAM_PERFORMANCE_REPORT.md); historical measurements below
+are milestones, not current throughput guarantees.
+
 Engineering defaults (configurable, not universal SOC standards): provisional
 1,000 sustained EPS and 3x burst; 2-second ingest-to-finding p95; at least 7-day
 projected-event retention/replay; at least 90-day deduplication metadata and

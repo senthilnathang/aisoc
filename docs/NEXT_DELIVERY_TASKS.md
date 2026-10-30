@@ -9,6 +9,10 @@ and HTTPS alert transport tested only against loopback fixtures. See
 [local release gates](LOCAL_RELEASE_GATES.md) for exact commands and remaining
 deployment/vendor/model-quality boundaries. No production activation is requested.
 
+Demo import is now exposed as `./run.sh import-demo all`, `showcase`, or
+`files FILE.json...`, with `--dry-run`. [Commands and constraints](BENCHMARK_DATA_IMPORT.md)
+describe existing-bundle requirements and automatic restart for new source grants.
+
 | Work | Acceptance | Status |
 |---|---|---|
 | Persistent showcase | 10,000 synthetic events, replay-safe seed, scoped API pagination and browser evidence | Loaded: ten demo sources, ten synced investigations |

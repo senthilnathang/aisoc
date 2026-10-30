@@ -1,6 +1,6 @@
 # Data Model
 
-PostgreSQL is the active datastore as of 2026-10-29. The authoritative physical
+PostgreSQL is the active datastore; current foundation schema status is 2026-10-30. The authoritative physical
 schema is in `backend-go/migrations/` (30 migrations, 48 tables including the new
 streaming state). Foundation startup applies all source migrations. The separate release remains
 on migration 019 with 28 tables. The entity catalog
@@ -184,3 +184,16 @@ to stopped; revocation and audit commit together. These records are simulations.
 Migration 029 adds `stream_event_archives`. Verified files replace eligible hot
 payloads while event identities, hashes and dedup receipts remain durable. Archive
 files must accompany database backups and be restored at their recorded paths.
+
+## Migration 030 and demo imports
+
+`stream_payload_budgets` stores derived per-source identity count, hot-event count
+and hot bytes. Statement triggers maintain counters on insert/update/delete and
+rollback; archive pointers do not spend the hot-payload budget. Event identities
+are immutable. The foundation has 30 migrations and 48 tables; the preserved
+release is not automatically upgraded by changing profiles.
+
+Demo imports use the same Go acceptance transaction as mock intake, committing
+source checkpoints, events and outbox intent together. JSON files never bypass
+tenant/source binding or write directly to PostgreSQL. Reimport preserves identity
+and content-hash conflict semantics; it is not a bulk overwrite operation.

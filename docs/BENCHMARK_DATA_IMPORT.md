@@ -1,5 +1,43 @@
 # Import benchmark data into the local demo
 
+## Launcher commands
+
+```bash
+./run.sh import-demo all --dry-run
+./run.sh import-demo all
+./run.sh import-demo all --bundle /path/to/prepared-bundle
+./run.sh import-demo showcase
+./run.sh import-demo files output/demo-import/benchmark-60k/benchmark-import-01.json output/demo-import/benchmark-60k/benchmark-import-02.json
+./run.sh --help
+```
+
+Use `AISOC_RUNTIME_PROFILE=foundation` when the selected profile is not foundation.
+Initialize the foundation first with `./run.sh start backend` under that profile.
+`all` imports the built-in 10,000-event showcase and all files in the selected
+benchmark bundle (default `output/demo-import/benchmark-60k`). It fails before any
+import if the bundle is missing or invalid. `showcase` does not need that bundle.
+`files` accepts one or more manifest-listed event files, including quoted paths with
+spaces; each parent bundle is validated completely before anything is imported.
+Arbitrary JSON, report/manifest files and duplicate selections are rejected.
+
+`--dry-run` checks and prints the selection without starting services or modifying
+grants/events. A normal import adds missing selected grants without overwriting
+existing ones, automatically restarts the foundation when new grants need loading,
+and starts it if stopped. The frontend is not restarted. Existing matching grants
+do not trigger a restart. Local launcher imports are serialized by a file lock.
+Release-profile imports are refused; no release database is copied or mutated.
+Selected imports write `selected-import-receipt.json` with selected scopes/counts;
+full imports keep `import-receipt.json`. The receipts distinguish ingestion from
+processing completion. Repeating a command safely resumes/deduplicates data.
+
+The current installation has 60,000 benchmark events plus 10,000 showcase events
+and the original four-event fixture. All benchmark events completed and replay
+inserted zero. The ten showcase investigations remain mock-backed. Raw artifacts
+are intentionally ignored by Git; use the preparation workflow below on a fresh
+checkout or unpack the retained bundle locally.
+
+## Bundle preparation
+
 The load test exports its exact generated synthetic input **after** timing ends to
 `output/backend-framework/stream-load.json.events.jsonl`. Its successful report
 contains the export SHA-256. The one setup event is excluded. Test database cleanup

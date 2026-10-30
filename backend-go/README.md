@@ -2,10 +2,18 @@
 
 Active modular Go API and PostgreSQL persistence, with a separate investigation
 worker and optional Rust/WASM/Python specialist dispatch. All 97 legacy routes
-are implemented for supported workflows. The optimized API/worker are active on
-port 3002 after the 2026-10-29 migration. See [architecture](../docs/ARCHITECTURE.md),
+are implemented for supported workflows. The selected local foundation runs on
+API 3003/PostgreSQL 55435 through migration 030; the preserved release remains on
+3002/55436 after the 2026-10-29 migration. See [architecture](../docs/ARCHITECTURE.md),
 [release evidence](../docs/migration/RELEASE_STATUS.md) and
 [contract differences](../docs/adr/003-replacement-contract-decisions.md).
+
+From the repository root, `./run.sh import-demo all`, `showcase`, or `files FILE...`
+uses the Go mock-import API with durable checkpoints and deduplication. It requires
+the foundation profile. Use `--dry-run` to validate selection first. See
+[developer commands](../docs/DEVELOPMENT.md) and [bundle format](../docs/BENCHMARK_DATA_IMPORT.md).
+Publication receipt batches lock rows in a consistent order; the single-statement
+SQL experiment was reverted. Stable 1,000 EPS is still an open performance gate.
 
 ## Structure
 

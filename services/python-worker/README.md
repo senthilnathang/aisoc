@@ -4,6 +4,13 @@ An independently runnable service in the Go-first framework. Go owns orchestrati
 tenant authorization, durable retries and result admission. Python has no database
 or privileged response-tool credentials.
 
+The local foundation starts this service under its supervisor (FastAPI 8001,
+gRPC 50051). Demo JSON imports enter through Go, not FastAPI. Durable showcase
+investigations remain explicitly mock-mode; private model endpoint configuration
+enables an optional model RPC capability without silently converting demo jobs.
+See [local release gates](../../docs/LOCAL_RELEASE_GATES.md) for configuration and
+real-model evaluation limits, and [demo imports](../../docs/BENCHMARK_DATA_IMPORT.md).
+
 ```mermaid
 flowchart LR
   API[Go API] --> DB[(PostgreSQL)]

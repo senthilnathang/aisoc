@@ -25,6 +25,12 @@ not production capacity guarantees. See [completion](migration/RELEASE_STATUS.md
 
 ## Operational follow-up
 
+Completed local usability follow-up: `run.sh import-demo` supports all demo data,
+the built-in showcase, and selected validated JSON files, with dry-run and replay
+deduplication. The installation retains 70,000 demo events and ten showcase
+investigations. [Import instructions](BENCHMARK_DATA_IMPORT.md) cover preparation,
+scope changes, service restarts and verification.
+
 The current local foundation uses migration 030, a supervised Go/Python stack,
 fixture-tested configurable source readers, mock responses and archive-inclusive
 restore validation. Stable 1,000 EPS remains unmet (latest sustained test: 745 EPS).

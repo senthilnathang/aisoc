@@ -11,6 +11,12 @@ contracts, archive-inclusive recovery and HTTPS alert fixtures pass. Responses
 remain mocked. The sustained 1,000 EPS gate remains open; see
 [delivery tasks](NEXT_DELIVERY_TASKS.md) and [local release gates](LOCAL_RELEASE_GATES.md).
 
+Demo usability follow-up: all/showcase/selected-file imports are exposed through
+`run.sh import-demo`, with dry-run, checksummed bundle validation, scoped grants and
+Go API checkpoint/dedup enforcement. See [import instructions](BENCHMARK_DATA_IMPORT.md).
+The receipt lock-ordering fix passed full regression; the larger SQL receipt rewrite
+was reverted because its throughput improvement did not repeat.
+
 | ID | Task | Depends on | Acceptance gate | Status |
 |---|---|---|---|---|
 | S01 | Versioned telemetry/finding contracts and Redis boundary ADR | Reviewed diagram | Typed Go validation, source/tenant binding, stable revision-aware identities, mock fixture and negative tests | Complete |
