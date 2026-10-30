@@ -14,6 +14,11 @@ duplicate effects. [The performance gate](PERFORMANCE_GATE.md) separates average
 throughput from latency stability. [Historical evidence](STREAM_PERFORMANCE_REPORT.md)
 retains earlier failed experiments and timeout observations.
 
+Snapshot regressions also cover unknown dead work and quarantined deliveries,
+empty tenant/source/connector scopes, and completed-over-dead precedence. The
+scoped-join query experiment was reverted after a load-test statement timeout;
+passing functional tests alone did not justify adopting it.
+
 The final profile passed the full framework suite. Separately, three consecutive
 60k load runs passed the average-throughput requirement but failed the strict
 latency gate; `performance_gate.py` correctly exits 1 for that series. The profile

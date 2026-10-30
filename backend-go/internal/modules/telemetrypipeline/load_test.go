@@ -84,6 +84,37 @@ func TestStreamLoadReport(t *testing.T) {
 	var completionNanos atomic.Int64
 	var inserted atomic.Int64
 	var payloadBytes atomic.Int64
+	t.Cleanup(func() {
+		if !t.Failed() {
+			return
+		}
+		// Preserve evidence before the disposable database is removed. This is
+		// a failure artifact, never a successful/importable throughput report.
+		failure := map[string]any{"passed": false, "accepted": inserted.Load(), "completed": finished.Load(),
+			"database_client_profile": profile.snapshot(), "slow_query_timeline": profile.slowSnapshot()}
+		planCtx, planCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer planCancel()
+		for _, row := range profile.snapshot() {
+			if row.Stage != "" || !strings.Contains(row.SQL, "FROM states") {
+				continue
+			}
+			var raw []byte
+			err := diagnosticsPool.QueryRow(planCtx, "EXPLAIN (FORMAT JSON) "+row.SQL,
+				r.Binding.TenantID, r.Binding.ConnectorID, r.Binding.Source, r.Processor).Scan(&raw)
+			failure["snapshot_plan_captured"] = err == nil
+			if err == nil {
+				failure["snapshot_plan"] = json.RawMessage(raw)
+			}
+			break
+		}
+		encoded, err := json.MarshalIndent(failure, "", "  ")
+		if err == nil {
+			err = os.WriteFile(path+".failure.json", append(encoded, '\n'), 0600)
+		}
+		if err != nil {
+			t.Log("failed to persist diagnostic artifact")
+		}
+	})
 	var wg sync.WaitGroup
 	errs := make(chan error, 8)
 	var cpuBefore, cpuAfter syscall.Rusage
@@ -151,7 +182,7 @@ func TestStreamLoadReport(t *testing.T) {
 			}
 			n, err := r.PublishBatch(ctx, workload.producerBatch)
 			if err != nil {
-				errs <- fmt.Errorf("%s: %w", ctx.Value(profileKey("stage")), err)
+				errs <- fmt.Errorf("publish: %w", err)
 				cancel()
 				return
 			}
@@ -224,7 +255,7 @@ func TestStreamLoadReport(t *testing.T) {
 		snapshot, err := r.Store.Snapshot(ctx, r.Binding, r.Processor)
 		if err != nil {
 			if ctx.Err() == nil {
-				errs <- fmt.Errorf("%s: %w", ctx.Value(profileKey("stage")), err)
+				errs <- fmt.Errorf("snapshot: %w", err)
 				cancel()
 			}
 			break

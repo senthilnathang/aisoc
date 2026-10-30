@@ -17,6 +17,12 @@ and must not be summed. These measurements can locate stalls, not prove device
 failure. The first diagnostic baseline predates the resource wall-clock origin
 and cannot be aligned precisely with SQL timestamps.
 
+Failed load probes retain `<report>.failure.json` with partial accepted/completed
+counts and query diagnostics. A five-second EXPLAIN attempt captures the snapshot
+plan without re-executing it. Capture is best effort if the database is unavailable;
+the original test failure remains authoritative. Do not import or evaluate this
+artifact as a successful throughput run.
+
 ## Local demo import workflow
 
 Initialize with `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. The selected

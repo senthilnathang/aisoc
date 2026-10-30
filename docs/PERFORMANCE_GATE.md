@@ -175,3 +175,19 @@ Python framework suite passed, including Go race checks and the new mixed
 exhausted/fresh lease regression. The two resource-parser tests and 323 relative
 documentation links passed. These correctness checks do not pass the performance
 gate.
+
+### Snapshot-query experiment
+
+The diagnostic baseline spent 17.5 seconds across 58 snapshot reads. A replacement
+using materialized scoped sets and event-key joins passed mixed-state correctness
+checks but hit PostgreSQL's statement timeout during the 60k load probe, about
+13.6 seconds into the test. The change was reverted; there is no valid throughput
+result from this attempt. The original aggregate query remains active.
+
+The failure is retained in `output/backend-framework/snapshot-scoped-join-timeout.log`.
+A read-only EXPLAIN on one existing 1,000-event demo scope showed join cardinality
+overestimation, but that warm-data plan does not establish the failed probe's cause.
+Future failed load tests save `.failure.json` beside the requested report, with
+partial counts, query timings and a bounded five-second EXPLAIN attempt before
+the disposable database is removed. EXPLAIN does not execute the failed query.
+Failure artifacts are not successful or importable benchmark reports.

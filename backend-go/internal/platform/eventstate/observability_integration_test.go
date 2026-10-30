@@ -3,6 +3,7 @@ package eventstate
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"aisoc/backend/internal/modules/telemetry"
@@ -38,6 +39,13 @@ func TestSnapshotMixedStatesAndProcessorIsolation(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// Quarantined deliveries and dead work without an accepted event must not
+	// create accepted/dead counts or multiply the joined event rows.
+	for _, key := range []string{"event:" + strings.Repeat("f", 64), "delivery:123-0"} {
+		if _, err := s.Pool.Exec(ctx, `INSERT INTO stream_consumer_work(tenant_id,connector_id,source,processor,work_key,state,max_attempts) VALUES($1,$2,$3,'accounting',$4,'dead',3)`, b.TenantID, b.ConnectorID, b.Source, key); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if _, err := s.Pool.Exec(ctx, `UPDATE stream_events SET created_at=now()-interval '1 hour' WHERE tenant_id=$1`, b.TenantID); err != nil {
 		t.Fatal(err)
 	}
@@ -57,5 +65,15 @@ func TestSnapshotMixedStatesAndProcessorIsolation(t *testing.T) {
 	other, err := s.Snapshot(ctx, b, "other-processor")
 	if err != nil || other.Completed != 0 || other.Dead != 1 || other.Pending != 3 {
 		t.Fatal(other, err)
+	}
+	for _, empty := range []telemetry.Binding{
+		{TenantID: b.TenantID, ConnectorID: b.ConnectorID, Source: "other-source"},
+		{TenantID: b.TenantID, ConnectorID: "other-connector", Source: b.Source},
+		{TenantID: "other-tenant", ConnectorID: b.ConnectorID, Source: b.Source},
+	} {
+		r, err := s.Snapshot(ctx, empty, "accounting")
+		if err != nil || r != (Snapshot{}) {
+			t.Fatal("scope isolation", r, err)
+		}
 	}
 }
