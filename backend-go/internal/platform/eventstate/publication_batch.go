@@ -3,6 +3,7 @@ package eventstate
 import (
 	"aisoc/backend/internal/modules/telemetry"
 	"context"
+	"github.com/jackc/pgx/v5"
 )
 
 type PublicationReceipt struct {
@@ -13,7 +14,7 @@ type PublicationReceipt struct {
 // MarkPublishedBatch commits receipts together only if every event still owns its
 // unexpired attempt. Redis writes may precede a failed commit; replay remains safe.
 func (s Store) MarkPublishedBatch(ctx context.Context, b telemetry.Binding, receipts []PublicationReceipt) error {
-	if !validBinding(b) || len(receipts) < 1 || len(receipts) > 25 {
+	if !validBinding(b) || len(receipts) < 1 || len(receipts) > 100 {
 		return ErrInvalid
 	}
 	keys, attempts, ids := []string{}, []string{}, []string{}
@@ -32,14 +33,26 @@ func (s Store) MarkPublishedBatch(ctx context.Context, b telemetry.Binding, rece
 		return err
 	}
 	defer tx.Rollback(ctx)
-	tag, err := tx.Exec(ctx, `UPDATE stream_outbox o SET state='published',published_at=now(),message_id=r.message_id,lease_until=NULL,error_code=NULL,updated_at=now()
- FROM unnest($4::text[],$5::text[],$6::text[]) AS r(event_key,attempt_id,message_id)
- WHERE o.tenant_id=$1 AND o.connector_id=$2 AND o.source=$3 AND o.event_key=r.event_key AND o.attempt_id::text=r.attempt_id AND o.state='publishing' AND o.lease_until>clock_timestamp()`, b.TenantID, b.ConnectorID, b.Source, keys, attempts, ids)
-	if err != nil {
-		return err
+	// Pipeline exact-key updates on one connection and transaction. A generic
+	// join plan must not scan all retained receipts for a small supplied batch.
+	batch := &pgx.Batch{}
+	for i, key := range keys {
+		batch.Queue(`UPDATE stream_outbox SET state='published',published_at=now(),message_id=$6,lease_until=NULL,error_code=NULL,updated_at=now() WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=$4 AND attempt_id::text=$5 AND state='publishing' AND lease_until>clock_timestamp()`, b.TenantID, b.ConnectorID, b.Source, key, attempts[i], ids[i])
 	}
-	if tag.RowsAffected() != int64(len(receipts)) {
-		return ErrLease
+	results := tx.SendBatch(ctx, batch)
+	for range keys {
+		tag, e := results.Exec()
+		if e != nil {
+			results.Close()
+			return e
+		}
+		if tag.RowsAffected() != 1 {
+			results.Close()
+			return ErrLease
+		}
+	}
+	if err = results.Close(); err != nil {
+		return err
 	}
 	return tx.Commit(ctx)
 }

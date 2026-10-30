@@ -1,0 +1,4 @@
+{
+  "endpoint": "https://alerts.example.invalid/aisoc",
+  "credential_file": "/run/secrets/alert-token"
+}

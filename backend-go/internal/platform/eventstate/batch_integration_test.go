@@ -25,7 +25,7 @@ func TestBatchAdmissionAndUniqueConcurrentLeases(t *testing.T) {
 	if replay.Inserted != 0 {
 		t.Fatal(replay)
 	}
-	if _, err := s.ClaimBatch(ctx, b, 26); !errors.Is(err, ErrInvalid) {
+	if _, err := s.ClaimBatch(ctx, b, 101); !errors.Is(err, ErrInvalid) {
 		t.Fatal(err)
 	}
 	var wg sync.WaitGroup

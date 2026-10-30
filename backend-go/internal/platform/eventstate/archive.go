@@ -175,7 +175,10 @@ func (o OperatorRecovery) ArchiveCompleted(ctx context.Context, actor auth.Princ
 	}
 	defer tx.Rollback(ctx)
 	var one int
-	if err = tx.QueryRow(ctx, `SELECT 1 FROM stream_source_checkpoints WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 FOR UPDATE`, b.TenantID, b.ConnectorID, b.Source).Scan(&one); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT 1 FROM stream_source_checkpoints WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 FOR NO KEY UPDATE`, b.TenantID, b.ConnectorID, b.Source).Scan(&one); err != nil {
+		return receipt, err
+	}
+	if err = lockMetadata(ctx, tx, b, processor); err != nil {
 		return receipt, err
 	}
 	for _, event := range bundle.Events {

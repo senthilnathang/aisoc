@@ -1,6 +1,6 @@
 # Delivery roadmap
 
-Updated 2026-10-29. The local backend migration is complete. Operational follow-up
+Updated 2026-10-30. The local backend migration is complete. Operational follow-up
 and new product capabilities are separate from replacement parity.
 
 ## Completed local release
@@ -25,9 +25,15 @@ not production capacity guarantees. See [completion](migration/RELEASE_STATUS.md
 
 ## Operational follow-up
 
+The current local foundation uses migration 030, a supervised Go/Python stack,
+fixture-tested configurable source readers, mock responses and archive-inclusive
+restore validation. Stable 1,000 EPS remains unmet (latest sustained test: 745 EPS).
+See [local release gates](LOCAL_RELEASE_GATES.md) and the [delivery tracker](NEXT_DELIVERY_TASKS.md).
+Remote deployment and vendor/model validation remain outside the selected local scope.
+
 - [ ] Complete the minimum seven-day rollback window, then explicitly review legacy
   recovery cleanup. Retention expiry does not delete anything automatically.
-- [ ] Install a chosen supervisor and backup schedule where needed. Templates exist.
+- [ ] Install production supervision and backup schedules where needed. Local foundation supervision is running; templates exist.
 - [ ] Add encrypted off-host backup storage, retention and failure notifications.
 - [ ] Add remote HTTPS deployment, SSO/RBAC, tenant provisioning, managed secret
   rotation, rate limiting, audit export and monitoring alerts.

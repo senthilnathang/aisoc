@@ -29,6 +29,7 @@ func run() error {
 	days := flag.Int("min-age-days", 7, "Completed event age, 1..365 days")
 	verify := flag.String("verify", "", "Verify a compressed archive instead of exporting")
 	hash := flag.String("sha256", "", "Expected uncompressed bundle hash for verification")
+	verifyDB := flag.Bool("verify-database", false, "Verify every archived payload reference in the configured restored database")
 	flag.Parse()
 	if *verify != "" {
 		bundle, err := eventstate.VerifyArchive(*verify, *hash)
@@ -44,7 +45,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if c.Auth.Mode != "local" || os.Getenv("AISOC_GO_ENV") == "production" {
+	if !*verifyDB && (c.Auth.Mode != "local" || os.Getenv("AISOC_GO_ENV") == "production") {
 		return errors.New("local sandbox export only")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -56,6 +57,47 @@ func run() error {
 	defer pool.Close()
 	if err = database.Ready(ctx, pool); err != nil {
 		return err
+	}
+	if *verifyDB {
+		rows, err := pool.Query(ctx, `SELECT a.tenant_id,a.connector_id,a.source,a.event_key,a.file_path,a.sha256,e.content_hash,e.envelope FROM stream_event_archives a JOIN stream_events e USING(tenant_id,connector_id,source,event_key) ORDER BY a.file_path,a.sha256,a.event_key`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		lastPath, lastHash := "", ""
+		var bundle eventstate.ArchiveBundle
+		var records map[string]string
+		count := 0
+		for rows.Next() {
+			var b telemetry.Binding
+			var key, path, hash, content string
+			var raw []byte
+			if err = rows.Scan(&b.TenantID, &b.ConnectorID, &b.Source, &key, &path, &hash, &content, &raw); err != nil {
+				return err
+			}
+			if path != lastPath || hash != lastHash {
+				bundle, err = eventstate.VerifyArchive(path, hash)
+				if err != nil {
+					return err
+				}
+				records = map[string]string{}
+				for _, event := range bundle.Events {
+					records[event.EventKey] = event.ContentHash
+				}
+				lastPath, lastHash = path, hash
+			}
+			var pointer struct {
+				Archived bool `json:"_archive"`
+			}
+			if json.Unmarshal(raw, &pointer) != nil || !pointer.Archived || bundle.Binding != b || records[key] != content {
+				return eventstate.ErrConflict
+			}
+			count++
+		}
+		if err = rows.Err(); err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{"verified": true, "archived_payloads": count})
 	}
 	for _, s := range c.Auth.StreamOperations {
 		if s.ID == *scopeID && s.OperatorID == "local-development" && s.AllowRetry {

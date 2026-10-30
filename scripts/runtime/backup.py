@@ -12,10 +12,15 @@ import subprocess
 import time
 from urllib.parse import urlsplit, urlunsplit
 import urllib.request
+import archive_backup
 from manage import ROOT, PG, runtime_environment
 
 def backup(state):
-    config=json.loads((state/'settings.json').read_text());url=urlsplit(config['url']);source=url.path.lstrip('/')
+    config=json.loads((state/'settings.json').read_text())
+    foundation=state==ROOT/'.run/go-dev'
+    if foundation:
+        config={**config,'pg_port':55435,'api_port':3003,'auth_mode':'local','operators_file':'','release':False}
+    url=urlsplit(config['url']);source=url.path.lstrip('/')
     if not source.startswith('aisoc_go_'):raise RuntimeError('Unexpected release database')
     identifier=time.strftime('%Y%m%d-%H%M%S')+'-'+secrets.token_hex(4)
     directory=ROOT/'.run/backups'/identifier;directory.mkdir(parents=True)
@@ -32,6 +37,8 @@ def backup(state):
             settings=directory/'settings.json';settings.write_text(json.dumps(config))
             operators=config.get('operators_file')
             if operators:(directory/'operators.json').write_bytes(Path(operators).read_bytes())
+            for name in ('stream-scopes.json','inference.json'):
+                if (state/name).is_file():(directory/name).write_bytes((state/name).read_bytes())
             backup_seconds=time.monotonic()-start
             run([PG/'createdb','-O','aisoc_app',target]);created=True
             restore_start=time.monotonic()
@@ -41,14 +48,24 @@ def backup(state):
             counts={name:int(query('SELECT count(*) FROM "'+name.replace('"','""')+'"')) for name in tables}
             with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
             restored={**config,'url':urlunsplit(url._replace(path='/'+target)),'api_port':port}
-            api=subprocess.Popen([str(state/'bin/api')],env=runtime_environment(restored),stdout=log,stderr=log)
+            archives=[]
+            if query("SELECT to_regclass('public.stream_event_archives') IS NOT NULL")=='t':
+                # Build from the same checked-out schema contract as the backup.
+                verifier=directory/'archive-verifier'
+                subprocess.run(['go','build','-o',str(verifier),'./cmd/stream-archive'],cwd=ROOT/'backend-go',stdout=log,stderr=log,check=True,timeout=120)
+                try:
+                    archives=archive_backup.capture(query,directory,state/'archives',verifier,runtime_environment(restored),log)
+                    subprocess.run([str(verifier),'--verify-database'],env=runtime_environment(restored),stdout=log,stderr=log,check=True,timeout=120)
+                finally:verifier.unlink(missing_ok=True)
+            api_binary=ROOT/'backend-go/bin/api' if foundation else state/'bin/api'
+            api=subprocess.Popen([str(api_binary)],env=runtime_environment(restored),stdout=log,stderr=log)
             for _ in range(100):
                 try:
                     with urllib.request.urlopen(f'http://127.0.0.1:{port}/ready',timeout=1) as response:
                         if response.status==200:break
                 except OSError:time.sleep(.1)
             else:raise RuntimeError('Restored release schema is not ready')
-            manifest={'passed':True,'created_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'dump_sha256':hashlib.file_digest(dump.open('rb'),'sha256').hexdigest(),'tables':counts,'backup_seconds':backup_seconds,'restore_seconds':time.monotonic()-restore_start,'private_artifacts':str(directory),'source_database_modified':False,'verification':'pg_restore with errors fatal; all constraints validated; release API schema/readiness check'}
+            manifest={'passed':True,'created_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'dump_sha256':hashlib.file_digest(dump.open('rb'),'sha256').hexdigest(),'tables':counts,'archives':archives,'archive_restore_verified':True,'backup_seconds':backup_seconds,'restore_seconds':time.monotonic()-restore_start,'private_artifacts':str(directory),'source_database_modified':False,'verification':'pg_restore with errors fatal; constraints validated; copied archive hashes and restored payload resolution; API schema/readiness check'}
             for file in directory.iterdir():
                 if file.is_file():
                     with file.open('rb') as saved:os.fsync(saved.fileno())

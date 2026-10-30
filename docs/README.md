@@ -68,6 +68,7 @@ user-selected local release.
 ## Latest local delivery
 
 - [Persistent demo, response sandbox and remaining gates](NEXT_DELIVERY_TASKS.md)
+- [Configurable local integrations and release validation](LOCAL_RELEASE_GATES.md)
 - [QRadar and inference adapter contracts](INTEGRATION_ADAPTERS.md)
 - [Production preparation](../deploy/production/README.md)
 

@@ -6,10 +6,17 @@ import (
 	"testing"
 )
 
-type loadConfig struct{ events, eps, pauseSeconds, idlePollMS, burstMultiplier, consumerBatch int }
+type loadConfig struct{ events, eps, pauseSeconds, idlePollMS, burstMultiplier, consumerBatch, monitorMS int }
 
 func parseLoadConfig(getenv func(string) string) (loadConfig, error) {
-	c := loadConfig{events: 1000, eps: 1000, idlePollMS: 1, burstMultiplier: 1, consumerBatch: 10}
+	c := loadConfig{events: 1000, eps: 1000, idlePollMS: 1, burstMultiplier: 1, consumerBatch: 10, monitorMS: 100}
+	if raw := getenv("AISOC_STREAM_LOAD_MONITOR_MS"); raw != "" {
+		var err error
+		c.monitorMS, err = strconv.Atoi(raw)
+		if err != nil || c.monitorMS < 100 || c.monitorMS > 5000 {
+			return c, fmt.Errorf("invalid monitoring interval")
+		}
+	}
 	if raw := getenv("AISOC_STREAM_LOAD_CONSUMER_BATCH"); raw != "" {
 		var err error
 		c.consumerBatch, err = strconv.Atoi(raw)
@@ -33,7 +40,7 @@ func parseLoadConfig(getenv func(string) string) (loadConfig, error) {
 			*target = n
 		}
 	}
-	if c.events < 100 || c.events > 10000 || c.events%100 != 0 || c.eps < 100 || c.eps > 1000 || c.pauseSeconds < 0 || c.pauseSeconds > 10 || c.idlePollMS < 1 || c.idlePollMS > 100 {
+	if c.events < 100 || c.events > 60000 || c.events%100 != 0 || c.eps < 100 || c.eps > 1000 || c.pauseSeconds < 0 || c.pauseSeconds > 10 || c.idlePollMS < 1 || c.idlePollMS > 100 {
 		return c, fmt.Errorf("workload exceeds bounded test limits")
 	}
 	return c, nil
@@ -51,6 +58,8 @@ func TestLoadConfigBounds(t *testing.T) {
 		{map[string]string{"AISOC_STREAM_LOAD_EVENTS": "3000", "AISOC_STREAM_LOAD_EPS": "100", "AISOC_STREAM_LOAD_PAUSE_SECONDS": "2"}, true},
 		{map[string]string{"AISOC_STREAM_LOAD_EVENTS": "101"}, false},
 		{map[string]string{"AISOC_STREAM_LOAD_EVENTS": "10001"}, false},
+		{map[string]string{"AISOC_STREAM_LOAD_EVENTS": "60000"}, true},
+		{map[string]string{"AISOC_STREAM_LOAD_EVENTS": "60100"}, false},
 		{map[string]string{"AISOC_STREAM_LOAD_EPS": "0"}, false},
 		{map[string]string{"AISOC_STREAM_LOAD_PAUSE_SECONDS": "11"}, false},
 		{map[string]string{"AISOC_STREAM_LOAD_EPS": "bad"}, false},

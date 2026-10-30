@@ -63,6 +63,36 @@ func (r Runtime) PublishBatch(ctx context.Context, limit int) (int, error) {
 		return 0, err
 	}
 	receipts := []eventstate.PublicationReceipt{}
+	if len(leases) > 1 {
+		events := make([]telemetry.Event, 0, len(leases))
+		for _, l := range leases {
+			e, decodeErr := telemetry.Decode(l.Envelope, r.Binding)
+			if decodeErr != nil || e.Identity() != l.EventKey || e.ContentHash() != l.ContentHash {
+				break
+			}
+			events = append(events, e)
+		}
+		if len(events) == len(leases) {
+			ids, publishErr := r.Publisher.PublishBatchBounded(ctx, r.Binding, events, r.MaxEntries)
+			if publishErr == nil {
+				for i, l := range leases {
+					receipts = append(receipts, eventstate.PublicationReceipt{Lease: l, MessageID: ids[i]})
+				}
+				if err = r.Store.MarkPublishedBatch(ctx, r.Binding, receipts); err != nil {
+					return 0, err
+				}
+				return len(receipts), nil
+			}
+			if !errors.Is(publishErr, streams.ErrBackpressure) {
+				for _, l := range leases {
+					publishErr = errors.Join(publishErr, r.Store.Retry(ctx, r.Binding, l, eventstate.RetryDelay(l.Attempts)))
+				}
+				return 0, publishErr
+			}
+			// A near-full stream can still admit a smaller prefix using the
+			// original per-event capacity checks and receipt fencing below.
+		}
+	}
 	for i, l := range leases {
 		e, err := telemetry.Decode(l.Envelope, r.Binding)
 		if err == nil && (e.Identity() != l.EventKey || e.ContentHash() != l.ContentHash) {

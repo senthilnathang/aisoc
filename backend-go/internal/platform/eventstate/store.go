@@ -105,7 +105,7 @@ func (s Store) Accept(ctx context.Context, b telemetry.Binding, expected Checkpo
 		return result, err
 	}
 	var current Checkpoint
-	err = tx.QueryRow(ctx, `SELECT cursor,version FROM stream_source_checkpoints WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 FOR UPDATE`, b.TenantID, b.ConnectorID, b.Source).Scan(&current.Cursor, &current.Version)
+	err = tx.QueryRow(ctx, `SELECT cursor,version FROM stream_source_checkpoints WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 FOR NO KEY UPDATE`, b.TenantID, b.ConnectorID, b.Source).Scan(&current.Cursor, &current.Version)
 	if err != nil {
 		return result, err
 	}
@@ -113,11 +113,11 @@ func (s Store) Accept(ctx context.Context, b telemetry.Binding, expected Checkpo
 		return result, ErrCheckpoint
 	}
 	var count, size, total int64
-	err = tx.QueryRow(ctx, `SELECT count(*) FILTER(WHERE a.event_key IS NULL),COALESCE(sum(octet_length(e.envelope)) FILTER(WHERE a.event_key IS NULL),0),count(*) FROM stream_events e LEFT JOIN stream_event_archives a USING(tenant_id,connector_id,source,event_key) WHERE tenant_id=$1 AND connector_id=$2 AND source=$3`, b.TenantID, b.ConnectorID, b.Source).Scan(&count, &size, &total)
+	err = tx.QueryRow(ctx, `SELECT COALESCE((SELECT hot_events FROM stream_payload_budgets WHERE tenant_id=$1 AND connector_id=$2 AND source=$3),0),COALESCE((SELECT hot_bytes FROM stream_payload_budgets WHERE tenant_id=$1 AND connector_id=$2 AND source=$3),0),COALESCE((SELECT total_events FROM stream_payload_budgets WHERE tenant_id=$1 AND connector_id=$2 AND source=$3),0)`, b.TenantID, b.ConnectorID, b.Source).Scan(&count, &size, &total)
 	if err != nil {
 		return result, err
 	}
-	rows, err := tx.Query(ctx, `SELECT event_key,content_hash FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=ANY($4::text[])`, b.TenantID, b.ConnectorID, b.Source, keys)
+	rows, err := tx.Query(ctx, `SELECT e.event_key,e.content_hash FROM unnest($4::text[]) k CROSS JOIN LATERAL (SELECT event_key,content_hash FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=k OFFSET 0) e`, b.TenantID, b.ConnectorID, b.Source, keys)
 	if err != nil {
 		return Accepted{}, err
 	}
@@ -189,7 +189,7 @@ func (s Store) Claim(ctx context.Context, b telemetry.Binding) (*Lease, error) {
 // ClaimBatch retains per-event leases, attempts and receipts. The correlated
 // envelope lookup avoids source-wide nested-loop scans with cold statistics.
 func (s Store) ClaimBatch(ctx context.Context, b telemetry.Binding, limit int) ([]Lease, error) {
-	if !validBinding(b) || limit < 1 || limit > 25 {
+	if !validBinding(b) || limit < 1 || limit > 100 {
 		return nil, ErrInvalid
 	}
 	_, err := s.Pool.Exec(ctx, `UPDATE stream_outbox SET state='failed',lease_until=NULL,error_code='ATTEMPTS_EXHAUSTED',updated_at=now()

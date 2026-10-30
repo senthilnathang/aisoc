@@ -17,6 +17,15 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('Inference redirects are disabled')
 
 
+def unique_object(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError('Duplicate inference field')
+        value[key] = item
+    return value
+
+
 class JSONModel:
     def __init__(self, endpoint, model, credential_file=None):
         url = urllib.parse.urlsplit(endpoint)
@@ -59,7 +68,7 @@ class JSONModel:
             raise ValueError('Inference service unavailable') from None
         if len(raw) > 16384 or time.time() >= task.deadline_unix_ms / 1000:
             raise ValueError('Inference exceeded output or time budget')
-        result = json.loads(raw)
+        result = json.loads(raw, object_pairs_hook=unique_object)
         if not isinstance(result, dict) or set(result) != {'verdict', 'hypotheses', 'missing_evidence'}:
             raise ValueError('Invalid inference output schema')
         if result['verdict'] not in ('INCONCLUSIVE', 'SUSPICIOUS', 'BENIGN', 'MALICIOUS'):

@@ -3,6 +3,7 @@ package eventstate
 import (
 	"aisoc/backend/internal/modules/telemetry"
 	"context"
+	"github.com/jackc/pgx/v5"
 )
 
 type Snapshot struct {
@@ -24,8 +25,8 @@ func (s Store) Snapshot(ctx context.Context, b telemetry.Binding, processor stri
 	if !validBinding(b) || !idPattern.MatchString(processor) {
 		return r, ErrInvalid
 	}
-	// Aggregate scoped sets once instead of probing inbox/work for every retained
-	// event. Completed still wins over dead; unknown work cannot become acceptance.
+	// Aggregate scoped sets once. Completed still wins over dead; unknown work
+	// cannot become acceptance. Avoid a growing multi-column nested-loop join.
 	err := s.Pool.QueryRow(ctx, `WITH states AS MATERIALIZED (
  SELECT event_key,min(created_at) AS created_at,bool_or(completed) AS completed,bool_or(dead) AS dead FROM (
  SELECT event_key,created_at,false AS completed,false AS dead,true AS accepted FROM stream_events WHERE tenant_id=$1 AND connector_id=$2 AND source=$3
@@ -38,7 +39,7 @@ func (s Store) Snapshot(ctx context.Context, b telemetry.Binding, processor stri
  (SELECT count(*) FROM stream_replay_gaps WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4),
  (SELECT count(*) FROM stream_dead_letters WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND processor=$4),
  (SELECT count(*) FROM stream_event_archives WHERE tenant_id=$1 AND connector_id=$2 AND source=$3)
- FROM states`, b.TenantID, b.ConnectorID, b.Source, processor).Scan(&r.Accepted, &r.Completed, &r.Dead, &r.Pending, &r.OldestPendingSeconds, &r.PublicationFailed, &r.HistoricalGaps, &r.DeadLetters, &r.Archived)
+ FROM states`, pgx.QueryExecModeExec, b.TenantID, b.ConnectorID, b.Source, processor).Scan(&r.Accepted, &r.Completed, &r.Dead, &r.Pending, &r.OldestPendingSeconds, &r.PublicationFailed, &r.HistoricalGaps, &r.DeadLetters, &r.Archived)
 	return r, err
 }
 func (s Store) Committed(ctx context.Context, b telemetry.Binding, processor, key, hash string) (bool, error) {

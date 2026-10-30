@@ -22,8 +22,10 @@ SOAR uses explicit organization/incident IDs and its own credential file. It
 retrieves case context through `/rest/orgs/{org}/incidents/{id}`; this is not raw
 SIEM telemetry. Installed schemas and conflict behavior must be checked using the
 product's API browser, as described by IBM's [SOAR REST guide](https://www.ibm.com/support/pages/rest-api).
-Live SOAR writes, Ariel query admission and Sentinel adapters remain separate
-capabilities; the working demo continues to use normalized JSON and mock notes.
+Ariel saved-search admission/status/results and Sentinel incident pages now have
+configurable adapters and local HTTP contract tests. Their commands and scope limits
+are documented in [local release gates](LOCAL_RELEASE_GATES.md). Live SOAR writes
+remain unactivated; the working demo uses normalized JSON and durable mock notes.
 
 Both adapters enforce bounded payloads, deadlines, no redirects, TLS outside
 literal loopback, at most three read attempts for 429/503 and bounded retry delays.
@@ -42,6 +44,10 @@ Configuration keys use the exported Go names: `Endpoint`, `Version`, `Product`,
 `CredentialFile`, `DomainID`, `OrganizationID`. Pin the actual installed version;
 the fixture's 25.0/51.0 labels are not discovery of your products. Probe output
 does not automatically become an authentication event or advance a database cursor.
+
+`ArielSavedSearchIDs` allowlists at most 20 operator-defined saved queries. Sentinel
+has its own configuration contract and externally refreshed access-token file.
+Neither adapter has access to response credentials or arbitrary model-supplied URLs.
 
 ## Optional JSON inference service
 

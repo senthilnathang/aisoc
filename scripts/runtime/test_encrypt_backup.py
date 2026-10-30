@@ -19,7 +19,9 @@ class EncryptBackupTests(unittest.TestCase):
             backup = root/'verified'; backup.mkdir(); destination = root/'destination'
             payload = b'Synthetic backup fixture, not a production database'
             (backup/'postgres.dump').write_bytes(payload)
-            (backup/'manifest.json').write_text(json.dumps({'passed': True, 'dump_sha256': hashlib.sha256(payload).hexdigest()}))
+            archive_payload=b'Synthetic compressed archive bytes'
+            (backup/'archive-fixture.json.gz').write_bytes(archive_payload)
+            (backup/'manifest.json').write_text(json.dumps({'passed': True, 'dump_sha256': hashlib.sha256(payload).hexdigest(), 'archives':[{'file':'archive-fixture.json.gz','file_sha256':hashlib.sha256(archive_payload).hexdigest()}]}))
             gpg = ['gpg', '--homedir', str(keyring), '--batch', '--pinentry-mode', 'loopback', '--passphrase', '']
             try:
                 subprocess.run(gpg+['--quick-generate-key', 'AISOC fixture <fixture@example.invalid>', 'rsa2048', 'encr', '1d'], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
@@ -32,7 +34,12 @@ class EncryptBackupTests(unittest.TestCase):
                 decrypted = subprocess.check_output(gpg+['--decrypt', str(encrypted)], stderr=subprocess.DEVNULL, timeout=30)
                 with tarfile.open(fileobj=io.BytesIO(decrypted)) as archive:
                     self.assertEqual(archive.extractfile('postgres.dump').read(), payload)
+                    self.assertEqual(archive.extractfile('archive-fixture.json.gz').read(), archive_payload)
                 self.assertTrue(all(p.suffix in ('.gpg', '.json') for p in destination.iterdir()))
+                (backup/'archive-fixture.json.gz').write_bytes(b'tampered archive')
+                failed = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
+                self.assertNotEqual(failed.returncode, 0)
+                (backup/'archive-fixture.json.gz').write_bytes(archive_payload)
                 (backup/'postgres.dump').write_bytes(b'changed after verification')
                 failed = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
                 self.assertNotEqual(failed.returncode, 0)

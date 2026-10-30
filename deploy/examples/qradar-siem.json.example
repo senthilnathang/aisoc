@@ -1,0 +1,8 @@
+{
+  "Endpoint": "https://qradar.example.invalid",
+  "Version": "25.0",
+  "Product": "qradar-siem",
+  "CredentialFile": "/run/secrets/qradar-sec-token",
+  "DomainID": 7,
+  "ArielSavedSearchIDs": [42]
+}

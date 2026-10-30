@@ -1,0 +1,7 @@
+{
+  "Endpoint": "https://soar.example.invalid",
+  "Version": "51.0",
+  "Product": "qradar-soar",
+  "OrganizationID": 7,
+  "CredentialFile": "/run/secrets/qradar-soar-basic-authorization"
+}

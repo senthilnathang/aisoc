@@ -1,6 +1,6 @@
 # Application architecture
 
-Current as of 2026-10-29. Go/PostgreSQL is active; Node is retained for comparison
+Current as of 2026-10-30. Go/PostgreSQL is active; Node is retained for comparison
 and rollback. The frontend remains React/Chakra/Vite.
 
 ```mermaid

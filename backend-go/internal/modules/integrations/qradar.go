@@ -26,10 +26,12 @@ type QRadar struct {
 	version, credential, product string
 	domain, org                  int64
 	client                       *http.Client
+	savedSearches                map[int64]bool
 }
 type QRadarConfig struct {
 	Endpoint, Version, Product, CredentialFile string
 	DomainID, OrganizationID                   int64
+	ArielSavedSearchIDs                        []int64
 }
 
 // NewQRadar requires pinned version metadata and a trusted endpoint. HTTP is
@@ -56,7 +58,14 @@ func NewQRadar(c QRadarConfig) (*QRadar, error) {
 	if c.Product == "qradar-soar" && !strings.HasPrefix(credential, "Basic ") {
 		return nil, ErrContract
 	}
-	return &QRadar{base: u, version: c.Version, product: c.Product, credential: credential, domain: c.DomainID, org: c.OrganizationID, client: &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
+	allowed := map[int64]bool{}
+	for _, id := range c.ArielSavedSearchIDs {
+		if id < 1 || len(allowed) >= 20 {
+			return nil, ErrContract
+		}
+		allowed[id] = true
+	}
+	return &QRadar{base: u, version: c.Version, product: c.Product, credential: credential, domain: c.DomainID, org: c.OrganizationID, savedSearches: allowed, client: &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
 }
 
 func (q *QRadar) read(ctx context.Context, path string, query url.Values, target any) error {

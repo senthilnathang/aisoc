@@ -240,6 +240,32 @@ func TestConcurrentBoundedPublishDoesNotOvershoot(t *testing.T) {
 	}
 }
 
+func TestBoundedBatchVisibilityAndCapacity(t *testing.T) {
+	p, c, a, b, e := setup(t)
+	ctx := context.Background()
+	key, _ := Key(b)
+	if err := c.EnsureGroup(ctx, b, "batch"); err != nil {
+		t.Fatal(err)
+	}
+	ids, err := p.PublishBatchBounded(ctx, b, []telemetry.Event{e, e, e}, 3)
+	if err != nil || len(ids) != 3 {
+		t.Fatal(ids, err)
+	}
+	if _, err = p.PublishBatchBounded(ctx, b, []telemetry.Event{e, e}, 3); !errors.Is(err, ErrBackpressure) {
+		t.Fatal(err)
+	}
+	if n, err := a.redis.XLen(ctx, key).Result(); err != nil || n != 3 {
+		t.Fatal(n, err)
+	}
+	deliveries, err := c.Read(ctx, b, "batch", "worker", 3, time.Millisecond)
+	if err != nil || len(deliveries) != 3 {
+		t.Fatal(deliveries, err)
+	}
+	if n, err := c.Pending(ctx, b, "batch"); err != nil || n != 3 {
+		t.Fatal("implicit ACK", n, err)
+	}
+}
+
 func TestReclaimReportsMissingPayloadsAndKeepsPoisonPending(t *testing.T) {
 	p, c, a, b, e := setup(t)
 	ctx := context.Background()

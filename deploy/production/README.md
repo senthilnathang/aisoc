@@ -26,7 +26,8 @@ managed key rotation still need environment-specific implementation.
 ## Encrypted off-host backup
 
 The existing `scripts/runtime/backup.py` creates and restores a private backup,
-checks constraints and verifies API readiness. Use its verified backup directory
+checks constraints, copies and verifies referenced archive payload files, and verifies
+API readiness. Foundation backups use `--state .run/go-dev`. Use its verified backup directory
 as input to `scripts/runtime/encrypt_backup.py`. Supply a trusted recipient
 fingerprint already imported into a dedicated GPG keyring. It creates only an
 encrypted archive and SHA-256 manifest in the chosen destination. Select an
@@ -43,6 +44,12 @@ bounded metrics, never evidence payloads, to your monitoring service. Suggested
 initial alerts: missing heartbeat >30 seconds; pending age >15 seconds; nonzero
 DLQ; backup verification failure; stale backup >24 hours; disk >80%. Tune from
 measured workload. External destinations and credentials remain unset.
+
+`scripts/runtime/monitor.py` accepts an explicit `--webhook-config` pointing at
+HTTPS-only operational-alert configuration. The transport sends only fixed component
+and reason fields and rejects redirects. Local tests validate trusted certificates
+and reject untrusted certificates using a loopback HTTPS receiver; no external
+destination is configured. This does not replace a durable external monitoring system.
 
 Existing tests cover worker crash, transport loss/replay, stalled TCP and memory
 backpressure. Replicated failover, power loss and network partitions across real

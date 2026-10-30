@@ -147,6 +147,7 @@ def create_app(settings=None):
                 'plugins': [{'id': 'python.normalize', 'version': '1'}],
                 'investigation_rpc': 'aisoc.worker.v1.Investigator/Investigate',
                 'investigation_mode': 'mock-v1',
+                'investigation_modes': ['mock-v1', 'model-v1'] if request.app.state.runtime.settings.inference_url else ['mock-v1'],
                 'max_input_bytes': 65536, 'max_output_bytes': 65536,
                 'max_concurrent_rpcs': 4, 'execution_transport': 'grpc'}
 

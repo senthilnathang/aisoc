@@ -45,7 +45,7 @@ func TestStreamLoadReport(t *testing.T) {
 	pauseDuration := time.Duration(workload.pauseSeconds) * time.Second
 	r, a, template := setup(t)
 	r.Store.MaxEvents = count + 1
-	r.Store.MaxPayloadBytes = 8 << 20
+	r.Store.MaxPayloadBytes = 64 << 20 // Disposable capacity probe only; production limits are unchanged.
 	r.MaxEntries = count + 1
 	r.MaxRecoveryRecords = count + 1
 	noop := func(context.Context, pgx.Tx, telemetry.Event) error { return nil }
@@ -78,6 +78,7 @@ func TestStreamLoadReport(t *testing.T) {
 	var maxScheduleLag atomic.Int64
 	var finished atomic.Int64
 	var publisherFinished atomic.Bool
+	var completionNanos atomic.Int64
 	var inserted atomic.Int64
 	var payloadBytes atomic.Int64
 	var wg sync.WaitGroup
@@ -85,6 +86,14 @@ func TestStreamLoadReport(t *testing.T) {
 	var cpuBefore, cpuAfter syscall.Rusage
 	syscall.Getrusage(syscall.RUSAGE_SELF, &cpuBefore)
 	began := time.Now()
+	markCompletion := func() {
+		n := time.Since(began).Nanoseconds()
+		for old := completionNanos.Load(); n > old; old = completionNanos.Load() {
+			if completionNanos.CompareAndSwap(old, n) {
+				break
+			}
+		}
+	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -140,7 +149,7 @@ func TestStreamLoadReport(t *testing.T) {
 			if ctx.Err() != nil {
 				return
 			}
-			n, err := r.PublishBatch(ctx, 25)
+			n, err := r.PublishBatch(ctx, 100)
 			if err != nil {
 				errs <- err
 				cancel()
@@ -156,6 +165,7 @@ func TestStreamLoadReport(t *testing.T) {
 				}
 			}
 		}
+		markCompletion()
 		publisherFinished.Store(true)
 	}()
 	for worker := 0; worker < 2; worker++ {
@@ -202,6 +212,7 @@ func TestStreamLoadReport(t *testing.T) {
 						due, _ := scheduled.Load(d.Key)
 						scheduledDurations.Store(d.Key, float64(time.Since(due.(time.Time)).Microseconds())/1000)
 						finished.Add(1)
+						markCompletion()
 					}
 				}
 			}
@@ -224,7 +235,7 @@ func TestStreamLoadReport(t *testing.T) {
 		if snapshot.OldestPendingSeconds > peakAge {
 			peakAge = snapshot.OldestPendingSeconds
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(time.Duration(workload.monitorMS) * time.Millisecond)
 	}
 	elapsed := time.Since(began)
 	cancel()
@@ -283,6 +294,9 @@ func TestStreamLoadReport(t *testing.T) {
 	}
 	report := map[string]any{"schema_version": 1, "workload": "1000 projected authentication events in 10 batches, 100ms apart; bounded overload probe, not sustained capacity", "offered_eps": 1000, "events": count, "payload_bytes": payloadBytes.Load(), "accepted": inserted.Load(), "completed": finished.Load(), "unacked": pending, "elapsed_seconds": elapsed.Seconds(), "achieved_eps": float64(count) / elapsed.Seconds(), "accept_start_to_committed_ack_ms": map[string]float64{"p50": percentile(.5), "p95": percentile(.95), "p99": percentile(.99)}, "sampled_peak_pending": peakPending, "sampled_peak_pending_age_seconds": peakAge, "go_cpu_seconds": cpu(cpuAfter.Utime) + cpu(cpuAfter.Stime) - cpu(cpuBefore.Utime) - cpu(cpuBefore.Stime), "go_process_peak_rss_kib": cpuAfter.Maxrss, "redis_memory_bytes": redisMemory, "logical_cpus": runtime.NumCPU(), "gomaxprocs": runtime.GOMAXPROCS(0), "go_version": runtime.Version(), "race": race, "publisher_workers": 1, "consumer_workers": 2, "postgres_snapshot_including_one_setup_event": snapshot, "limits": "No live provider, finding/LLM latency, PostgreSQL CPU/RSS, cluster failover, sustained SLO or production capacity measured. Full suite tests crashes and transport faults separately; optional cooperative consumer pause is reported explicitly."}
 	report["correctness_passed"] = true
+	report["last_commit_or_ack_seconds"] = time.Duration(completionNanos.Load()).Seconds()
+	report["commit_ack_eps"] = float64(count) / time.Duration(completionNanos.Load()).Seconds()
+	report["elapsed_notes"] = "elapsed_seconds includes backlog-monitor wakeup; last_commit_or_ack_seconds ends at final publication commit or consumer ACK, whichever is later"
 	report["postgres_diagnostics"] = databaseProfile
 	report["workload"] = "bounded paced synthetic authentication workload; 100-event batches; no production capacity claim"
 	report["offered_eps"] = workload.eps
@@ -295,7 +309,8 @@ func TestStreamLoadReport(t *testing.T) {
 	scheduledDurations.Range(func(_, v any) bool { scheduledSamples = append(scheduledSamples, v.(float64)); return true })
 	sort.Float64s(scheduledSamples)
 	report["scheduled_start_to_committed_ack_ms"] = map[string]float64{"p50": scheduledSamples[int(math.Ceil(.5*float64(len(scheduledSamples))))-1], "p95": scheduledSamples[int(math.Ceil(.95*float64(len(scheduledSamples))))-1], "p99": scheduledSamples[int(math.Ceil(.99*float64(len(scheduledSamples))))-1]}
-	report["publisher_claim_batch_size"] = 25
+	report["publisher_claim_batch_size"] = 100
+	report["backlog_monitor_interval_ms"] = workload.monitorMS
 	report["publisher_empty_claim_delay_ms"] = workload.idlePollMS
 	report["database_client_profile"] = profile.snapshot()
 	for _, row := range profile.snapshot() {

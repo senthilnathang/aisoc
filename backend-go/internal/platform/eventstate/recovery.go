@@ -44,17 +44,24 @@ func validWork(key string) bool {
 		(strings.HasPrefix(key, "delivery:") && len(key) <= 137 && messagePattern.MatchString(strings.TrimPrefix(key, "delivery:")))
 }
 
-// lockBudget serializes new metadata admission with source ingestion. No network
-// or effect runs under this lock. Budgets apply per source/processor.
+// lockMetadata serializes metadata admission per source/processor independently
+// from source ingestion. Hash collisions only add contention, never bypass locks.
+// All admission and archive compaction paths take this transaction-scoped lock
+// before reading the budget or locking work rows. No network effects are allowed.
+func lockMetadata(ctx context.Context, tx pgx.Tx, b telemetry.Binding, processor string) error {
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended(jsonb_build_array('aisoc-stream-metadata-v1',$1::text,$2::text,$3::text,$4::text)::text,0))`, b.TenantID, b.ConnectorID, b.Source, processor)
+	return err
+}
+
+// lockBudget serializes new metadata admission. Budgets apply per source/processor.
 func lockBudget(ctx context.Context, tx pgx.Tx, b telemetry.Binding, processor string, limit int64, workKey, gapID string) error {
 	if !validBinding(b) || !idPattern.MatchString(processor) || limit < 1 || limit > 100000 {
 		return ErrInvalid
 	}
-	var one int
-	if err := tx.QueryRow(ctx, `SELECT 1 FROM stream_source_checkpoints WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 FOR UPDATE`, b.TenantID, b.ConnectorID, b.Source).Scan(&one); err != nil {
+	if err := lockMetadata(ctx, tx, b, processor); err != nil {
 		return err
 	}
-	// Keep this check after acquiring the source lock so it observes admissions
+	// Keep this check after acquiring the metadata lock so it observes admissions
 	// committed by the previous holder. CASE avoids counting retained rows on replay.
 	var full bool
 	err := tx.QueryRow(ctx, `SELECT CASE WHEN

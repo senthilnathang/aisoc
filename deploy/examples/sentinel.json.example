@@ -1,0 +1,8 @@
+{
+  "Endpoint": "https://management.azure.com",
+  "APIVersion": "2025-09-01",
+  "SubscriptionID": "00000000-0000-0000-0000-000000000001",
+  "ResourceGroup": "example",
+  "Workspace": "example-workspace",
+  "CredentialFile": "/run/secrets/sentinel-arm-access-token"
+}

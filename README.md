@@ -25,6 +25,10 @@ switching profiles so its API proxy is restarted. Foundation startup supervises
 Go, Python and stream workers; stop preserves data. The release database remains
 separate and is never merged or overwritten by switching profiles.
 See [current delivery status](docs/NEXT_DELIVERY_TASKS.md) for implementation limits.
+Configurable Ariel/Sentinel reads, private model-service configuration, archived
+payload recovery and local HTTPS alert checks are described in
+[local release gates](docs/LOCAL_RELEASE_GATES.md). Real vendor/model validation and
+production activation are not inferred from passing fixture tests.
 
 ```bash
 ./run.sh start both

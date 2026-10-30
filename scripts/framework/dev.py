@@ -85,6 +85,15 @@ def start_python_worker(config):
         available(50051);available(8001)
         env={key:value for key,value in os.environ.items() if key in ('PATH','LANG')}
         env.update(AISOC_WORKER_TOKEN=config['worker_token'],AISOC_PYTHON_ADDR='127.0.0.1:50051',AISOC_PYTHON_HTTP_ADDR='127.0.0.1:8001')
+        inference=STATE/'inference.json'
+        if inference.exists():
+            if inference.stat().st_mode & 0o077:
+                raise RuntimeError('Inference configuration must be private (0600)')
+            values=json.loads(inference.read_text())
+            allowed={'endpoint','model','credential_file'}
+            if not isinstance(values,dict) or set(values)-allowed or not all(isinstance(v,str) for v in values.values()) or not values.get('endpoint') or not values.get('model'):
+                raise RuntimeError('Invalid inference configuration')
+            env.update(AISOC_INFERENCE_URL=values['endpoint'],AISOC_INFERENCE_MODEL=values['model'],AISOC_INFERENCE_CREDENTIAL_FILE=values.get('credential_file',''))
         with (STATE/'python-worker.log').open('a') as log:
             process=subprocess.Popen([str(PYTHON),str(PYTHON_SERVICE)],env=env,cwd=ROOT,stdout=log,stderr=log,start_new_session=True)
         (STATE/'python-worker.pid').write_text(str(process.pid))

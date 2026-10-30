@@ -127,7 +127,7 @@ func (r Runtime) RunMock(ctx context.Context) error {
 	lastVersion := int64(-1)
 	investigationPending := true
 	for ctx.Err() == nil {
-		published, publishErr := r.PublishBatch(ctx, 25)
+		published, publishErr := r.PublishBatch(ctx, 100)
 		pollErr := r.Poll(ctx, "filtered", noop)
 		var maintenanceErr error
 		if time.Since(maintenance) >= time.Second {

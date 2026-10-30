@@ -3,14 +3,20 @@
 Scope: local JSON data, local deployment, production configuration prepared only;
 sandbox session revocation. Live vendor/model verification is not claimed.
 
+The latest continuation adds configurable Ariel/Sentinel adapters, private model
+configuration, adversarial inference contract checks, archive-inclusive recovery,
+and HTTPS alert transport tested only against loopback fixtures. See
+[local release gates](LOCAL_RELEASE_GATES.md) for exact commands and remaining
+deployment/vendor/model-quality boundaries. No production activation is requested.
+
 | Work | Acceptance | Status |
 |---|---|---|
 | Persistent showcase | 10,000 synthetic events, replay-safe seed, scoped API pagination and browser evidence | Loaded: ten demo sources, ten synced investigations |
-| P1 performance | Reduce SQL/locking costs while preserving idempotency and faults; repeat comparable load tests | Implemented and measured; stable 1,000 EPS gate remains open |
-| P1 integrations | Versioned source adapters, bounded polling/replay and fixture contracts | Read-only QRadar transport and JSON contracts tested; live mapping/write-back/Ariel/Sentinel not validated |
+| P1 performance | Reduce SQL/locking costs while preserving idempotency and faults; repeat comparable load tests | Final 60,000/60,000 completed at 745 EPS, p95 29.987 s; stable 1,000 EPS gate remains open |
+| P1 integrations | Versioned source adapters, bounded polling/replay and fixture contracts | QRadar, allowlisted Ariel and Sentinel readers fixture-tested; live mapping/polling/write-back not certified |
 | P1 inference | Preserve typed gRPC; configurable model adapter and local evidence evaluation | Go/Python/JSON service contract tested; real model quality and production scheduling not enabled |
 | P2 continuous ingestion | Bounded correlation windows, verified retention/replay and dedup preservation | Verified payload offload frees hot capacity; identities/dedup retained; bounded metadata ceiling |
-| P2 operations | Local supervision plus production TLS, encrypted backup and alert configuration; no external activation | Supervisor crash recovery and encryption round-trip passed; production templates prepared |
+| P2 operations | Local supervision plus production TLS, encrypted backup and alert configuration; no external activation | Supervisor recovery, archive-inclusive restore, encryption and loopback HTTPS alerts tested; production templates prepared |
 | P3 responses | Sandbox session revocation, explicit approval, idempotency, audit, kill switch and compensation semantics | Implemented; expiry, denial, rollback and replay tested; no live IAM calls |
 
 ## Showcase

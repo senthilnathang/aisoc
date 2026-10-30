@@ -5,6 +5,12 @@ Tasks run in dependency order. Preserve the working Go/PostgreSQL and Python
 FastAPI/gRPC foundation. No production containment or live provider credentials
 are required for the first milestone.
 
+Continuation status (2026-10-30): migration 030 and bounded publication/receipt
+batches are installed locally; configurable Ariel/Sentinel readers, inference
+contracts, archive-inclusive recovery and HTTPS alert fixtures pass. Responses
+remain mocked. The sustained 1,000 EPS gate remains open; see
+[delivery tasks](NEXT_DELIVERY_TASKS.md) and [local release gates](LOCAL_RELEASE_GATES.md).
+
 | ID | Task | Depends on | Acceptance gate | Status |
 |---|---|---|---|---|
 | S01 | Versioned telemetry/finding contracts and Redis boundary ADR | Reviewed diagram | Typed Go validation, source/tenant binding, stable revision-aware identities, mock fixture and negative tests | Complete |

@@ -388,5 +388,42 @@ remains unmet. Checkpoint row locking dominates process-query elapsed time.
 
 Local evidence: `output/backend-framework/final-steady-stream-load.json` and
 `set-snapshot-stream-load.json`. The complete regression suite passed. The running
-sandbox retains its conservative default consumer batch; the benchmark explicitly
-opts into 100. These bounded runs do not establish sustained production capacity.
+sandbox at that revision retained its conservative default consumer batch; the benchmark explicitly
+opted into 100. These bounded runs do not establish sustained production capacity.
+
+## 2026-10-30: sustained validation after migration 030
+
+Processor metadata now uses its own scoped advisory lock. Intake checkpoint locks
+permit foreign-key checks; transactional payload counters replace repeated retained
+payload scans. Redis publication and fenced PostgreSQL receipts use bounded batches
+of 100, with receipt updates pipelined in one transaction. The local worker also
+uses a 100-event read limit. Retry, backpressure, audit and idempotency checks remain.
+
+| Run (1,000 EPS offered) | Completed | Elapsed-time EPS | Scheduled-to-ACK p95 |
+|---|---:|---:|---:|
+| Short batched-publication check | 10,000 | 1,003 | 0.108 s |
+| Sustained pipeline check | 60,000 | 866 | 11.857 s |
+| Repeat after clearing regenerable Go cache | 60,000 | 660 | 46.103 s |
+| Experimental 5 ms commit delay | 60,000 | 476 | 66.670 s |
+| Final default configuration and full regression suite | 60,000 | 745 | 29.987 s |
+
+**Stable 1,000 EPS is not achieved.** The short result is not sustained capacity.
+The final run completed all 60,000 events with zero unacknowledged backlog; its
+last committed/acknowledged event rate was 756 EPS. The 745 EPS figure includes the
+monitor's final wakeup. Sustained pipeline runs sample backlog every 1,000 ms;
+the short check used 100 ms. Every event still contributes to latency statistics.
+These are synthetic transport measurements, not model or finding latency.
+
+The final run retained `fsync=on`, `synchronous_commit=on`, `commit_delay=0` and
+`commit_siblings=0`. The 5 ms delay experiment was worse and was not adopted.
+Observed WAL sync stalls and large run-to-run variance require a controlled
+storage/host baseline before claiming further improvement. The filesystem had
+less than 4 GiB free; clearing only regenerable Go caches freed space but did not
+establish a performance benefit. No application data was removed for that cleanup.
+
+Evidence is retained locally in `output/backend-framework/60k-final-default.json`,
+`60k-pipeline-before-cache-clean.json`, `60k-pipeline-after-cache-clean.json`,
+`60k-group-commit-5000us.json`, and `batched-publication-10k.json`. The final
+`report.json` passes Go race/vet, Python/Rust, authenticated gRPC, migration,
+tenant/policy, replay, worker-crash, Redis recovery and transaction rollback gates.
+Correctness passing does not make the throughput gate pass.

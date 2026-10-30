@@ -29,6 +29,13 @@ def main():
     with dump.open('rb') as source:
         if hashlib.file_digest(source, 'sha256').hexdigest() != manifest['dump_sha256']:
             raise RuntimeError('Backup no longer matches its verified manifest')
+    for archive in manifest.get('archives', []):
+        name = archive['file']
+        if Path(name).name != name or not name.startswith('archive-'):
+            raise RuntimeError('Invalid archive receipt')
+        with (args.backup/name).open('rb') as source:
+            if hashlib.file_digest(source, 'sha256').hexdigest() != archive['file_sha256']:
+                raise RuntimeError('Archive no longer matches verified backup')
     args.destination.mkdir(parents=True, exist_ok=True, mode=0o700)
     # Plaintext staging stays on the local temporary filesystem, never on the
     # potentially off-host destination mount. TemporaryDirectory is mode 0700.

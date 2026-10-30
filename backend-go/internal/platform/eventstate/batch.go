@@ -32,8 +32,7 @@ func (s Store) ApplyFreshBatch(ctx context.Context, b telemetry.Binding, process
 		return false, err
 	}
 	defer tx.Rollback(ctx)
-	var one int
-	if err = tx.QueryRow(ctx, `SELECT 1 FROM stream_source_checkpoints WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 FOR UPDATE`, b.TenantID, b.ConnectorID, b.Source).Scan(&one); err != nil {
+	if err = lockMetadata(ctx, tx, b, processor); err != nil {
 		return false, err
 	}
 	var exists bool

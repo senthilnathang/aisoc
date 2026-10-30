@@ -277,6 +277,12 @@ user-selected local release.
 
 ## Persistent showcase and local response validation (2026-10-30)
 
+The follow-on [local gate report](LOCAL_RELEASE_GATES.md) adds Ariel/Sentinel scope
+contracts, payload-counter rollback, concurrent quota/ingestion isolation, bounded
+Redis batch publication, archive-inclusive restore with originals removed, encrypted
+archive tamper rejection and loopback HTTPS alert verification. Sustained probes now
+support 60,000 events; see the performance report for measured outcomes.
+
 The complete disposable framework suite passed with streams and a 10,000-event
 load probe. Coverage includes fresh-batch atomic rollback/replay, archive content
 verification and capacity release, scoped telemetry pagination, QRadar read-only

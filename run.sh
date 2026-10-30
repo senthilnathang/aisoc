@@ -71,7 +71,7 @@ for service in "${services[@]}"; do
       fi
       if [[ "$service" == backend ]]; then url=http://127.0.0.1:3002/health; else url=http://127.0.0.1:8080; fi
       if curl -fsS --max-time 1 "$url" >/dev/null 2>&1; then echo "$url is already occupied by an unmanaged service" >&2; exit 1; fi
-      (cd "$ROOT/$service"; if [[ "$service" == backend ]]; then nohup setsid ./node_modules/.bin/tsx src/server.ts >"$RUN/$service.log" 2>&1 & else nohup setsid ./node_modules/.bin/vite --host 0.0.0.0 --port 8080 --strictPort >"$RUN/$service.log" 2>&1 & fi; echo $! >"$RUN/$service.pid")
+      (cd "$ROOT/$service"; if [[ "$service" == backend ]]; then nohup setsid ./node_modules/.bin/tsx src/server.ts >"$RUN/$service.log" 2>&1 & else nohup setsid ./node_modules/.bin/vite --host 127.0.0.1 --port 8080 --strictPort >"$RUN/$service.log" 2>&1 & fi; echo $! >"$RUN/$service.pid")
       ready=false
       for attempt in {1..40}; do
         if curl -fsS --max-time 1 "$url" >/dev/null 2>&1; then ready=true; break; fi

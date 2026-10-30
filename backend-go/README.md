@@ -14,7 +14,7 @@ port 3002 after the 2026-10-29 migration. See [architecture](../docs/ARCHITECTUR
 - `cmd/migrate`: schema/checksums; `cmd/data-migrate`: import/export/reconciliation.
 - `internal/modules`: tenant-scoped domains and transactional repositories.
 - `internal/platform`: config/auth/database/jobs/RPC; `internal/transport/httpapi`: HTTP.
-- `migrations/`: 29 ordered PostgreSQL migrations in source, applied transactionally.
+- `migrations/`: 30 ordered PostgreSQL migrations in source, applied transactionally.
   Migrations 020–027 add streaming recovery, finding admission, mock investigation/SOAR,
   cache invalidation, metadata-budget counters and worker heartbeat. Foundation
   startup applies all migrations; the separate release remains on 019.
