@@ -2,6 +2,7 @@ package auth
 
 import (
 	"aisoc/backend/internal/platform/config"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,70 @@ import (
 	"testing"
 	"time"
 )
+
+func TestLocalRejectsAmbiguousTenant(t *testing.T) {
+	for _, values := range [][]string{{"tenant-a", "tenant-b"}, {"tenant-a", "tenant-a"}, {"tenant-a, tenant-b"}} {
+		m, h := testManager()
+		m.config.Mode = "local"
+		r := httptest.NewRequest("GET", "/protected", nil)
+		r.Header["X-Tenant-Id"] = values
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("ambiguous tenant %q accepted: %d", values, w.Code)
+		}
+	}
+}
+
+// A source key authorizes only the named source's intake, even in local mode.
+func TestSourceCredentialBoundary(t *testing.T) {
+	key := strings.Repeat("s", 40)
+	for _, mode := range []string{"local", "token"} {
+		for _, tc := range []struct {
+			name, method, path, credential, tenant string
+			want                                   int
+		}{
+			{"events", "POST", "/api/v1/intake/source-a/events", key, "", 200},
+			{"alerts", "POST", "/api/v1/intake/source-a/alerts", key, "tenant-a", 200},
+			{"wrong tenant", "POST", "/api/v1/intake/source-a/events", key, "tenant-b", 403},
+			{"other source", "POST", "/api/v1/intake/source-b/events", key, "", 401},
+			{"missing key", "POST", "/api/v1/intake/source-a/events", "", "", 401},
+			{"operator key", "POST", "/api/v1/intake/source-a/events", "parity_fixture_" + strings.Repeat("a", 40), "", 401},
+			{"management", "POST", "/api/v1/sources", key, "", 401},
+			{"wrong method", "GET", "/api/v1/intake/source-a/events", key, "", 401},
+		} {
+			t.Run(mode+"/"+tc.name, func(t *testing.T) {
+				m, _ := testManager()
+				m.config.Mode = mode
+				m.SourceAuthenticate = func(_ context.Context, source, credential string) (string, error) {
+					if source == "source-a" && credential == key {
+						return "tenant-a", nil
+					}
+					return "", nil
+				}
+				h := m.Protect(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					p := From(r.Context())
+					if p.ID != "source-a" || p.Tenant != "tenant-a" {
+						t.Errorf("incorrect binding: %+v", p)
+					}
+					w.WriteHeader(200)
+				}))
+				r := httptest.NewRequest(tc.method, tc.path, nil)
+				if tc.credential != "" {
+					r.Header.Set("Authorization", "Bearer "+tc.credential)
+				}
+				if tc.tenant != "" {
+					r.Header.Set("X-Tenant-Id", tc.tenant)
+				}
+				w := httptest.NewRecorder()
+				h.ServeHTTP(w, r)
+				if w.Code != tc.want {
+					t.Fatalf("status %d, want %d", w.Code, tc.want)
+				}
+			})
+		}
+	}
+}
 
 func testManager() (*Manager, http.Handler) {
 	m := New(config.Auth{Mode: "token", DefaultTenant: "demo", Operators: []config.Operator{{ID: "fixture-a", TenantID: "auth-a", TokenHash: hash("parity_fixture_" + strings.Repeat("a", 40))}}, Origins: []string{"http://localhost:8080"}, SessionTTL: time.Hour})

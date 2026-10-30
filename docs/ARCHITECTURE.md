@@ -160,6 +160,11 @@ immediate interruption of every underlying operation.
 
 - Local auth is for development. Token mode binds tenant identity to an operator
   or session; source keys authorize intake only.
+  Intake middleware resolves the source key to the stored tenant; `IngestSource`
+  rechecks expiry/revocation and the key under a PostgreSQL row lock through commit.
+  This prevents rotation/revocation racing the intake write. Local tenant selection
+  rejects repeated or comma-joined tenant headers; local mode still permits explicit
+  tenant selection and must not be exposed as a multi-tenant authentication service.
 - Requests carrying Origin must match the configured allowlist before authentication
   or public handlers, including local mode; empty/duplicate Origin headers are rejected.
   Requests without Origin remain supported for non-browser clients. This is not a

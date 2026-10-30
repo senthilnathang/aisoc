@@ -154,9 +154,9 @@ func (s Store) Mutate(ctx context.Context, tenant, id string, days int, actor st
 	return map[string]any{"source": v.View(), "api_key": key}, tx.Commit(ctx)
 }
 
-// Authenticate is a repository primitive for the future intake transaction.
-// It does not authorize any HTTP intake endpoint yet. Intake must recheck the
-// credential inside its write transaction to serialize with revoke/rotation.
+// Authenticate resolves an intake source credential to its stored tenant for
+// HTTP middleware. Intake rechecks the credential under the source row lock in
+// its write transaction to serialize with revoke/rotation (IngestSource).
 func (s Store) Authenticate(ctx context.Context, id, key string) (string, error) {
 	v, err := scan(s.Pool.QueryRow(ctx, `SELECT `+columns+` FROM api_sources WHERE id=$1`, id))
 	if err != nil {

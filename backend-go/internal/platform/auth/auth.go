@@ -181,6 +181,12 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 				return
 			}
 		} else if m.config.Mode == "local" {
+			// Reject repeated and proxy-coalesced selectors rather than silently
+			// choosing a tenant based on header ordering.
+			if values := r.Header.Values("X-Tenant-Id"); len(values) > 1 || (len(values) == 1 && strings.Contains(values[0], ",")) {
+				deny(w, 400, "VALIDATION_ERROR", "Exactly one tenant identifier is allowed.")
+				return
+			}
 			tenant := strings.TrimSpace(r.Header.Get("X-Tenant-Id"))
 			if tenant == "" {
 				tenant = m.config.DefaultTenant

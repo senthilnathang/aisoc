@@ -232,6 +232,13 @@ observability and worker routing. Do not relax the loopback guard to deploy remo
 
 ### PostgreSQL and Redis access
 
+Tenant authentication belongs in `platform/auth`, not individual route handlers.
+Source keys authorize only POST intake events/alerts for their source ID. Never
+replace the transaction-level key check in `intake.IngestSource` with middleware
+alone: rotation/revocation must serialize with the domain write. Header tenant IDs
+are assertions against authenticated credentials; only local demo mode allows a
+tenant selector. Repeated or comma-joined local selectors return HTTP 400.
+
 Use parameterized pgx in current code. The agreed direction is sqlc-generated
 PostgreSQL access, but no sqlc configuration/generated query package is installed
 yet. Introduce it incrementally while preserving existing immutable migrations,

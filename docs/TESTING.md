@@ -3,6 +3,13 @@
 The [multi-tenant threat model](MULTITENANT_STREAMING_THREAT_MODEL.md) defines
 common identity, isolation, replay, worker and response-security release gates.
 
+`go test -race ./internal/platform/auth` (from `backend-go`) covers source-key
+route and tenant binding in local/token modes, missing and wrong-source keys,
+operator keys rejected for intake, source keys rejected for management, and
+repeated/comma-joined local tenant headers. These middleware tests use a credential
+resolver fixture; database rotation/revocation remains covered separately by the
+intake integration tests. They do not certify production tenant isolation.
+
 Current as of 2026-10-30. Go/PostgreSQL is the active backend. Node/Fastify/SQLite
 tests remain a legacy reference; they are not the only backend verification.
 

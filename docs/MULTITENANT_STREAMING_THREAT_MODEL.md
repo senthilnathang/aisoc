@@ -8,7 +8,7 @@ infrastructure administrators. Tenant identity is authenticated at Go ingress.
 
 | Boundary / threat | Required control | Negative test / evidence | Current status |
 |---|---|---|---|
-| Payload/header tenant spoof | Connector principal determines tenant and allowed source; reject mismatch | Same payload under two credentials; forged header/source; revoked/rotated key | Event binding exists; connector service identity incomplete |
+| Payload/header tenant spoof | Connector principal determines tenant and allowed source; reject mismatch | Same payload under two credentials; forged header/source; revoked/rotated key | Source-key HTTP intake binds stored tenant and rechecks under transaction lock; middleware route/scope tests cover local/token modes. Local ambiguous selectors rejected. Stream bindings exist; remote service identity remains incomplete |
 | Broker cross-tenant read/write | Service ACLs, routing enforcement, quotas, topic/deployment tier | Tenant A cannot produce/consume B; forged key and wildcard ACL tests | Missing broker deployment |
 | Partition hot-key denial of service | Bounded key cardinality, quotas, backpressure and reserved capacity | Large tenant + many small tenants; one entity floods; critical capacity remains available | Bounded local batches; distributed fairness missing |
 | SQL/view leakage | Go-only query surface, scoped query allowlist, least-privilege grants; dedicated deployment for hard boundary | Missing predicates, malicious view, direct SQL credentials, privileged maintenance | Application scoping exists; hard database isolation remains unverified |
