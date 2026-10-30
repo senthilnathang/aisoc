@@ -1,12 +1,5 @@
 # Delivery roadmap
 
-2026-10-31 addition: [R0–R6 streaming data-plane plan](RISINGWAVE_1M_REVIEW.md#incremental-pr-plan)
-tracks the proposed aggregate 1M EPS architecture. Repository audit, tenant threat
-model and an opt-in SQL/Go parity harness precede broker selection and rollout.
-Kafka is the first evaluation candidate; neither Kafka nor Redpanda is enabled.
-RisingWave adoption and production tenant-isolation topology remain gated by
-measured correctness, recovery, capacity and cost. See [ADR 006](adr/006-streaming-data-plane-evaluation.md).
-
 Updated 2026-10-30. The local backend migration is complete. Operational follow-up
 and new product capabilities are separate from replacement parity.
 

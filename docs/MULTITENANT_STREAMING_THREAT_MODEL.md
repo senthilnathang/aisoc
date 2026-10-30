@@ -11,17 +11,17 @@ infrastructure administrators. Tenant identity is authenticated at Go ingress.
 | Payload/header tenant spoof | Connector principal determines tenant and allowed source; reject mismatch | Same payload under two credentials; forged header/source; revoked/rotated key | Event binding exists; connector service identity incomplete |
 | Broker cross-tenant read/write | Service ACLs, routing enforcement, quotas, topic/deployment tier | Tenant A cannot produce/consume B; forged key and wildcard ACL tests | Missing broker deployment |
 | Partition hot-key denial of service | Bounded key cardinality, quotas, backpressure and reserved capacity | Large tenant + many small tenants; one entity floods; critical capacity remains available | Bounded local batches; distributed fairness missing |
-| SQL/view leakage | Go-only query surface, scoped query allowlist, least-privilege grants; dedicated deployment for hard boundary | Missing predicates, malicious view, direct SQL credentials, privileged maintenance | POC grouping only; not a security boundary |
-| Correlation contamination | Tenant + connector/source + entity keys; validated canonical projection | Same user/IP/event IDs in A/B and two connectors; cross-source joins explicit | Go negative checks; new SQL parity opt-in |
+| SQL/view leakage | Go-only query surface, scoped query allowlist, least-privilege grants; dedicated deployment for hard boundary | Missing predicates, malicious view, direct SQL credentials, privileged maintenance | Application scoping exists; hard database isolation remains unverified |
+| Correlation contamination | Tenant + connector/source + entity keys; validated canonical projection | Same user/IP/event IDs in A/B and two connectors; cross-source joins explicit | Go negative checks; additional engines require their own parity tests |
 | Replay/conflicting identity | Stable identity and content hash; conflict quarantine; revision policy | Exact duplicate, same key/different body, opaque revisions, replay after restart | Existing Go contracts; future broker bridge missing |
-| Late or future timestamps | Clock-skew limits, explicit watermark/idle policy, replay lane | Boundary timestamps, delayed success/failure, idle partition, far-future event | Bounded Go watermark; production RW policy missing |
+| Late or future timestamps | Clock-skew limits, explicit watermark/idle policy, replay lane | Boundary timestamps, delayed success/failure, idle partition, far-future event | Bounded Go watermark; distributed late-event policy missing |
 | Finding update causes duplicate incident | Stable rule instance + revision, durable suppression/admission transaction | Repeated MV updates/retractions, crash between admission and offset commit | Current evidence-based finding dedup; streaming updates not designed |
 | Redis queue loss | PostgreSQL job/outbox authority and recoverable dispatch | Flush/restart hint queue; job still discoverable exactly once for effects | Existing PG jobs; proposed Redis dispatcher missing |
 | Compromised Python/Rust worker | No provider/DB credentials, tenant-scoped task/result validation, tool authorization in Go | Forged result tenant/attempt/evidence, excessive output, cancellation, injection | Typed bounded workers/QA; remote TLS identity incomplete |
 | Cross-tenant cache/RAG/evidence | Scope keys/retrieval by authenticated tenant and policy; object IAM | Same IOC with tenant-private annotations, guessed object ref, stale permission, cache poisoning | Cache scope exists; production object/RAG IAM unverified |
 | Unsafe response/retry | Go approval, scoped target, idempotency and uncertain-result reconciliation | Lost provider ACK, duplicate approval, expiry, kill switch, wrong tenant target | Sandbox session revocation only |
 | Privileged DB/admin access | Separate roles, RLS where appropriate, audited break-glass, dedicated planes | BYPASSRLS/admin queries, backup access, tenant restore, access after offboarding | App predicates/composite keys; no found RLS policies |
-| Leaks through diagnostics | Redaction, bounded payloads, metadata-only traces and scoped dashboards | Secrets/PII in input, DLQ, exception, labels and model prompt | Existing bounded contracts; new broker/RW paths must be evaluated |
+| Leaks through diagnostics | Redaction, bounded payloads, metadata-only traces and scoped dashboards | Secrets/PII in input, DLQ, exception, labels and model prompt | Existing bounded contracts; new data-plane paths must be evaluated |
 
 Release gate: no observed cross-tenant disclosure or duplicate externally effective
 actions in this defined suite; this is not a mathematical zero-risk claim. Test
@@ -30,11 +30,11 @@ offboarding. Exercise at least two same-key tenants, one hot tenant and a reserv
 critical lane. Track starvation duration, tenant lag, resource use, admission rejects
 and operator overrides; aggregate throughput alone is insufficient.
 
-Tenant deletion includes broker retention, RisingWave state/MVs, cache, evidence
+Tenant deletion includes broker retention, correlation state/views, cache, evidence
 objects, PostgreSQL, backups and model-provider retention obligations. Do not claim
 instant erasure of immutable logs/backups. Dedicated planes do not remove control-
 plane authorization obligations or privileged operator access risks.
 
-The finite SQL POC verifies correlation key separation only. It does not validate
-RisingWave user permissions, resource pools, tenant IAM, compromise containment,
-broker durability or production actions. Those remain explicit release blockers.
+Correlation key separation alone does not validate database user permissions,
+resource pools, tenant IAM, compromise containment, broker durability or production
+actions. Those remain explicit release blockers for any future data-plane engine.
