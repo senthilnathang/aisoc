@@ -12,8 +12,8 @@ flowchart LR
   Stream <-->|bounded delivery / explicit ACK| Redis[(Redis Streams :16379)]
   Stream -->|finding admission / mock SOAR reconciliation| PG
   IW[Go investigation worker] --> PG
-  SW[Optional Go specialist dispatcher] --> PG
-  SW -->|versioned gRPC| Rust[Rust / embedded Wasmi]
+  SW[Go specialist dispatcher] --> PG
+  SW -->|optional versioned gRPC| Rust[Rust / embedded Wasmi]
   SW -->|versioned gRPC| Python[Python service / trusted subprocess]
   HTTP[FastAPI health and capabilities] -->|shared lifecycle| Python
 ```
@@ -46,6 +46,74 @@ Domain modules share transactions rather than calling each other over HTTP.
 Go owns authorization, business state, approvals and audits. Specialists receive
 no database credentials.
 
+## REST, gRPC and asynchronous work
+
+| Boundary | Current transport | Owner and purpose |
+|---|---|---|
+| Browser / demo importer → Go | HTTP JSON on API 3003 | Authentication, tenant/source scope, validation and durable intake |
+| Go → Python | Unary gRPC on loopback 50051 | Typed specialist execution and investigation requests |
+| Go → optional Rust worker | Unary gRPC at the configured loopback address | Hashing and bounded WASM plugins; not a telemetry engine |
+| Python management | FastAPI HTTP on loopback 8001 | Liveness, readiness and authenticated capabilities; no execution route |
+| Accepted telemetry → consumers | Redis Streams with PostgreSQL outbox/inbox | Buffered delivery, replay and commit-before-ACK |
+| Investigation scheduling | PostgreSQL jobs and Go dispatcher | Durable leases, retries and result admission |
+
+FastAPI and Python gRPC share one independently supervised process. FastAPI lifespan
+starts/drains gRPC; Go calls gRPC directly, not an HTTP-to-gRPC proxy. The generic
+[Worker contract](../contracts/proto/aisoc/worker/v1/worker.proto) supplies
+`Execute`; the typed [Investigator contract](../contracts/proto/aisoc/worker/v1/investigation.proto)
+supplies `Investigate`. Both belong to `aisoc.worker.v1`; neither uses application
+streaming. Generic plugin input/output is a bounded byte payload, while investigation
+evidence, hypotheses and results have explicit Protobuf fields.
+
+```mermaid
+sequenceDiagram
+  participant Go as Go intake/orchestration
+  participant DB as PostgreSQL jobs
+  participant Dispatcher as Go specialist dispatcher
+  participant Python as Python gRPC worker
+  Go->>DB: Commit investigation task
+  Dispatcher->>DB: Claim job and attempt lease
+  Dispatcher->>Python: Unary RPC with credential, identity and deadline
+  Python-->>Dispatcher: Bounded typed result or gRPC error
+  Dispatcher->>Dispatcher: Check identity and investigation QA
+  alt Valid result and current lease
+    Dispatcher->>DB: Commit result through fenced completion
+  else Failure or rejected result
+    Dispatcher->>DB: Apply durable retry/state rules
+  end
+```
+
+| Safeguard | Implemented behavior |
+|---|---|
+| Service authentication | Bearer metadata; Go replaces caller-supplied authorization. Python uses constant-time comparison and rejects duplicate credentials |
+| Transport security | Literal loopback only, plaintext gRPC. TLS/mTLS and remote service identity are not implemented |
+| Execution time | Go caps execution at five seconds; an earlier task/caller deadline wins. Normalization subprocesses have a separate three-second bound |
+| Payload limits | Generic input/output: 65,536 bytes; wire messages: 70,000 bytes. Investigation tasks/results are further bounded to 16 KiB and at most 16 evidence items |
+| Admission | Python admits at most four concurrent RPCs, including health; overload is rejected |
+| Result ownership | Tenant/job/task/attempt identity and investigation evidence checks in Go; stale or cancelled jobs cannot commit results |
+| Recovery | PostgreSQL owns application retries. No automatic execution retry policy is configured at the RPC layer |
+| Health/lifecycle | Authenticated unary standard health, HTTP readiness, graceful shutdown and reconnect tests. Core API readiness does not depend on optional workers |
+
+The current [Go dispatcher](../backend-go/cmd/worker/main.go) executes one claimed
+job at a time per process. Python's four RPC slots therefore do not imply four
+parallel investigations in this launcher. Channels are retained by plugin clients;
+channel reuse does not provide application-level dispatch concurrency.
+
+gRPC supplies shared generated contracts and explicit deadlines/statuses for internal
+workers. REST remains the frontend and vendor-integration boundary. No equivalent
+REST-versus-gRPC benchmark has established a speedup here; gRPC does not solve
+PostgreSQL commit/storage bottlenecks or confer stronger security by itself.
+Read [developer implementation guidance](DEVELOPMENT.md#working-with-grpc-workers)
+for code locations and verification.
+
+Before distributed or real-model production use, address bounded dispatcher
+concurrency, workload-specific deadlines, TLS/mTLS and credential rotation,
+per-RPC metrics/tracing, multi-worker routing and contract compatibility policy.
+The investigation validators reject unknown fields, so additive Protobuf changes
+must not be assumed compatible without coordinated validation tests. Cancellation
+bounds result acceptance but does not guarantee immediate termination of an
+underlying model HTTP request. Demo inference remains explicitly mocked.
+
 ## Persistence and concurrency
 
 The local foundation runs migrations through 030 (48 tables), including durable
@@ -62,6 +130,13 @@ PostgreSQL uses typed columns, JSONB documents, composite tenant keys and scoped
 indexes. Mutations and audits commit together. Row locks serialize conflicting
 case/response/Skills updates; multi-query projections use repeatable-read snapshots
 where required. See the [physical and logical data model](DATA_MODEL.md).
+
+The agreed next data-access standard is **sqlc + pgx for PostgreSQL**, but sqlc
+generation has not yet been introduced: current stores use handwritten parameterized
+pgx queries. Redis continues to use go-redis; sqlc does not generate Redis operations.
+Domain methods may compose cache and database adapters while keeping their distinct
+transaction, expiry and ACK semantics explicit. The PostgreSQL outbox remains the
+coordination boundary; adopting sqlc will not create a cross-store transaction.
 
 Investigation create/patch batch ordered SQL commands within their transactions.
 Audit failure still rolls back prior commands. Typed detail responses avoid an
@@ -164,8 +239,8 @@ this deterministic rule does not require model calls or a new Rust service.
 S06 extends that mock flow with [durable finding admission](FINDING_ADMISSION.md),
 reusing the existing alert/case/job transaction and local worker. Canonical receipts
 prevent duplicate cases; per-tenant budgets and scheduling bound stream-admitted
-work. The source implementation is opt-in and has not been deployed to the running
-foundation/release services. S07 adds the mock Python/QA boundary below.
+work. This was initially opt-in; it is now deployed in the local foundation's mock
+flow, while the preserved release remains separate. S07 adds the Python/QA boundary below.
 
 S07 adds [typed mock investigation and QA](L1_INVESTIGATION.md) to the independent
 Python FastAPI/gRPC service. Go builds bounded evidence tasks, queues explicit mock

@@ -15,7 +15,7 @@ real-model evaluation limits, and [demo imports](../../docs/BENCHMARK_DATA_IMPOR
 flowchart LR
   API[Go API] --> DB[(PostgreSQL)]
   Dispatcher[Go specialist dispatcher] --> DB
-  Dispatcher -->|authenticated gRPC Execute| Python[Python worker]
+  Dispatcher -->|authenticated gRPC Execute / Investigate| Python[Python worker]
   FastAPI[FastAPI lifespan] -->|starts and drains| Python
   Monitor[Health probes] -->|HTTP health / ready| FastAPI
 ```
@@ -66,6 +66,7 @@ Use this entry point: extra Uvicorn workers/reload would compete for the gRPC po
 | HTTP `GET /v1/capabilities` | Bearer-authenticated plugin versions and limits |
 | gRPC `grpc.health.v1.Health/Check` | Authenticated unary health for `aisoc.worker.v1.Worker` |
 | gRPC `aisoc.worker.v1.Worker/Execute` | Existing versioned, bounded execution contract |
+| gRPC `aisoc.worker.v1.Investigator/Investigate` | Typed evidence and investigation result; mock mode or explicitly configured model adapter |
 
 Go executes work over gRPC; there is no HTTP execution bypass. Only
 `python.normalize` version `1` is available through Worker/Execute: a trusted bounded subprocess, not an LLM
@@ -77,12 +78,21 @@ enforces three-second child execution, 64 KiB payloads and subprocess cleanup.
 Health shares the admission limit and may report not ready under load; readiness
 failure alone should not trigger a process restart.
 
+The three-second child limit applies to normalization, not model inference. Typed
+investigations use their task deadline and tighter 16 KiB/16-evidence-item bounds.
+The current Go dispatcher executes one job at a time per process, so the four
+server slots are capacity limits rather than a promise of parallel investigations.
+Transport is bearer-authenticated plaintext on literal loopback; TLS/mTLS and remote
+service identity are not implemented. See the [architecture boundary](../../docs/ARCHITECTURE.md#rest-grpc-and-asynchronous-work)
+and [developer workflow](../../docs/DEVELOPMENT.md#working-with-grpc-workers).
+
 S07 adds a separate typed `Investigator/Investigate` RPC on the same listener,
-with authenticated named health and capabilities discovery. Only `mock-v1` is
-supported: two alternative hypotheses, supplied citations, missing evidence and an
-inconclusive result requiring review. Go owns evidence access, job retries and QA.
-There are no model calls or privileged tools. This direct bounded mock does not
-launch the normalization subprocess. See [contract and limits](../../docs/L1_INVESTIGATION.md).
+with authenticated named health and capabilities discovery. The default `mock-v1`
+returns two alternative hypotheses, supplied citations, missing evidence and an
+inconclusive result requiring review. Optional `model-v1` requires the explicit
+configuration below; durable showcase jobs stay mock-mode. Go owns evidence access,
+job retries and QA. Neither mode provides privileged tools. Investigation execution
+does not launch the normalization subprocess. See [contract and limits](../../docs/L1_INVESTIGATION.md).
 
 ## Verification
 

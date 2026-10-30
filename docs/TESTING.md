@@ -52,6 +52,15 @@ No production integration or model-latency benchmark is claimed by these checks.
 
 ## Required checks
 
+For the current REST/gRPC boundary, read the
+[architecture map](ARCHITECTURE.md#rest-grpc-and-asynchronous-work) and
+[contract change workflow](DEVELOPMENT.md#working-with-grpc-workers).
+`services/python-worker/test_service.py` covers HTTP/gRPC lifecycle, reconnect,
+authentication and overload/readiness. `backend-go/internal/platform/plugins/`
+tests the client boundary; full framework checks exercise durable cross-language
+dispatch. Runtime limits are separate from throughput measurements: these tests
+do not establish a gRPC-over-REST speedup or remote mTLS readiness.
+
 Streaming milestone S03 passed `python3 scripts/framework/check_streams.py` and
 the full `python3 scripts/framework/check.py --with-streams` suite. Redis checks
 cover authentication/ACLs, concurrent group consumption, explicit ACK, pending

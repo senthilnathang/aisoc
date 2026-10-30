@@ -2,6 +2,15 @@
 
 Status: accepted for the development framework, 2026-10-29.
 
+Implementation follow-up, 2026-10-30: this ADR records the original normalization
+boundary. The local foundation now also exposes typed `Investigator/Investigate`,
+explicit mock investigation jobs and an optional configured JSON model adapter.
+The original ownership decision remains: Go orchestrates and admits results;
+FastAPI manages the Python process, and execution uses gRPC. See the current
+[architecture](../ARCHITECTURE.md#rest-grpc-and-asynchronous-work) and
+[developer guide](../DEVELOPMENT.md#working-with-grpc-workers) for implemented
+limits and remaining distributed-worker work. Real-model quality is not certified.
+
 ## Decision
 
 Go remains the API, authorization, persistence and orchestration owner. The Python
@@ -43,7 +52,7 @@ An HTTP-only Python backend would duplicate the existing gRPC boundary. A separa
 FastAPI process would duplicate runtime lifecycle without a present need. Redis,
 a broker and another workflow engine are unnecessary for this change.
 
-Only the trusted normalization plugin exists today. This does not implement LLM
+At initial acceptance, only the trusted normalization plugin existed. That change did not implement LLM
 inference, QRadar connectors, agent reasoning or privileged responses. Measure
 network/model workloads before changing language boundaries for performance.
 
