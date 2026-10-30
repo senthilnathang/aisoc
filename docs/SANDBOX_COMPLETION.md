@@ -40,15 +40,17 @@ independent full regression suite passed after the final code changes. Screensho
 `output/playwright/stream-operations.png`. Release API 3002 remains separate.
 
 The original 10,000-event overload probe drained all events at 229.82 EPS, p95 34.758 seconds
-scheduled-input-to-ACK, zero final pending/ACK backlog. **The provisional 1,000 EPS
-target is not met.** Full finding/model latency and live inference quality are not
+scheduled-input-to-ACK, zero final pending/ACK backlog. At that stage the provisional
+1,000 EPS target was not met. Full finding/model latency and live inference quality are not
 established. Those limits do not prevent testing the bounded local JSON workflow.
 
-The latest sustained probe completed 60,000/60,000 at 745 EPS, p95 29.987 seconds,
-with zero unacknowledged backlog and synchronous durability enabled. The full suite
-passed; the throughput target remains open. See the [performance report](STREAM_PERFORMANCE_REPORT.md)
+An earlier sustained probe completed 60,000/60,000 at 745 EPS, p95 29.987 seconds.
+The latest three consecutive runs complete 180,000/180,000 at 1,063–1,104 EPS,
+with synchronous durability enabled. Average throughput is verified; latency
+stability remains open (p95 3.50–6.05 seconds). See the [current gate](PERFORMANCE_GATE.md)
 and [configurable local release gates](LOCAL_RELEASE_GATES.md). The persistent demo
-still holds 10,000 events across ten sources; replay inserted zero. The updated
+includes 10,000 showcase events across ten sources plus 60,000 benchmark events;
+replay inserted zero. The updated
 48-table backup restored successfully. A separate disposable restore recovered 100
 archived events after removing original archive files and rejected corruption.
 

@@ -10,6 +10,11 @@ The development framework includes an independent
 [Python FastAPI/gRPC service](services/python-worker/README.md): FastAPI manages
 service health and lifecycle; Go dispatches bounded work through gRPC.
 
+[Local performance validation](docs/PERFORMANCE_GATE.md) completed three 60,000-event
+runs at 1,063–1,104 EPS. Average throughput exceeds 1,000 EPS; latency stability
+still fails the two-second p95 gate. These are synthetic transport results, not
+live-provider or AI investigation capacity.
+
 ## Run the initialized application
 
 The local showcase now uses **one frontend on port 8080**, backed by the Go

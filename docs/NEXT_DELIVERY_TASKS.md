@@ -16,7 +16,7 @@ describe existing-bundle requirements and automatic restart for new source grant
 | Work | Acceptance | Status |
 |---|---|---|
 | Persistent showcase | 10,000 synthetic events, replay-safe seed, scoped API pagination and browser evidence | Loaded: ten demo sources, ten synced investigations |
-| P1 performance | Reduce SQL/locking costs while preserving idempotency and faults; repeat comparable load tests | Stable 1,000 EPS remains open. Controlled baseline 741 EPS; candidate 925 then 700 EPS, so SQL experiment reverted; receipt lock ordering retained |
+| P1 performance | Repeated >=1,000 EPS with bounded latency, idempotency and fault recovery | Average throughput verified: 1,063 / 1,104 / 1,095 EPS across three 60k runs. Strict stability still fails: p95 3.63 / 6.05 / 3.50 s. [Gate evidence](PERFORMANCE_GATE.md) |
 | P1 integrations | Versioned source adapters, bounded polling/replay and fixture contracts | QRadar, allowlisted Ariel and Sentinel readers fixture-tested; live mapping/polling/write-back not certified |
 | P1 inference | Preserve typed gRPC; configurable model adapter and local evidence evaluation | Go/Python/JSON service contract tested; real model quality and production scheduling not enabled |
 | P2 continuous ingestion | Bounded correlation windows, verified retention/replay and dedup preservation | Verified payload offload frees hot capacity; identities/dedup retained; bounded metadata ceiling |

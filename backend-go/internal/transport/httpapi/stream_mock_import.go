@@ -45,7 +45,7 @@ func registerStreamMockImport(mux *http.ServeMux, pool *pgxpool.Pool, scopes []c
 		if err := streamBody(r, &page); err != nil {
 			return nil, 0, streamError(err)
 		}
-		if page.SchemaVersion != "1.0" || len(page.Events) == 0 || len(page.Events) > 100 {
+		if page.SchemaVersion != "1.0" || len(page.Events) == 0 || len(page.Events) > telemetry.MaxBatchEvents {
 			return nil, 0, streamError(eventstate.ErrInvalid)
 		}
 		b := telemetry.Binding{TenantID: scope.TenantID, ConnectorID: scope.ConnectorID, Source: scope.Source}

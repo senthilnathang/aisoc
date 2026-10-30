@@ -70,7 +70,7 @@ func (s Store) Checkpoint(ctx context.Context, b telemetry.Binding) (Checkpoint,
 // cannot advance it. An empty batch can advance an empty source page.
 func (s Store) Accept(ctx context.Context, b telemetry.Binding, expected Checkpoint, next string, events []telemetry.Event) (Accepted, error) {
 	var result Accepted
-	if !validBinding(b) || expected.Version < 0 || len(events) > 100 || len(next) == 0 || len(next) > 2048 || !utf8.ValidString(next) || strings.ContainsRune(next, 0) {
+	if !validBinding(b) || expected.Version < 0 || len(events) > telemetry.MaxBatchEvents || len(next) == 0 || len(next) > 2048 || !utf8.ValidString(next) || strings.ContainsRune(next, 0) {
 		return result, ErrInvalid
 	}
 	if s.MaxEvents <= 0 || s.MaxPayloadBytes <= 0 {
@@ -189,7 +189,7 @@ func (s Store) Claim(ctx context.Context, b telemetry.Binding) (*Lease, error) {
 // ClaimBatch retains per-event leases, attempts and receipts. The correlated
 // envelope lookup avoids source-wide nested-loop scans with cold statistics.
 func (s Store) ClaimBatch(ctx context.Context, b telemetry.Binding, limit int) ([]Lease, error) {
-	if !validBinding(b) || limit < 1 || limit > 100 {
+	if !validBinding(b) || limit < 1 || limit > telemetry.MaxBatchEvents {
 		return nil, ErrInvalid
 	}
 	_, err := s.Pool.Exec(ctx, `UPDATE stream_outbox SET state='failed',lease_until=NULL,error_code='ATTEMPTS_EXHAUSTED',updated_at=now()

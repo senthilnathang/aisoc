@@ -65,7 +65,7 @@ func TestValidationDoesNotNeedRedis(t *testing.T) {
 	defer c.Close()
 	b := telemetry.Binding{TenantID: "tenant", ConnectorID: "connector", Source: "source"}
 	ctx := context.Background()
-	if _, err := c.Read(ctx, b, "group", "consumer", 101, time.Second); !errors.Is(err, ErrInvalid) {
+	if _, err := c.Read(ctx, b, "group", "consumer", MaxBatch+1, time.Second); !errors.Is(err, ErrInvalid) {
 		t.Fatal(err)
 	}
 	if _, err := c.Read(ctx, b, "group", "consumer", 1, 0); !errors.Is(err, ErrInvalid) {

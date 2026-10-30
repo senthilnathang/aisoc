@@ -33,7 +33,8 @@ scope changes, service restarts and verification.
 
 The current local foundation uses migration 030, a supervised Go/Python stack,
 fixture-tested configurable source readers, mock responses and archive-inclusive
-restore validation. Stable 1,000 EPS remains unmet (latest sustained test: 745 EPS).
+restore validation. Average throughput now exceeds 1,000 EPS in three consecutive
+60k runs; latency stability remains unmet. See [current evidence](PERFORMANCE_GATE.md).
 See [local release gates](LOCAL_RELEASE_GATES.md) and the [delivery tracker](NEXT_DELIVERY_TASKS.md).
 Remote deployment and vendor/model validation remain outside the selected local scope.
 
@@ -87,7 +88,8 @@ queries, demo metrics, simulations and vendor claims are not live provider execu
 
 [Delivery tracker](NEXT_DELIVERY_TASKS.md) records the persisted 10,000-event demo,
 main frontend on 8080, sandbox session revocation, verified payload offload, optional
-JSON inference transport and read-only QRadar adapters. The final synthetic run
-completed every event at 641 EPS; stable 1,000 EPS remains open. Live Ariel/source
+JSON inference transport and read-only QRadar adapters. Three consecutive synthetic
+runs completed 180,000/180,000 events at 1,063–1,104 EPS; the strict latency gate
+remains open (p95 3.50–6.05 s). Live Ariel/source
 mapping, SOAR write-back, Sentinel, model quality and production activation remain
 separate gates. JSON fixtures do not establish live integration compatibility.

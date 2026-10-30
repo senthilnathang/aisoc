@@ -6,10 +6,17 @@ import (
 	"testing"
 )
 
-type loadConfig struct{ events, eps, pauseSeconds, idlePollMS, burstMultiplier, consumerBatch, monitorMS int }
+type loadConfig struct{ events, eps, pauseSeconds, idlePollMS, burstMultiplier, consumerBatch, monitorMS, producerBatch int }
 
 func parseLoadConfig(getenv func(string) string) (loadConfig, error) {
-	c := loadConfig{events: 1000, eps: 1000, idlePollMS: 1, burstMultiplier: 1, consumerBatch: 10, monitorMS: 100}
+	c := loadConfig{events: 1000, eps: 1000, idlePollMS: 1, burstMultiplier: 1, consumerBatch: 10, monitorMS: 100, producerBatch: 100}
+	if raw := getenv("AISOC_STREAM_LOAD_PRODUCER_BATCH"); raw != "" {
+		var err error
+		c.producerBatch, err = strconv.Atoi(raw)
+		if err != nil || c.producerBatch < 100 || c.producerBatch > 500 || c.producerBatch%100 != 0 {
+			return c, fmt.Errorf("invalid producer batch")
+		}
+	}
 	if raw := getenv("AISOC_STREAM_LOAD_MONITOR_MS"); raw != "" {
 		var err error
 		c.monitorMS, err = strconv.Atoi(raw)
@@ -20,7 +27,7 @@ func parseLoadConfig(getenv func(string) string) (loadConfig, error) {
 	if raw := getenv("AISOC_STREAM_LOAD_CONSUMER_BATCH"); raw != "" {
 		var err error
 		c.consumerBatch, err = strconv.Atoi(raw)
-		if err != nil || c.consumerBatch < 1 || c.consumerBatch > 100 {
+		if err != nil || c.consumerBatch < 1 || c.consumerBatch > 500 {
 			return c, fmt.Errorf("invalid consumer batch")
 		}
 	}
@@ -40,7 +47,7 @@ func parseLoadConfig(getenv func(string) string) (loadConfig, error) {
 			*target = n
 		}
 	}
-	if c.events < 100 || c.events > 60000 || c.events%100 != 0 || c.eps < 100 || c.eps > 1000 || c.pauseSeconds < 0 || c.pauseSeconds > 10 || c.idlePollMS < 1 || c.idlePollMS > 100 {
+	if c.events < 100 || c.events > 60000 || c.events%c.producerBatch != 0 || c.eps < 100 || c.eps > 2000 || c.pauseSeconds < 0 || c.pauseSeconds > 10 || c.idlePollMS < 1 || c.idlePollMS > 100 {
 		return c, fmt.Errorf("workload exceeds bounded test limits")
 	}
 	return c, nil
@@ -61,6 +68,11 @@ func TestLoadConfigBounds(t *testing.T) {
 		{map[string]string{"AISOC_STREAM_LOAD_EVENTS": "60000"}, true},
 		{map[string]string{"AISOC_STREAM_LOAD_EVENTS": "60100"}, false},
 		{map[string]string{"AISOC_STREAM_LOAD_EPS": "0"}, false},
+		{map[string]string{"AISOC_STREAM_LOAD_EPS": "1200"}, true},
+		{map[string]string{"AISOC_STREAM_LOAD_EPS": "2001"}, false},
+		{map[string]string{"AISOC_STREAM_LOAD_PRODUCER_BATCH": "500"}, true},
+		{map[string]string{"AISOC_STREAM_LOAD_PRODUCER_BATCH": "501"}, false},
+		{map[string]string{"AISOC_STREAM_LOAD_PRODUCER_BATCH": "300"}, false},
 		{map[string]string{"AISOC_STREAM_LOAD_PAUSE_SECONDS": "11"}, false},
 		{map[string]string{"AISOC_STREAM_LOAD_EPS": "bad"}, false},
 	} {

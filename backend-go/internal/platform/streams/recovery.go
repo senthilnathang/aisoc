@@ -16,7 +16,7 @@ var ErrBackpressure = errors.New("stream capacity reached")
 // through PostgreSQL idempotency; Lua errors are not assumed to roll back writes.
 func (c *Client) PublishBatchBounded(ctx context.Context, b telemetry.Binding, events []telemetry.Event, maxEntries int64) ([]string, error) {
 	key, err := Key(b)
-	if err != nil || len(events) < 1 || len(events) > 100 || maxEntries < 1 || maxEntries > 100000 {
+	if err != nil || len(events) < 1 || len(events) > telemetry.MaxBatchEvents || maxEntries < 1 || maxEntries > 100000 {
 		return nil, ErrInvalid
 	}
 	args := []any{maxEntries, len(events)}

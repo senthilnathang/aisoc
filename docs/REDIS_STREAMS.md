@@ -64,7 +64,7 @@ to the caller and PostgreSQL retry/identity handling.
 | `Key` | Derive one partition from trusted tenant/connector/source identities |
 | `Publish` | Validate projected telemetry and XADD an envelope/key/content hash; no trimming |
 | `EnsureGroup` | Idempotently create the consumer group at `0`, including older entries |
-| `Read` | Read 1–100 messages with 1ms–1s blocking; no implicit acknowledgment |
+| `Read` | Read 1–500 messages with 1ms–1s blocking; no implicit acknowledgment |
 | `Reclaim` | Bounded XAUTOCLAIM with continuation cursor and explicit deleted-entry IDs |
 | `Ack` | Explicit acknowledgment after durable processing or failure disposition |
 | `Pending` | Pending count for a group; broader metrics are S10 work |

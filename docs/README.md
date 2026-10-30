@@ -15,6 +15,7 @@ preserved separately. Historical migration reports and ADR dates remain unchange
 | [Frontend integration](FRONTEND_INTEGRATION.md) | Routes, API transport and UI boundaries |
 | [Testing](TESTING.md) | Suite coverage, commands, browser evidence and limits |
 | [Security review](SECURITY_REVIEW.md) | Targeted findings, fixes, dependency scans and validation memory measurement |
+| [1,000 EPS gate](PERFORMANCE_GATE.md) | Repeated throughput/latency verification, bounded batches and local PostgreSQL tuning |
 | [Benchmark data import](BENCHMARK_DATA_IMPORT.md) | Retained test JSON, checksummed demo bundles and replay-safe Go API import |
 | [Delivery roadmap](ROADMAP.md) | Completed work and prioritized follow-up |
 | [Feature roadmap](FEATURE_ROADMAP.md) | Product acceptance criteria beyond migration |

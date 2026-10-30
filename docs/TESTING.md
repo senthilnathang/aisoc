@@ -8,11 +8,16 @@ tests remain a legacy reference; they are not the only backend verification.
 The [security review](SECURITY_REVIEW.md) records Origin-boundary and import-file
 regressions, dependency audits, and the bounded-memory hashing measurement.
 
-The final receipt lock-ordering fix passed the complete Go/PostgreSQL/Redis/Python/
-Rust framework suite. Concurrent opposite-order publication batches are covered;
-the more complex single-statement receipt experiment was reverted. Stable 1,000 EPS
-is not a passed gate: [measurement evidence](STREAM_PERFORMANCE_REPORT.md) retains
-successful runs, variance and the timeout with the expanded demo active.
+The Go/PostgreSQL/Redis/Python/Rust suite covers sorted concurrent receipt batches,
+atomic stale-lease rollback, 500-event delivery/receipt mapping and replay without
+duplicate effects. [The performance gate](PERFORMANCE_GATE.md) separates average
+throughput from latency stability. [Historical evidence](STREAM_PERFORMANCE_REPORT.md)
+retains earlier failed experiments and timeout observations.
+
+The final profile passed the full framework suite. Separately, three consecutive
+60k load runs passed the average-throughput requirement but failed the strict
+latency gate; `performance_gate.py` correctly exits 1 for that series. The profile
+parser rejects attempts to disable durability or inject arbitrary PostgreSQL options.
 
 | Case | Expected result | Coverage |
 |---|---|---|

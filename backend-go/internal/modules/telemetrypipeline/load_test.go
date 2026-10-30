@@ -34,8 +34,8 @@ func TestStreamLoadReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	count := int64(workload.events)
-	interval := time.Duration(100) * time.Second / time.Duration(workload.eps)
-	batches := workload.events / 100
+	interval := time.Duration(workload.producerBatch) * time.Second / time.Duration(workload.eps)
+	batches := workload.events / workload.producerBatch
 	schedule := make([]time.Duration, batches+1)
 	for i := 0; i < batches; i++ {
 		step := interval
@@ -103,11 +103,11 @@ func TestStreamLoadReport(t *testing.T) {
 		ctx := context.WithValue(ctx, profileKey("stage"), "accept")
 		cp, err := r.Store.Checkpoint(ctx, r.Binding)
 		if err != nil {
-			errs <- err
+			errs <- fmt.Errorf("%s: %w", ctx.Value(profileKey("stage")), err)
 			cancel()
 			return
 		}
-		for batch := 0; batch < workload.events/100; batch++ {
+		for batch := 0; batch < workload.events/workload.producerBatch; batch++ {
 			due := began.Add(schedule[batch])
 			delay := time.Until(due)
 			if delay > 0 {
@@ -117,13 +117,13 @@ func TestStreamLoadReport(t *testing.T) {
 					return
 				}
 			}
-			events := make([]telemetry.Event, 100)
+			events := make([]telemetry.Event, workload.producerBatch)
 			now := time.Now()
 			if lag := now.Sub(due).Microseconds(); lag > maxScheduleLag.Load() {
 				maxScheduleLag.Store(lag)
 			}
 			for i := range events {
-				e := loadEvent(template, batch*100+i)
+				e := loadEvent(template, batch*workload.producerBatch+i)
 				events[i] = e
 				starts.Store(e.Identity(), now)
 				scheduled.Store(e.Identity(), due)
@@ -132,7 +132,7 @@ func TestStreamLoadReport(t *testing.T) {
 			}
 			accepted, err := r.Store.Accept(ctx, r.Binding, cp, fmt.Sprintf("batch-%d", batch), events)
 			if err != nil {
-				errs <- err
+				errs <- fmt.Errorf("%v: %w", ctx.Value(profileKey("stage")), err)
 				cancel()
 				return
 			}
@@ -149,9 +149,9 @@ func TestStreamLoadReport(t *testing.T) {
 			if ctx.Err() != nil {
 				return
 			}
-			n, err := r.PublishBatch(ctx, 100)
+			n, err := r.PublishBatch(ctx, workload.producerBatch)
 			if err != nil {
-				errs <- err
+				errs <- fmt.Errorf("%s: %w", ctx.Value(profileKey("stage")), err)
 				cancel()
 				return
 			}
@@ -189,14 +189,14 @@ func TestStreamLoadReport(t *testing.T) {
 				ds, err := local.Consumer.Read(ctx, r.Binding, r.Processor, local.ConsumerName, workload.consumerBatch, 100*time.Millisecond)
 				if err != nil {
 					if ctx.Err() == nil {
-						errs <- err
+						errs <- fmt.Errorf("%s: %w", ctx.Value(profileKey("stage")), err)
 						cancel()
 					}
 					return
 				}
 				if err = local.ProcessBatch(ctx, ds, "filtered", noop); err != nil {
 					if ctx.Err() == nil {
-						errs <- err
+						errs <- fmt.Errorf("%s: %w", ctx.Value(profileKey("stage")), err)
 						cancel()
 					}
 					return
@@ -224,7 +224,7 @@ func TestStreamLoadReport(t *testing.T) {
 		snapshot, err := r.Store.Snapshot(ctx, r.Binding, r.Processor)
 		if err != nil {
 			if ctx.Err() == nil {
-				errs <- err
+				errs <- fmt.Errorf("%s: %w", ctx.Value(profileKey("stage")), err)
 				cancel()
 			}
 			break
@@ -298,7 +298,7 @@ func TestStreamLoadReport(t *testing.T) {
 	report["commit_ack_eps"] = float64(count) / time.Duration(completionNanos.Load()).Seconds()
 	report["elapsed_notes"] = "elapsed_seconds includes backlog-monitor wakeup; last_commit_or_ack_seconds ends at final publication commit or consumer ACK, whichever is later"
 	report["postgres_diagnostics"] = databaseProfile
-	report["workload"] = "bounded paced synthetic authentication workload; 100-event batches; no production capacity claim"
+	report["workload"] = fmt.Sprintf("bounded paced synthetic authentication workload; %d-event batches; no production capacity claim", workload.producerBatch)
 	report["offered_eps"] = workload.eps
 	report["consumer_batch_limit"] = workload.consumerBatch
 	report["scheduled_input_seconds"] = schedule[batches].Seconds()
@@ -309,7 +309,9 @@ func TestStreamLoadReport(t *testing.T) {
 	scheduledDurations.Range(func(_, v any) bool { scheduledSamples = append(scheduledSamples, v.(float64)); return true })
 	sort.Float64s(scheduledSamples)
 	report["scheduled_start_to_committed_ack_ms"] = map[string]float64{"p50": scheduledSamples[int(math.Ceil(.5*float64(len(scheduledSamples))))-1], "p95": scheduledSamples[int(math.Ceil(.95*float64(len(scheduledSamples))))-1], "p99": scheduledSamples[int(math.Ceil(.99*float64(len(scheduledSamples))))-1]}
-	report["publisher_claim_batch_size"] = 100
+	report["publisher_claim_batch_size"] = workload.producerBatch
+	report["producer_batch_size"] = workload.producerBatch
+	report["disposable_cluster_cleanup"] = os.Getenv("AISOC_STREAM_LOAD_DISPOSABLE") == "1"
 	report["backlog_monitor_interval_ms"] = workload.monitorMS
 	report["publisher_empty_claim_delay_ms"] = workload.idlePollMS
 	report["database_client_profile"] = profile.snapshot()

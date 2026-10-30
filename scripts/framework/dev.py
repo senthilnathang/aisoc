@@ -12,6 +12,7 @@ import subprocess
 import time
 import urllib.request
 import redis_runtime
+import postgres_profile
 
 ROOT=Path(__file__).resolve().parents[2]
 STATE=ROOT/'.run/go-dev'
@@ -215,7 +216,7 @@ def main():
                 try: run([PG/'initdb','-D',STATE/'pg','-U','aisoc_admin','--auth-local=trust','--auth-host=scram-sha-256','--pwfile',secret])
                 finally: secret.unlink(missing_ok=True)
                 state=STATE/'settings.json';state.write_text(json.dumps(config));state.chmod(0o600)
-            if not pg_running(): run([PG/'pg_ctl','-D',STATE/'pg','-l',STATE/'postgres.log','-o',f'-h 127.0.0.1 -p 55435 -k {STATE}','-w','start'])
+            if not pg_running(): run([PG/'pg_ctl','-D',STATE/'pg','-l',STATE/'postgres.log','-o',f'-h 127.0.0.1 -p 55435 -k {STATE} '+postgres_profile.options(STATE/'postgres-profile.json'),'-w','start'])
             if not config.get('database_initialized'):
                 env={**os.environ,'PGHOST':'127.0.0.1','PGPORT':'55435','PGUSER':'aisoc_admin','PGPASSWORD':config['admin_password'],'PGDATABASE':'postgres'}
                 # Generated passwords contain only hexadecimal characters; no user input enters SQL.

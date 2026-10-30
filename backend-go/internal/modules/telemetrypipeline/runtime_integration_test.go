@@ -54,6 +54,12 @@ func setup(t *testing.T) (Runtime, *redis.Client, telemetry.Event) {
 		if err := a.Del(ctx, key).Err(); err != nil {
 			t.Error(err)
 		}
+		if t.Name() == "TestStreamLoadReport" && os.Getenv("AISOC_STREAM_LOAD_DISPOSABLE") == "1" {
+			// check.py owns and removes this entire temporary PostgreSQL cluster.
+			// Normal integration tests and independently invoked probes still clean
+			// their own tenant. This changes teardown only, after measurement.
+			return
+		}
 		for _, table := range []string{"stream_dead_letters", "stream_consumer_work", "stream_replay_gaps", "stream_inbox", "stream_outbox", "stream_events", "stream_source_checkpoints", "jobs"} {
 			// Bound test teardown too: large retained fixtures must not require
 			// weakening the application's statement timeout for a bulk delete.

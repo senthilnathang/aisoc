@@ -8,7 +8,8 @@ are required for the first milestone.
 Continuation status (2026-10-30): migration 030 and bounded publication/receipt
 batches are installed locally; configurable Ariel/Sentinel readers, inference
 contracts, archive-inclusive recovery and HTTPS alert fixtures pass. Responses
-remain mocked. The sustained 1,000 EPS gate remains open; see
+remain mocked. [Average 1,000 EPS is verified](PERFORMANCE_GATE.md) across three
+60k runs; the strict latency-stability gate remains open. See
 [delivery tasks](NEXT_DELIVERY_TASKS.md) and [local release gates](LOCAL_RELEASE_GATES.md).
 
 Demo usability follow-up: all/showcase/selected-file imports are exposed through

@@ -230,6 +230,15 @@ Scope configuration stays private under `.run/`; artifacts stay in ignored `outp
 The importer never enables live providers or privileged response execution.
 See [demo commands and format](BENCHMARK_DATA_IMPORT.md).
 
+Telemetry transactions, Redis reads/publication and ACK batches now share a
+500-event maximum. Receipt updates lock sorted keys and join each event to its
+attempt/message ID once, with atomic rollback on a stale lease. The HTTP body
+limit remains 1 MiB; the demo loader still submits 100-event pages. Optional local
+PostgreSQL tuning is allowlisted in `.run/go-dev/postgres-profile.json`; fsync,
+synchronous commit and full-page writes remain mandatory in the foundation.
+[Repeated performance validation](PERFORMANCE_GATE.md) verifies average throughput
+above 1,000 EPS while retaining the failed latency-stability gate.
+
 S04 adds [stream recovery primitives](STREAMING_RECOVERY.md): durable retries/DLQ,
 bounded publication, consumer fencing and retained-event reconciliation. These are
 not scheduled by the core API; live ingestion remains disabled.

@@ -19,7 +19,11 @@ No Redis network calls or new HTTP endpoints are implemented by this package.
 ## Acceptance and checkpointing
 
 `eventstate.Store.Accept` takes an authenticated `telemetry.Binding`, the expected
-checkpoint version/cursor, a next opaque cursor and at most 100 validated events.
+checkpoint version/cursor, a next opaque cursor and at most 500 validated events.
+The shared batch bound also applies to publication, receipts, processing and ACK;
+individual envelopes remain capped at 16 KiB and HTTP bodies at 1 MiB. Larger
+batches amortize transaction costs without changing checkpoint/lease fencing or
+ACK-after-commit semantics. Existing clients may continue to submit smaller pages.
 The tenant must already exist. It creates/locks the source checkpoint row, checks
 the expected version, rejects conflicting content under an existing event key,
 inserts new event/outbox rows and advances the checkpoint in one transaction.

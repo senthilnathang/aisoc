@@ -16,7 +16,8 @@ session revocation. Configurable QRadar/Ariel/Sentinel readers are fixture-teste
 live polling/write-back and actual model quality remain open. The 70,000-event demo
 can be replayed through `run.sh import-demo all` or selected files; see
 [demo imports](BENCHMARK_DATA_IMPORT.md). These local capabilities do not certify
-production autonomy, retention scale or sustained 1,000 EPS.
+production autonomy or retention scale. [Repeated measurements](PERFORMANCE_GATE.md)
+verify average throughput above 1,000 EPS; stable latency remains an open gate.
 
 ## Current foundation
 

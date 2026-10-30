@@ -3,6 +3,10 @@
 Current backend: Go/PostgreSQL. The retained TypeScript/SQLite implementation is
 for comparison and rollback, not normal application startup.
 
+See the [performance gate](PERFORMANCE_GATE.md) for repeated 1,000 EPS validation
+and the optional, allowlisted local PostgreSQL profile. Average throughput and
+latency stability are evaluated separately; one fast run does not pass the gate.
+
 ## Local demo import workflow
 
 Initialize with `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. The selected

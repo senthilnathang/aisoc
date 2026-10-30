@@ -1,5 +1,10 @@
 # S10 measured sandbox results — 2026-10-29
 
+**Latest update, 2026-10-30:** three consecutive 60,000-event runs now exceed
+1,000 EPS on average. The latency-stability gate still fails (p95 3.50–6.05 s).
+See the [current gate report](PERFORMANCE_GATE.md) for the exact results, changes
+and reproduction command. The observations below are retained historical evidence.
+
 **Correctness checks passed; production capacity is not established.** The current
 durable pipeline, including the batching changes below, did not keep up with the
 nominal 1,000 EPS probe.

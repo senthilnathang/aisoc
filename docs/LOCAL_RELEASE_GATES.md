@@ -8,10 +8,14 @@ the separate authenticated HTTPS deployment configuration.
 
 Migration 030 adds derived hot-payload/identity counters with transactional insert,
 update, delete and rollback accounting. It preserves existing rows and all source
-receipts. Workers use bounded batches of up to 100; Redis capacity limits, fenced
+receipts. Workers now use bounded batches of up to 500; Redis capacity limits, fenced
 publication receipts and PostgreSQL commit-before-ACK are unchanged. For rollback,
 restore the verified pre-migration backup and its matching binaries; do not delete
 migration history or edit an applied migration checksum.
+
+The 500-event limit and set-based receipt update require no new schema migration.
+Three consecutive runs verify average throughput above 1,000 EPS; the stricter
+latency gate still fails. See [current measurements and tuning](PERFORMANCE_GATE.md).
 
 Performance probes retain `fsync=on` and `synchronous_commit=on` and record their
 actual settings. `--pg-commit-delay-us` optionally tests a bounded group-commit

@@ -31,21 +31,26 @@ def main():
     parser.add_argument('--stream-load',action='store_true',help='Measure bounded synthetic traffic in isolated PostgreSQL/Redis after correctness checks')
     parser.add_argument('--stream-measure-only',action='store_true',help='Isolated measurement iteration; skips full correctness gates')
     parser.add_argument('--stream-events',type=int,default=1000,help='Synthetic event count (100..60000, multiples of 100)')
-    parser.add_argument('--stream-eps',type=int,default=1000,help='Scheduled offered rate (100..1000 EPS)')
+    parser.add_argument('--stream-eps',type=int,default=1000,help='Scheduled offered rate (100..2000 EPS); use modest headroom to test 1,000 EPS capacity')
     parser.add_argument('--stream-pause-seconds',type=int,default=0,help='Pause both consumers halfway through scheduled input (0..10 seconds)')
     parser.add_argument('--stream-idle-poll-ms',type=int,default=1,help='Benchmark publisher delay after an empty claim (1..100 ms)')
     parser.add_argument('--stream-burst-multiplier',type=int,default=1,choices=range(1,6),help='Multiply offered EPS for the middle third of event batches (1..5)')
-    parser.add_argument('--stream-consumer-batch',type=int,default=10,choices=range(1,101),help='Bounded fresh-event transaction batch (1..100)')
+    parser.add_argument('--stream-consumer-batch',type=int,default=10,choices=range(1,501),help='Bounded fresh-event transaction batch (1..500)')
+    parser.add_argument('--stream-producer-batch',type=int,default=100,choices=(100,200,300,400,500),help='Bounded intake/publication batch; event count must be divisible by this value')
     parser.add_argument('--stream-monitor-ms',type=int,default=100,choices=range(100,5001),help='Backlog sampling interval; per-event latency recording is unchanged')
     parser.add_argument('--pg-commit-delay-us',type=int,default=0,choices=range(0,10001),help='Disposable PostgreSQL group-commit delay; fsync and synchronous commit remain enabled')
+    parser.add_argument('--pg-shared-buffers-mb',type=int,default=128,choices=(128,256,512),help='Bounded disposable PostgreSQL shared buffer allocation')
+    parser.add_argument('--pg-work-mem-mb',type=int,default=4,choices=(4,16,32),help='Bounded per-operation PostgreSQL working memory')
+    parser.add_argument('--pg-wal-sync-method',default='fdatasync',choices=('fdatasync','open_datasync','fsync'),help='Durable WAL synchronization method for the disposable cluster')
+    parser.add_argument('--pg-wal-init-zero',default='on',choices=('on','off'),help='Whether to pre-zero new WAL segments in the disposable cluster')
     options=parser.parse_args()
     if options.stream_load and not options.with_streams:
         parser.error('--stream-load requires --with-streams')
     if options.stream_measure_only and not options.stream_load:
         parser.error('--stream-measure-only requires --stream-load')
-    if not (100 <= options.stream_events <= 60000 and options.stream_events % 100 == 0 and 100 <= options.stream_eps <= 1000 and 0 <= options.stream_pause_seconds <= 10 and 1 <= options.stream_idle_poll_ms <= 100):
+    if not (100 <= options.stream_events <= 60000 and options.stream_events % options.stream_producer_batch == 0 and 100 <= options.stream_eps <= 2000 and 0 <= options.stream_pause_seconds <= 10 and 1 <= options.stream_idle_poll_ms <= 100):
         parser.error('Invalid bounded stream workload configuration')
-    if not options.stream_load and (options.stream_events != 1000 or options.stream_eps != 1000 or options.stream_pause_seconds != 0 or options.stream_idle_poll_ms != 1 or options.stream_burst_multiplier != 1 or options.stream_consumer_batch != 10 or options.stream_monitor_ms != 100 or options.pg_commit_delay_us != 0):
+    if not options.stream_load and (options.stream_events != 1000 or options.stream_eps != 1000 or options.stream_pause_seconds != 0 or options.stream_idle_poll_ms != 1 or options.stream_burst_multiplier != 1 or options.stream_producer_batch != 100 or options.stream_consumer_batch != 10 or options.stream_monitor_ms != 100 or options.pg_commit_delay_us != 0):
         parser.error('Stream workload options require --stream-load')
     if os.geteuid() == 0:
         raise RuntimeError('Run as an ordinary user; initdb refuses root')
@@ -84,19 +89,26 @@ def main():
             env['AISOC_STREAM_LOAD_PAUSE_SECONDS']=str(options.stream_pause_seconds)
             env['AISOC_STREAM_LOAD_IDLE_POLL_MS']=str(options.stream_idle_poll_ms)
             env['AISOC_STREAM_LOAD_BURST_MULTIPLIER']=str(options.stream_burst_multiplier)
+            env['AISOC_STREAM_LOAD_PRODUCER_BATCH']=str(options.stream_producer_batch)
             env['AISOC_STREAM_LOAD_CONSUMER_BATCH']=str(options.stream_consumer_batch)
             env['AISOC_STREAM_LOAD_MONITOR_MS']=str(options.stream_monitor_ms)
             env['AISOC_STREAM_LOAD_REPORT']=str(report/'stream-load.json')
+            # This cluster is owned by TemporaryDirectory and removed in finally.
+            # Avoid generating a second load's worth of WAL deleting the fixture
+            # row-by-row immediately before throwing away the entire cluster.
+            env['AISOC_STREAM_LOAD_DISPOSABLE']='1'
             try:
                 pgpid=int((temp/'pg/postmaster.pid').read_text().splitlines()[0])
                 with ResourceProbe(pgpid, report/'stream-load.json.resources.json'):
                     run(['go','test','-count=1','-run','^TestStreamLoadReport$','-v','./internal/modules/telemetrypipeline'],ROOT/'backend-go')
                 measured=json.loads((report/'stream-load.json').read_text())
-                measured['postgres_runtime']={'fsync':sql('SHOW fsync'),'synchronous_commit':sql('SHOW synchronous_commit'),'commit_delay_us':int(sql('SHOW commit_delay')),'commit_siblings':int(sql('SHOW commit_siblings'))}
+                measured['postgres_runtime']={name:sql('SHOW '+name) for name in ('fsync','synchronous_commit','full_page_writes','shared_buffers','work_mem','wal_sync_method','wal_init_zero')}
+                measured['postgres_runtime'].update(commit_delay_us=int(sql('SHOW commit_delay')),commit_siblings=int(sql('SHOW commit_siblings')))
                 (report/'stream-load.json').write_text(json.dumps(measured,indent=2)+'\n')
                 run(['go','test','-count=1','-run','^TestCacheLoadReport$','-v','./internal/modules/enrichment'],ROOT/'backend-go')
             finally:
                 env.pop('AISOC_STREAM_LOAD_REPORT',None)
+                env.pop('AISOC_STREAM_LOAD_DISPOSABLE',None)
         def wait_port(number):
             for _ in range(100):
                 try:
@@ -125,7 +137,7 @@ def main():
             pgport,apiport,pythonport,rustport,pythonhttpport=port(),port(),port(),port(),port()
             env.update(PGHOST='127.0.0.1',PGPORT=str(pgport),PGUSER='aisoc',PGPASSWORD=password,PGDATABASE='postgres')
             run([PG/'initdb','-D',temp/'pg','-U','aisoc','--auth-local=trust','--auth-host=scram-sha-256','--pwfile',pwfile])
-            run([PG/'pg_ctl','-D',temp/'pg','-l',temp/'pg.log','-o',f'-h 127.0.0.1 -p {pgport} -k {temp} -c track_io_timing=on -c track_wal_io_timing=on -c commit_delay={options.pg_commit_delay_us} -c commit_siblings=0','-w','start'])
+            run([PG/'pg_ctl','-D',temp/'pg','-l',temp/'pg.log','-o',f'-h 127.0.0.1 -p {pgport} -k {temp} -c track_io_timing=on -c track_wal_io_timing=on -c shared_buffers={options.pg_shared_buffers_mb}MB -c work_mem={options.pg_work_mem_mb}MB -c wal_sync_method={options.pg_wal_sync_method} -c wal_init_zero={options.pg_wal_init_zero} -c commit_delay={options.pg_commit_delay_us} -c commit_siblings=0','-w','start'])
             pg_started=True
             sql('CREATE DATABASE aisoc_go_test;')
             env['PGDATABASE']='aisoc_go_test'

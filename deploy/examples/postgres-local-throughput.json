@@ -1,0 +1,6 @@
+{
+  "shared_buffers_mb": 512,
+  "work_mem_mb": 32,
+  "wal_sync_method": "fsync",
+  "wal_init_zero": "off"
+}

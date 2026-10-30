@@ -29,7 +29,7 @@ type Runtime struct {
 }
 
 func (r Runtime) validate() error {
-	if r.ReadBatchSize < 0 || r.ReadBatchSize > 100 {
+	if r.ReadBatchSize < 0 || r.ReadBatchSize > telemetry.MaxBatchEvents {
 		return eventstate.ErrInvalid
 	}
 	if _, err := streams.Key(r.Binding); err != nil {
@@ -265,7 +265,7 @@ func (r Runtime) ProcessBatch(ctx context.Context, deliveries []streams.Delivery
 	if err := r.validate(); err != nil {
 		return err
 	}
-	if len(deliveries) > 100 {
+	if len(deliveries) > telemetry.MaxBatchEvents {
 		return eventstate.ErrInvalid
 	}
 	if len(deliveries) > 1 && effect != nil {

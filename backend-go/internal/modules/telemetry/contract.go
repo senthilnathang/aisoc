@@ -17,6 +17,10 @@ import (
 
 const MaxEnvelopeBytes = 16384
 
+// MaxBatchEvents bounds durable transactions and Redis operations (at most 8 MiB
+// of envelopes). HTTP requests retain their separate 1 MiB body limit.
+const MaxBatchEvents = 500
+
 var identifier = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$`)
 var ErrInvalid = errors.New("invalid telemetry envelope")
 var ErrBinding = errors.New("telemetry source binding mismatch")

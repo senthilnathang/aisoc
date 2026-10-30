@@ -6,6 +6,8 @@ The selected foundation serves these routes on 3003; the preserved release uses
 3002. `run.sh import-demo` adds no public API endpoints: it calls the existing
 scoped stream mock-import route in batches of at most 100, with current checkpoints,
 tenant/source validation and durable deduplication. See [demo import commands](BENCHMARK_DATA_IMPORT.md).
+The mock-import endpoint accepts up to 500 events per request within the unchanged
+1 MiB HTTP body limit; the demo loader keeps its compatible 100-event pages.
 Supported workflows are verified by shared HTTP and browser suites. Deliberate
 validation/security differences are recorded in
 [ADR 003](adr/003-replacement-contract-decisions.md).

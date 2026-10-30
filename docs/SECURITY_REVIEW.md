@@ -29,8 +29,9 @@ A temporary 32 MiB input produced identical SHA-256 digests through both paths:
 
 This single local run shows approximately 99.6% lower peak allocation for the hash
 operation, not lower overall import RSS or faster ingestion. Bundle preparation still
-materializes events for transformation. No new EPS benchmark was run; stable 1,000 EPS
-remains unproven. See [existing throughput results](STREAM_PERFORMANCE_REPORT.md).
+materializes events for transformation. That security-only pass did not run an EPS
+benchmark. Subsequent [throughput validation](PERFORMANCE_GATE.md) verifies average
+1,000 EPS while keeping the failed latency-stability gate explicit.
 
 ## Dependency audit
 

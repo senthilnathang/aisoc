@@ -15,7 +15,7 @@ type PublicationReceipt struct {
 // MarkPublishedBatch commits receipts together only if every event still owns its
 // unexpired attempt. Redis writes may precede a failed commit; replay remains safe.
 func (s Store) MarkPublishedBatch(ctx context.Context, b telemetry.Binding, receipts []PublicationReceipt) error {
-	if !validBinding(b) || len(receipts) < 1 || len(receipts) > 100 {
+	if !validBinding(b) || len(receipts) < 1 || len(receipts) > telemetry.MaxBatchEvents {
 		return ErrInvalid
 	}
 	// Concurrent overlapping batches must acquire row locks in the same order.
@@ -38,26 +38,28 @@ func (s Store) MarkPublishedBatch(ctx context.Context, b telemetry.Binding, rece
 		return err
 	}
 	defer tx.Rollback(ctx)
-	// Pipeline exact-key updates on one connection and transaction. A generic
-	// join plan must not scan all retained receipts for a small supplied batch.
-	batch := &pgx.Batch{}
-	for i, key := range keys {
-		batch.Queue(`UPDATE stream_outbox SET state='published',published_at=now(),message_id=$6,lease_until=NULL,error_code=NULL,updated_at=now() WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=$4 AND attempt_id::text=$5 AND state='publishing' AND lease_until>clock_timestamp()`, b.TenantID, b.ConnectorID, b.Source, key, attempts[i], ids[i])
-	}
-	results := tx.SendBatch(ctx, batch)
-	for range keys {
-		tag, e := results.Exec()
-		if e != nil {
-			results.Close()
-			return e
-		}
-		if tag.RowsAffected() != 1 {
-			results.Close()
-			return ErrLease
-		}
-	}
-	if err = results.Close(); err != nil {
+	// Lock the bounded primary-key set in stable order. The explicit tuple-ID
+	// restriction bounds the UPDATE target even when source statistics are cold.
+	// Tuple IDs never escape this statement; leases are rechecked after locking.
+	var updated int
+	err = tx.QueryRow(ctx, `WITH locked AS MATERIALIZED (
+ SELECT ctid,event_key,attempt_id,state,lease_until FROM stream_outbox
+ WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=ANY($4::text[])
+ ORDER BY event_key FOR UPDATE
+), receipts AS MATERIALIZED (
+ SELECT l.ctid,i.m FROM locked l JOIN unnest($4::text[],$5::text[],$6::text[]) AS i(k,a,m)
+ ON l.event_key=i.k AND l.attempt_id::text=i.a
+ WHERE l.state='publishing' AND l.lease_until>clock_timestamp()
+), changed AS (
+ UPDATE stream_outbox o SET state='published',published_at=now(),message_id=r.m,
+ lease_until=NULL,error_code=NULL,updated_at=now() FROM receipts r
+ WHERE o.ctid=ANY(ARRAY(SELECT ctid FROM receipts)) AND o.ctid=r.ctid RETURNING 1
+) SELECT count(*) FROM changed`, pgx.QueryExecModeExec, b.TenantID, b.ConnectorID, b.Source, keys, attempts, ids).Scan(&updated)
+	if err != nil {
 		return err
+	}
+	if updated != len(receipts) {
+		return ErrLease
 	}
 	return tx.Commit(ctx)
 }

@@ -12,7 +12,7 @@ type BatchEvent struct{ Key, Hash string }
 // Existing work, replay and poison stay on the leased per-event recovery path.
 // A crash rolls back the whole batch; Redis ACK must follow successful commit.
 func (s Store) ApplyFreshBatch(ctx context.Context, b telemetry.Binding, processor string, input []BatchEvent, disposition string, maxAttempts int, limit int64, effect func(context.Context, pgx.Tx, telemetry.Event) error) (bool, error) {
-	if !validBinding(b) || !idPattern.MatchString(processor) || len(input) < 2 || len(input) > 100 || effect == nil || maxAttempts < 1 || maxAttempts > 10 || limit < 1 || limit > 100000 || (disposition != "filtered" && disposition != "finding" && disposition != "rejected") {
+	if !validBinding(b) || !idPattern.MatchString(processor) || len(input) < 2 || len(input) > telemetry.MaxBatchEvents || effect == nil || maxAttempts < 1 || maxAttempts > 10 || limit < 1 || limit > 100000 || (disposition != "filtered" && disposition != "finding" && disposition != "rejected") {
 		return false, ErrInvalid
 	}
 	keys := make([]string, len(input))

@@ -12,8 +12,10 @@ From the repository root, `./run.sh import-demo all`, `showcase`, or `files FILE
 uses the Go mock-import API with durable checkpoints and deduplication. It requires
 the foundation profile. Use `--dry-run` to validate selection first. See
 [developer commands](../docs/DEVELOPMENT.md) and [bundle format](../docs/BENCHMARK_DATA_IMPORT.md).
-Publication receipt batches lock rows in a consistent order; the single-statement
-SQL experiment was reverted. Stable 1,000 EPS is still an open performance gate.
+Publication receipts now use a bounded set update with sorted row locks and atomic
+lease validation. Telemetry transactions support up to 500 events. See the
+[performance gate](../docs/PERFORMANCE_GATE.md) for repeated measurements and limits;
+average throughput alone does not establish stable latency or production capacity.
 
 ## Structure
 

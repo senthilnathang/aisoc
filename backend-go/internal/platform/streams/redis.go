@@ -17,7 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const MaxBatch = 100
+const MaxBatch = telemetry.MaxBatchEvents
 
 var (
 	ErrInvalid     = errors.New("invalid stream request or delivery")
