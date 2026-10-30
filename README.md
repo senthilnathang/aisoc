@@ -1,5 +1,9 @@
 # AISOC
 
+The proposed [RisingWave and multi-tenant streaming data plane](docs/RISINGWAVE_1M_REVIEW.md)
+is under repository-grounded evaluation. Aggregate 1M EPS is a target, not measured
+capacity; the [isolated POC](docs/RISINGWAVE_POC.md) does not change default services.
+
 Local security-operations application: React frontend, Go API and investigation
 worker, PostgreSQL persistence, and optional Rust/WASM and Python specialist
 workers. The Node/SQLite backend was replaced on **2026-10-29**. All 97 legacy
