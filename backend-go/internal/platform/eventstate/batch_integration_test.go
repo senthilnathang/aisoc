@@ -118,3 +118,46 @@ func TestBatchReceiptFencingIsAtomic(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestBatchReceiptConcurrentMapping(t *testing.T) {
+	s, b, template := setup(t)
+	ctx := context.Background()
+	events := make([]telemetry.Event, 100)
+	for i := range events {
+		events[i] = template
+		events[i].SourceEventID = fmt.Sprintf("receipt-%03d", i)
+	}
+	accept(t, s, b, Checkpoint{}, "receipts", events...)
+	leases, err := s.ClaimBatch(ctx, b, 100)
+	if err != nil || len(leases) != 100 {
+		t.Fatal(len(leases), err)
+	}
+	receipts := make([]PublicationReceipt, len(leases))
+	for i, lease := range leases {
+		receipts[i] = PublicationReceipt{Lease: lease, MessageID: fmt.Sprintf("1000-%d", i)}
+	}
+	reversed := append([]PublicationReceipt(nil), receipts...)
+	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
+		reversed[i], reversed[j] = reversed[j], reversed[i]
+	}
+	errs := make(chan error, 2)
+	go func() { errs <- s.MarkPublishedBatch(ctx, b, receipts) }()
+	go func() { errs <- s.MarkPublishedBatch(ctx, b, reversed) }()
+	succeeded := 0
+	for range 2 {
+		if err := <-errs; err == nil {
+			succeeded++
+		} else if !errors.Is(err, ErrLease) {
+			t.Fatal(err)
+		}
+	}
+	if succeeded != 1 {
+		t.Fatal("receipt ownership not exclusive", succeeded)
+	}
+	for _, receipt := range receipts {
+		var id string
+		if err = s.Pool.QueryRow(ctx, `SELECT message_id FROM stream_outbox WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND event_key=$4`, b.TenantID, b.ConnectorID, b.Source, receipt.Lease.EventKey).Scan(&id); err != nil || id != receipt.MessageID {
+			t.Fatal("wrong receipt mapping", id, err)
+		}
+	}
+}

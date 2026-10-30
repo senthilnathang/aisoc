@@ -4,6 +4,7 @@ import (
 	"aisoc/backend/internal/modules/telemetry"
 	"context"
 	"github.com/jackc/pgx/v5"
+	"sort"
 )
 
 type PublicationReceipt struct {
@@ -17,6 +18,10 @@ func (s Store) MarkPublishedBatch(ctx context.Context, b telemetry.Binding, rece
 	if !validBinding(b) || len(receipts) < 1 || len(receipts) > 100 {
 		return ErrInvalid
 	}
+	// Concurrent overlapping batches must acquire row locks in the same order.
+	// Copy the caller slice so sorting cannot race another publisher.
+	receipts = append([]PublicationReceipt(nil), receipts...)
+	sort.Slice(receipts, func(i, j int) bool { return receipts[i].Lease.EventKey < receipts[j].Lease.EventKey })
 	keys, attempts, ids := []string{}, []string{}, []string{}
 	seen := map[string]bool{}
 	for _, r := range receipts {

@@ -449,3 +449,39 @@ readers shared four connections. The sandbox consumer now uses a bounded pool of
 four. Concurrent-reader and full regression tests passed. After restart, all 60
 imported sources reported running workers without errors and zero pending events.
 This operational fix is separate from the two-consumer throughput measurement.
+
+## Publication-receipt experiment and concurrency fix
+
+The experiment locked up to 100 exact keys in sorted order and updated them in one
+SQL statement using statement-local tuple IDs. It passed correctness tests but did
+not establish repeatable performance improvement, so **the SQL rewrite was reverted**.
+The retained change sorts a private copy of receipt inputs before the existing
+pipelined updates, making overlapping publishers acquire row locks in the same order.
+A regression test races opposite-order batches and checks that one succeeds, the
+other loses ownership, and every message ID remains mapped to the correct event.
+No schema or durability setting changes were made.
+
+The initial baseline with the expanded 70,000-event demo running failed with a
+PostgreSQL statement timeout. That failed run is retained as
+`output/backend-framework/receipt-baseline-with-demo-failed.log`; it is not counted
+as a successful performance result. The subsequent controlled comparison stopped
+the local foundation for **both** runs, preserving its database. Other host workloads
+were not controlled, so the difference is observed evidence, not a guaranteed speedup.
+
+| Controlled run, 60,000 events / 1,000 EPS offered | Completed | Elapsed EPS | Scheduled-to-ACK p95 | Receipt SQL client time |
+|---|---:|---:|---:|---:|
+| Prior pipelined updates | 60,000 | 740.55 | 26.330 s | 31.286 s |
+| One bounded update per batch | 60,000 | 924.92 | 22.726 s | 16.121 s |
+| Same candidate repeated | 60,000 | 699.87 | 32.488 s | 34.650 s |
+
+All successful runs drained with zero unacknowledged entries. Receipt SQL times exclude the
+separate transaction commit and overlap other stages. `fsync` and synchronous
+commit stayed enabled. Evidence: `receipt-controlled-before.json` and
+`receipt-controlled-after.json` and `receipt-controlled-repeat.json` in
+`output/backend-framework/`. The candidate full
+Go race/vet, PostgreSQL, Redis, Python/Rust, gRPC and end-to-end regression suite
+passed. The final retained ordering fix is validated separately by the full suite.
+The 925 EPS result must not be advertised as a stable improvement or installed
+capacity. Stable 1,000 EPS and the latency target remain unmet. Further work needs
+a controlled storage/WAL and host-contention baseline; parsing-language changes
+would not remove the observed PostgreSQL durability waits.
