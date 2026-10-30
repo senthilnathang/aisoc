@@ -1,5 +1,11 @@
 # Developer guide
 
+The optional [RisingWave POC guide](RISINGWAVE_POC.md) documents isolated correlation
+evaluation. It reuses Go event identities and the existing correlation oracle;
+it is not an application migration or a new default service. See the
+[proposed contracts and PR sequence](RISINGWAVE_1M_REVIEW.md#contract-reuse-and-extensions)
+before extending broker ingestion or finding admission.
+
 Current backend: Go/PostgreSQL. The retained TypeScript/SQLite implementation is
 for comparison and rollback, not normal application startup.
 

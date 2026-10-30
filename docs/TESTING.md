@@ -3,6 +3,10 @@
 The [multi-tenant threat model](MULTITENANT_STREAMING_THREAT_MODEL.md) defines
 common identity, isolation, replay, worker and response-security release gates.
 
+The [RisingWave experiment](RISINGWAVE_POC.md) has separate Go fixture and real-SQL
+parity gates. A skipped SQL test is not a RisingWave pass. The common threat model
+also applies to its broker, worker, SQL, replay and response boundaries.
+
 Current as of 2026-10-30. Go/PostgreSQL is the active backend. Node/Fastify/SQLite
 tests remain a legacy reference; they are not the only backend verification.
 

@@ -1,5 +1,10 @@
 # Application architecture
 
+The [RisingWave / aggregate 1M EPS review](RISINGWAVE_1M_REVIEW.md) describes a
+proposed separate streaming data plane and its migration gates. Its diagrams are
+targets, not the currently deployed architecture below. An isolated SQL parity
+POC does not replace the Go/PostgreSQL/Redis path or enable production responses.
+
 Current as of 2026-10-30. Go/PostgreSQL is active; Node is retained for comparison
 and rollback. The frontend remains React/Chakra/Vite.
 
