@@ -437,3 +437,8 @@ Migration 037 and response policy/preview behavior are covered by `workspace_tes
 ## Hunt verification
 
 Hunt workspace tests cover tenant isolation, stored case/artifact matches, literal input, bounded results, timestamp conflicts, concurrent idempotent retries, notes and audit rollback. Browser fixtures cover registry/TI creation, search results, historical query attribution and responsive panels. See [commands and exact scope](HUNT_WORKSPACE.md).
+
+
+## Threat Intel verification
+
+The shared isolated PostgreSQL race suite includes threatintel tests for real registry counts, metadata guards, atomic linked hunt creation, concurrent retries, audit failure, report/IOC ownership and deleted-hunt replay. Browser fixtures cover report/IOC forms, relevance, delayed completion navigation, linked hunts and mobile/desktop views. The Hunt browser suite is updated for the shared TI registry. See [test scope](THREAT_INTEL_WORKSPACE.md).

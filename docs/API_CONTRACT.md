@@ -405,3 +405,8 @@ New endpoints: GET `/response-workflow-policies`; GET/PATCH `/response-plans/{id
 ## Hunt workspace APIs
 
 Added GET `/hunts/{id}/workspace`, POST `/hunts/{id}/search` with `{id,expected_updated_at}` and POST `/hunts/{id}/notes` with `{id,body}`, under `/api/v1`. Tenant/actor derive from authentication. Replays are idempotent, conflicting reuse returns 409. Legacy `/run` remains simulated and is not called by the new UI. See [details](HUNT_WORKSPACE.md).
+
+
+## Threat Intel workspace endpoints
+
+Added GET `/threat-intel/registry`, GET `/threat-intel-reports/{id}/workspace`, POST `/threat-intel-reports/{id}/local-hunt` under `/api/v1`. Report authoring supports actor/industry/region/relevance metadata and optional timestamp guards. Local-hunt requests create drafts with transactional audit; replay is preserved after deletion and returns 410 for a deleted target. See [contracts](THREAT_INTEL_WORKSPACE.md).

@@ -56,6 +56,7 @@ func threatOptions(r *http.Request) (threatintel.Options, error) {
 }
 func registerThreatIntelligence(mux *http.ServeMux, pool *pgxpool.Pool) {
 	store := threatintel.Store{Pool: pool}
+	registerThreatWorkspace(mux, store)
 	for _, resource := range []struct {
 		path string
 		kind threatintel.Kind

@@ -7,13 +7,13 @@ Implemented locally on 2026-11-01 after reviewing all four screenshots on [7AI T
 | Image | Screenshot browser URL | AISOC behavior |
 |---|---|---|
 | `hunt-threat-hunting-browser.png` | `/hunt/threat-hunting` | Searchable, paginated hunt registry; create and open hunt |
-| `hunt-threat-intel-browser-2.png` | `/hunt/threat-intelligence` | Stored TI reports, page-scoped report/source counts, report ingestion, create a literal-search hunt from report context |
+| `hunt-threat-intel-browser-2.png` | `/hunt/threat-intelligence` | Shared TI registry with filtered totals, analyst metadata, report ingestion and report-owned IOC-to-hunt links (migration 039) |
 | `hunt-detail-entities-browser.png` | `/hunt/threat-hunting/cve-2026-42897` | `/hunt/threat-hunting/{actual-id}`: Plan, conversation/notes and Entities panels |
 | `hunt-detail-findings-browser.png` | Same detail URL | Findings with source record IDs, excerpts and links to the original case; Step details and run-history selection |
 
 `/hunt` remains an alias for the registry. Detail breadcrumbs use a tenant-scoped Go `hunts` label lookup. The screenshot's CVE slug is not seeded as a fake record. Existing `/threat-intel` report detail remains available. The old Hunt dashboard's fallback hunts, invented quotas/counts and decorative lifecycle chart were removed.
 
-The registry shows real creation/update times and source instead of invented author identities. Report actor/industry/region metadata is not in the existing schema and is not fabricated. Lists show 50 records per page. TI counts explicitly describe the current page, not global or 30-day statistics. Creating a hunt from a report preserves an informational source reference and requires an analyst-provided search phrase; no automatic report reasoning or feed scheduling occurs.
+The hunt registry shows real creation/update times and source instead of invented author identities. Lists show 50 records per page. The TI route now shares the [Threat Intel workspace](THREAT_INTEL_WORKSPACE.md), which adds analyst actor/industry/region metadata, filtered report/source totals and atomic draft-hunt creation from active report-owned IOC values. It does not invoke automatic reasoning or live provider queries. Unknown metadata remains unfilled.
 
 ## Local search contract
 

@@ -171,3 +171,8 @@ Implemented Cases board/list, guarded local status updates, version-bound sandbo
 ## Hunt workspace (2026-11-01)
 
 Implemented screenshot-based registry, TI report table, Plan/notes/Entities/Findings panels and bounded evidence search with persisted audit-backed receipts. Removed invented Hunt dashboard metrics/fallbacks. Remaining: AI-generated plans/chat, live provider queries, feed automation, asynchronous hunt workers and retention tooling. See [implemented boundaries](HUNT_WORKSPACE.md).
+
+
+## Threat Intel workspace (2026-11-01)
+
+Implemented report table/detail, bounded analyst metadata, relevance/status filters, actual IOC counts and atomic idempotent draft hunts from report-owned active indicators. Removed sample reports and unsupported automatic scanning claims. Remaining: live feeds/STIX/TAXII, enrichment, bulk import, automatic relevance/verdict attribution and live execution. See [boundaries](THREAT_INTEL_WORKSPACE.md).

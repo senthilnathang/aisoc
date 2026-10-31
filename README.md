@@ -262,3 +262,8 @@ The [Respond workspace](docs/RESPONSE_WORKSPACE.md) now includes the Cases board
 ## Hunt workspace
 
 The [Hunt workspace](docs/HUNT_WORKSPACE.md) provides a registry, TI report hunting table and routed Plan/notes/Entities/Findings detail. Open `/hunt/threat-hunting`. New searches use real stored evidence with persisted receipts; no live telemetry query or LLM reasoning is implied.
+
+
+## Threat Intel workspace
+
+The [Threat Intel workspace](docs/THREAT_INTEL_WORKSPACE.md) adds the screenshot-based report table, analyst metadata/relevance, real IOC counts, report editing and active-IOC-to-local-hunt links. `/threat-intel` and `/hunt/threat-intelligence` share the same data/UI. Hunt creation is explicit, idempotent and audit-backed; it does not launch live queries.

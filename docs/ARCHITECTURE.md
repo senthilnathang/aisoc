@@ -332,3 +332,8 @@ React uses the existing case and versioned procedure APIs plus tenant-scoped Go 
 ## Hunt evidence search
 
 Go owns bounded tenant-scoped literal search over stored cases/artifacts, request replay and transactional audit. Migration 038 persists search snapshots and analyst notes through sqlc/pgx. The UI separates current hunt input from historical receipt queries. Legacy simulated execution remains compatible but is not used by these screens. See [Hunt architecture and safety](HUNT_WORKSPACE.md).
+
+
+## Threat Intel registry and local hunt links
+
+Go uses a repeatable-read registry projection and the existing tenant TI mutation lock for report/IOC changes and atomic local hunt creation. Migration 039 adds analyst metadata and retained request/link snapshots. The draft hunt, link and hunt/report audits commit together; no provider execution occurs. Hunt deletion retains replay tombstones. See [architecture and contracts](THREAT_INTEL_WORKSPACE.md).

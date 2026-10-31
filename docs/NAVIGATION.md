@@ -83,3 +83,8 @@ Cases uses `/respond/cases`; workflow policy configuration uses `/respond/remedi
 ## Hunt routes
 
 `/hunt/threat-hunting` is the registry (`/hunt` alias); `/hunt/threat-intelligence` is the report hunting table; `/hunt/threat-hunting/{id}` opens the detail workspace. Hunt detail remains under the Threat hunting submenu. Breadcrumb labels use authenticated tenant-scoped `hunts` metadata.
+
+
+## Shared Threat Intel registry
+
+`/threat-intel` and `/hunt/threat-intelligence` use the shared ThreatIntelWorkspace registry. Report details remain `/threat-intel/{id}` with the existing tenant-scoped breadcrumb. IOC-created local hunts open `/hunt/threat-hunting/{id}` only when creation completes while the initiating screen remains mounted.

@@ -221,3 +221,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Hunt workspace tables (038)
 
 `hunt_search_runs` stores bounded evidence snapshots and request identity; `hunt_notes` stores actor-attributed notes. Both use composite tenant/hunt keys and cascade on hunt deletion. Resource audit remains separate. Limits are 100 receipts and 100 notes per hunt, with latest 20 receipts displayed. See [retention semantics](HUNT_WORKSPACE.md).
+
+
+## Threat Intel workspace (039)
+
+Report columns: `threat_actor`, `targeted_industry`, `targeted_region`, `relevant`. `threat_report_hunts` stores tenant/report/request identity, immutable IOC snapshot, hunt ID and actor. Report deletion cascades links; hunt deletion intentionally retains them as request tombstones. Actual IOC counts are derived from indicator rows. See [retention and consistency](THREAT_INTEL_WORKSPACE.md).

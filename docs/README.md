@@ -1,7 +1,7 @@
 # Documentation index
 
 Current architecture and local migration status: 2026-11-01. The selected foundation
-uses API 3003/schema 038, with a 70,000-event local demo. The release on 3002 is
+uses API 3003/schema 039, with a 70,000-event local demo. The release on 3002 is
 preserved separately. Historical migration reports and ADR dates remain unchanged.
 
 | Document | Purpose |
@@ -100,3 +100,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Hunt screens
 
 [Hunt workspace](HUNT_WORKSPACE.md) documents screenshot mapping, bounded local evidence search, notes, migration 038, routes, tests and limitations.
+
+
+## Threat Intel screens
+
+[Threat Intel workspace](THREAT_INTEL_WORKSPACE.md): verified screenshot scope, shared registry/detail screens, metadata, actual IOC counts, linked local hunts, migration 039 and tests.

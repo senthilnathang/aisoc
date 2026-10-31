@@ -355,3 +355,8 @@ See [Response workspace](RESPONSE_WORKSPACE.md) for the JSON runbook import shap
 ## Hunt development
 
 Use `HuntWorkspace.jsx` and `internal/modules/hunts/workspace.go`; new SQL is in `hunts/queries/workspace.sql`. Regenerate with `make -C backend-go sqlc`. Apply migration 038 through normal startup. The isolated workspace harness includes hunts/navigation; browser fixtures are in `scripts/framework/hunt-workspace-browser-check.js`. See [contracts and local limits](HUNT_WORKSPACE.md).
+
+
+## Threat Intel development
+
+`ThreatIntelWorkspace.jsx` serves report registry/detail and the Hunt TI route. New backend code is `threatintel/workspace.go`, generated `threatsql`, and `httpapi/threat_workspace.go`. Apply migration 039, regenerate SQL with `make -C backend-go sqlc`, and run the disposable test harness plus `scripts/framework/threat-intel-browser-check.js`. See [version guards, retry semantics and limits](THREAT_INTEL_WORKSPACE.md).

@@ -113,7 +113,7 @@ func (s Store) Detail(ctx context.Context, k Kind, tenant, id string) (map[strin
 }
 
 func fields(k Kind, raw map[string]json.RawMessage) ([]string, []any, error) {
-	names := []string{"title", "summary", "source", "report_type", "severity", "status", "ioc_count", "hunt_status", "hunts_launched", "findings_count", "tags", "published_at"}
+	names := []string{"title", "summary", "source", "report_type", "severity", "status", "ioc_count", "hunt_status", "hunts_launched", "findings_count", "tags", "published_at", "threat_actor", "targeted_industry", "targeted_region", "relevant"}
 	enums := map[string]string{"report_type": "threat_report advisory ioc_feed hunt_pack", "severity": "low medium high critical", "status": "new reviewing actionable archived", "hunt_status": "not_started hunting completed no_findings"}
 	if k == Indicators {
 		names = []string{"report_id", "indicator_type", "value", "severity", "status", "hits", "last_seen_at"}
@@ -129,6 +129,12 @@ func fields(k Kind, raw map[string]json.RawMessage) ([]string, []any, error) {
 		var value any
 		var err error
 		switch name {
+		case "relevant":
+			var b bool
+			if string(v) == "null" || json.Unmarshal(v, &b) != nil {
+				return nil, nil, invalid()
+			}
+			value = b
 		case "ioc_count", "hunts_launched", "findings_count", "hits":
 			value, err = legacy.Integer(v)
 		case "tags":
@@ -151,6 +157,11 @@ func fields(k Kind, raw map[string]json.RawMessage) ([]string, []any, error) {
 		}
 		if err != nil {
 			return nil, nil, invalid()
+		}
+		if name == "threat_actor" || name == "targeted_industry" || name == "targeted_region" {
+			if len([]rune(value.(string))) > 200 {
+				return nil, nil, invalid()
+			}
 		}
 		if choices, ok := enums[name]; ok {
 			valid := false
@@ -188,8 +199,23 @@ func (s Store) Mutate(ctx context.Context, k Kind, tenant, id, operation string,
 	var details = map[string]any{"fields": keys}
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	if operation != "create" {
-		if _, err = get(ctx, tx, k, tenant, id); err != nil {
-			return nil, err
+		prior, e := get(ctx, tx, k, tenant, id)
+		if e != nil {
+			return nil, e
+		}
+		if token, ok := raw["expected_updated_at"]; ok {
+			var expected string
+			if json.Unmarshal(token, &expected) != nil {
+				return nil, invalid()
+			}
+			if prior["updated_at"] != expected {
+				return nil, fault.New(409, "VERSION_CONFLICT", "This record changed. Reload before saving.")
+			}
+		}
+		if stamp, ok := prior["updated_at"].(string); ok {
+			if at, e := time.Parse(time.RFC3339Nano, stamp); e == nil && !now.After(at) {
+				now = at.Add(time.Millisecond)
+			}
 		}
 	}
 	if k == Indicators {
