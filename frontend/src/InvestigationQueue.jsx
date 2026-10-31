@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Table, TableContainer, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
@@ -8,14 +8,19 @@ function AlertIntake({ rules, onClose, onIngested }) {
   const [evidenceType, setEvidenceType] = useState("domain");
   const [evidenceValue, setEvidenceValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const [error, setError] = useState("");
   const field = (key, value) => setDraft(current => ({ ...current, [key]: value }));
   const submit = async event => {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true); setError("");
     try {
       const result = await api.create("alerts", { ...draft, evidence: evidenceValue.trim() ? [{ type: evidenceType, value: evidenceValue.trim() }] : [] });
       onIngested(result);
     } catch (e) { setError(e.message); setBusy(false); }
+    finally { submitting.current = false; }
   };
   return <Modal isOpen onClose={onClose} size="xl" closeOnOverlayClick={!busy} closeOnEsc={!busy}><ModalOverlay /><ModalContent as="form" onSubmit={submit}>
     <ModalHeader>Submit an alert</ModalHeader><ModalCloseButton isDisabled={busy} />

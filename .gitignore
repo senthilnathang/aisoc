@@ -70,3 +70,5 @@ htmlcov/
 
 # Browser MCP snapshots and console captures
 .playwright-mcp/
+
+.superpowers/
