@@ -8,11 +8,14 @@ import (
 
 type RegistryOptions struct {
 	Search, Severity, Enabled, Source, Sort, Direction string
-	Limit, Offset                                      int
+	Limit, Offset, Days                                int
 }
 
 // Registry combines authored rules, source bindings and persisted alert metrics.
 func (s Store) Registry(ctx context.Context, tenant string, options RegistryOptions) (map[string]any, error) {
+	if options.Days > 0 {
+		return s.RegistryWindow(ctx, tenant, options, "")
+	}
 	tx, err := s.Pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return nil, err

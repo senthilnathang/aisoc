@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Text, Textarea } from "@chakra-ui/react";
 import { api } from "./api";
 
-export default function CreateDetectionRule({ onClose, onCreated, templates = [] }) {
-  const [draft, setDraft] = useState({ name: "", description: "", severity: "medium", query: "", execution_mode: "scheduled", enabled: false });
+export default function CreateDetectionRule({ onClose, onCreated, templates = [], initialTemplate = null }) {
+  const [draft, setDraft] = useState({ name: initialTemplate?.name || "", description: initialTemplate?.description || "", severity: initialTemplate?.severity || "medium", mitre_techniques: initialTemplate?.techniques || [], query: "", execution_mode: "scheduled", enabled: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const submit = async e => {

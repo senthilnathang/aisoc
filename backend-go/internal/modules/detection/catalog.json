@@ -1,0 +1,156 @@
+[
+  {
+    "id": "CAT-001",
+    "name": "Kerberoasting via SPN Request",
+    "tactics": [
+      "Credential Access"
+    ],
+    "techniques": [
+      "T1558.003"
+    ],
+    "source": "AISOC local starter",
+    "severity": "high",
+    "description": "Detects service ticket requests for SPNs indicating Kerberoasting attempts.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-002",
+    "name": "DCSync Attack Detection",
+    "tactics": [
+      "Credential Access"
+    ],
+    "techniques": [
+      "T1003.006"
+    ],
+    "source": "AISOC local starter",
+    "severity": "critical",
+    "description": "Identifies directory replication requests from non-DC sources.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-003",
+    "name": "Scheduled Task Creation via CLI",
+    "tactics": [
+      "Persistence",
+      "Execution"
+    ],
+    "techniques": [
+      "T1053.005"
+    ],
+    "source": "AISOC local starter",
+    "severity": "medium",
+    "description": "Detects scheduled tasks created via schtasks.exe or at.exe command line.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-004",
+    "name": "LSASS Memory Dump Detection",
+    "tactics": [
+      "Credential Access"
+    ],
+    "techniques": [
+      "T1003.001"
+    ],
+    "source": "AISOC local starter",
+    "severity": "critical",
+    "description": "Identifies attempts to dump LSASS process memory for credential harvesting.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-005",
+    "name": "DNS Tunneling Detection",
+    "tactics": [
+      "Command and Control",
+      "Exfiltration"
+    ],
+    "techniques": [
+      "T1071.004"
+    ],
+    "source": "AISOC local starter",
+    "severity": "high",
+    "description": "Detects high-entropy DNS queries indicating possible data exfiltration via DNS.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-006",
+    "name": "Cloud Storage Exfiltration",
+    "tactics": [
+      "Exfiltration"
+    ],
+    "techniques": [
+      "T1567.002"
+    ],
+    "source": "AISOC local starter",
+    "severity": "medium",
+    "description": "Monitors unusual uploads to cloud storage services outside approved providers.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-007",
+    "name": "WMI Lateral Movement",
+    "tactics": [
+      "Lateral Movement",
+      "Execution"
+    ],
+    "techniques": [
+      "T1047"
+    ],
+    "source": "AISOC local starter",
+    "severity": "high",
+    "description": "Detects WMI process creation on remote hosts indicative of lateral movement.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-008",
+    "name": "Registry Run Key Persistence",
+    "tactics": [
+      "Persistence"
+    ],
+    "techniques": [
+      "T1547.001"
+    ],
+    "source": "AISOC local starter",
+    "severity": "medium",
+    "description": "Monitors modifications to registry run keys for auto-start persistence.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-009",
+    "name": "Token Impersonation Detection",
+    "tactics": [
+      "Privilege Escalation",
+      "Defense Evasion"
+    ],
+    "techniques": [
+      "T1134.001"
+    ],
+    "source": "AISOC local starter",
+    "severity": "high",
+    "description": "Detects access token manipulation and impersonation attempts.",
+    "version": 1,
+    "kind": "metadata_only"
+  },
+  {
+    "id": "CAT-010",
+    "name": "Suspicious Office Macro Execution",
+    "tactics": [
+      "Execution"
+    ],
+    "techniques": [
+      "T1204.002"
+    ],
+    "source": "AISOC local starter",
+    "severity": "medium",
+    "description": "Identifies Office applications spawning suspicious child processes.",
+    "version": 1,
+    "kind": "metadata_only"
+  }
+]

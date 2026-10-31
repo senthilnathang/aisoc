@@ -95,6 +95,7 @@ const Icon = {
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/detect/detection-rules" || pathname === "/detect/detection-rules/") pathname = "/detect/rules";
   if (pathname === "/detect/detection-intelligence" || pathname === "/detect/detection-intelligence/") pathname = "/detect/intelligence";
   if (pathname === "/build-operations" || pathname === "/build-operations/") pathname = "/build/stream-operations";
   const responseView = Object.entries(pathForView).find(([view, path]) => view.startsWith("response") && path === pathname);
@@ -2721,7 +2722,7 @@ function App() {
     queue: <QueueDashboard setView={setView} />,
     investigations: <InvestigationQueue setView={setView} />,
     investigationDetail: <InvestigationCase key={investigationId} id={investigationId} />,
-    detect: <DetectionRegistry setView={setView} templates={catalogRules} />,
+    detect: <DetectionRegistry setView={setView} />,
     detectionIntelligence: <DetectionIntelligence setView={setView} />,
     detectionRuleDetail: <Box p={{ base: "12px", md: "20px" }}><RuleWorkspace key={ruleId} id={ruleId} standalone onClose={() => setView("detect")} onChanged={() => {}} onSelect={id => setView("detectionRuleDetail", id)} /></Box>,
     respond: <ResponseWorkspace key="respond" setView={setView} />,

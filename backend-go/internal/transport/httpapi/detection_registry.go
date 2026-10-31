@@ -7,7 +7,7 @@ import (
 
 func registryInput(r *http.Request) (detection.RegistryOptions, error) {
 	choices := func(values ...string) *responseRule { return &responseRule{choices: values} }
-	schema := objectRule(
+	schema := objectRule(responseField{"days", &responseRule{kind: "integer", min: 1, max: 90, bounded: true}},
 		responseField{"search", textRule(0, 200)}, responseField{"severity", choices("low", "medium", "high", "critical")},
 		responseField{"enabled", choices("true", "false")}, responseField{"source", textRule(0, 200)},
 		responseField{"sort", choices("name", "updated_at", "severity", "detections")}, responseField{"direction", choices("asc", "desc")},
@@ -36,6 +36,9 @@ func registryInput(r *http.Request) (detection.RegistryOptions, error) {
 	input := value.(map[string]any)
 	text := func(key string) string { v, _ := input[key].(string); return v }
 	options := detection.RegistryOptions{Search: text("search"), Severity: text("severity"), Enabled: text("enabled"), Source: text("source"), Sort: text("sort"), Direction: text("direction"), Limit: 25}
+	if v, ok := input["days"].(float64); ok {
+		options.Days = int(v)
+	}
 	if v, ok := input["limit"].(float64); ok {
 		options.Limit = int(v)
 	}

@@ -231,4 +231,8 @@ See [clickable breadcrumbs and tenant-scoped resource labels](docs/BREADCRUMBS.m
 
 ### Detection Intelligence screenshot implementation (2026-10-31)
 
-Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](docs/DETECTION_INTELLIGENCE.md). Other Detect screenshots remain future work.
+Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](docs/DETECTION_INTELLIGENCE.md). Coverage, Recommendations execution and Routing remain future work.
+
+### Detection Rules workspace (2026-10-31)
+
+The Rules screenshot layout now uses Go/sqlc period-specific metrics, a backend-served local catalog, and URL-persisted inspector selection, filters and tabs. Existing CRUD, audit and all-time APIs are retained. FPR and assessed coverage remain unknown; Recommendations execution is still planned. See [UI, API contracts, test workflow and rollback](docs/DETECTION_RULES.md).

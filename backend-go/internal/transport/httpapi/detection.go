@@ -60,6 +60,19 @@ func detectionInput(r *http.Request, partial bool) (map[string]any, []string, in
 }
 func registerDetection(mux *http.ServeMux, pool *pgxpool.Pool) {
 	store := detection.Store{Pool: pool}
+	mux.HandleFunc("GET /api/v1/detection-catalog", respond(func(r *http.Request) (any, int, error) {
+		for key := range r.URL.Query() {
+			if key != "search" {
+				return nil, 0, invalid()
+			}
+		}
+		options, err := registryInput(r)
+		if err != nil {
+			return nil, 0, err
+		}
+		result, err := detection.Catalog(options.Search)
+		return result, 200, err
+	}))
 	mux.HandleFunc("GET /api/v1/detection-registry", respond(func(r *http.Request) (any, int, error) {
 		options, err := registryInput(r)
 		if err != nil {
@@ -97,6 +110,23 @@ func registerDetection(mux *http.ServeMux, pool *pgxpool.Pool) {
 	}))
 	mux.HandleFunc("GET /api/v1/detection-rules/{id}", respond(func(r *http.Request) (any, int, error) {
 		result, err := store.Detail(r.Context(), auth.From(r.Context()).Tenant, r.PathValue("id"))
+		return result, 200, err
+	}))
+	mux.HandleFunc("GET /api/v1/detection-rules/{id}/metrics", respond(func(r *http.Request) (any, int, error) {
+		for key := range r.URL.Query() {
+			if key != "days" {
+				return nil, 0, invalid()
+			}
+		}
+		options, err := registryInput(r)
+		if err != nil {
+			return nil, 0, err
+		}
+		if options.Days == 0 {
+			options.Days = 30
+		}
+		options.Limit = 1
+		result, err := store.RegistryWindow(r.Context(), auth.From(r.Context()).Tenant, options, r.PathValue("id"))
 		return result, 200, err
 	}))
 	mux.HandleFunc("GET /api/v1/detection-rules/{id}/history", respond(func(r *http.Request) (any, int, error) {

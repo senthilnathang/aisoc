@@ -1,0 +1,7 @@
+import React from 'react';
+import { Box, Flex, Text } from '@chakra-ui/react';
+const colors={malicious:'#e85e65',suspicious:'#edae33',benign:'#9dbcae',mitigated:'#bed0d3',unknown:'#9987bf'};
+export default function RuleMetrics({ metrics, days }) {
+ const total=(metrics?.outcomes||[]).reduce((n,r)=>n+Number(r.count),0);
+ return <section className="rules-metrics" aria-label="Rule period metrics"><Text fontSize="11px" mb="8px">Last {days} days · UTC</Text><div className="rules-metric-grid">{[[metrics?.detections,'Detections'],[metrics?.investigations,'Investigations'],['—','FPR · Not assessed'],[metrics?.daily_average,'Daily average']].map(([value,label])=><div key={label}><strong>{value??'—'}</strong><span>{label}</span></div>)}</div><Text fontSize="11px" mt="16px" mb="8px">Investigation determinations</Text><div className="rules-outcome-bar" role="img" aria-label={total?`${total} distinct linked investigations`:'No linked investigations'}>{(metrics?.outcomes||[]).map(row=><div key={row.determination} title={`${row.determination}: ${row.count}`} style={{width:`${Number(row.count)/total*100}%`,background:colors[row.determination]||'#98a2ad'}} />)}</div><Flex gap="8px" wrap="wrap" mt="7px">{(metrics?.outcomes||[]).map(row=><Flex key={row.determination} align="center" gap="4px"><Box w="6px" h="6px" bg={colors[row.determination]||'#98a2ad'}/><Text fontSize="10px">{row.determination}: {row.count}</Text></Flex>)}{!total&&<Text fontSize="10px" color="gray.500">No linked cases in this period.</Text>}</Flex></section>;
+}
