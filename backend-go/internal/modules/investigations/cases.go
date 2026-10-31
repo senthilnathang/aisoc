@@ -1,6 +1,7 @@
 package investigations
 
 import (
+	"aisoc/backend/internal/modules/investigations/investigationsql"
 	"aisoc/backend/internal/modules/skills"
 	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
@@ -254,6 +255,9 @@ func contains(values []string, value string) bool {
 
 // Detail reads all related records from the same repeatable-read snapshot.
 func (s Store) Detail(ctx context.Context, tenant, id string) (*DetailRecord, error) {
+	return s.detail(ctx, tenant, id, false)
+}
+func (s Store) detail(ctx context.Context, tenant, id string, boundedAlerts bool) (*DetailRecord, error) {
 	tx, err := s.Pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -278,13 +282,35 @@ func (s Store) Detail(ctx context.Context, tenant, id string) (*DetailRecord, er
 	}
 	data.SkillApplications = applications
 	data.Remediations = remediations
-	alerts, jobs, err := AlertContext(ctx, tx, tenant, id)
+	var limit *int
+	if boundedAlerts {
+		n := 100
+		limit = &n
+	}
+	alerts, jobs, err := alertContextLimit(ctx, tx, tenant, id, limit)
 	if err != nil {
 		return nil, err
 	}
 	data.Alerts = alerts
 	data.Jobs = jobs
-	stepRecords, err := steps(ctx, tx, tenant, id)
+	var stepRecords []map[string]any
+	if boundedAlerts {
+		rows, e := investigationsql.New(tx).LookupSteps(ctx, investigationsql.LookupStepsParams{TenantID: tenant, InvestigationID: id})
+		err = e
+		stepRecords = []map[string]any{}
+		if e == nil {
+			for i := len(rows) - 1; i >= 0; i-- {
+				var item map[string]any
+				if err = json.Unmarshal(rows[i].Document, &item); err != nil {
+					break
+				}
+				item["id"] = rows[i].ID
+				stepRecords = append(stepRecords, item)
+			}
+		}
+	} else {
+		stepRecords, err = steps(ctx, tx, tenant, id)
+	}
 	if err != nil {
 		return nil, err
 	}

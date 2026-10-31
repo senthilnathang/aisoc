@@ -101,3 +101,7 @@ Shared HTTP scenarios and operator-driven browser checks are described in
 ### Detection Routing (2026-11-01)
 
 Detect → Routing uses `/detect/routing` (alias `/detect/detection-routing`) with universal/per-rule policies, audit and entity-list tabs. All persisted operations use Go APIs. See [Detection Routing](DETECTION_ROUTING.md).
+
+### Investigation workspace (2026-11-01)
+
+The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).

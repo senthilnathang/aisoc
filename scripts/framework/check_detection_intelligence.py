@@ -30,7 +30,7 @@ def main():
                  f'-h 127.0.0.1 -p {pgport} -k {temp}', '-w', 'start'], stdout=subprocess.DEVNULL)
             started = True
             run([PG/'createdb', 'aisoc_go_detection_test'])
-            run(['go', 'test', '-race', '-count=1', '-v', './internal/modules/detection', './internal/modules/routing', './internal/modules/intake', './internal/transport/httpapi'], cwd=ROOT/'backend-go')
+            run(['go', 'test', '-race', '-count=1', '-v', './internal/modules/detection', './internal/modules/routing', './internal/modules/investigations', './internal/modules/intake', './internal/transport/httpapi'], cwd=ROOT/'backend-go')
         finally:
             if started:
                 run([PG/'pg_ctl', '-D', temp/'pg', '-m', 'fast', '-w', 'stop'], stdout=subprocess.DEVNULL)

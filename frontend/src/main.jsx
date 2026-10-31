@@ -97,6 +97,8 @@ const Icon = {
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/investigate/investigations") pathname = "/investigations";
+  if (pathname.startsWith("/investigate/investigations/")) pathname = pathname.replace("/investigate/investigations/", "/investigations/");
   if (pathname === "/detect/detection-routing" || pathname === "/detect/detection-routing/") pathname = "/detect/routing";
   if (pathname === "/detect/detection-coverage" || pathname === "/detect/detection-coverage/") pathname = "/detect/coverage";
   if (pathname === "/detect/detection-rules/recommendations") pathname = "/detect/rules";

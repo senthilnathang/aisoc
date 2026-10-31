@@ -51,6 +51,7 @@ func buildWithStreams(ready func(context.Context) error, log *slog.Logger, secur
 		registerCoverage(mux, pool)
 		registerRuleRecommendations(mux, pool)
 		registerDetectionRouting(mux, pool)
+		registerInvestigationWorkspace(mux, pool)
 		registerThreatIntelligence(mux, pool)
 		registerHunts(mux, pool)
 		registerDashboard(mux, pool)

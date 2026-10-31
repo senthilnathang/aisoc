@@ -207,3 +207,7 @@ and content-hash conflict semantics; it is not a bulk overwrite operation.
 ### Detection Routing (2026-11-01)
 
 Migration 035 adds tenant routing configuration and short-lived preview receipt tables. Alert JSON stores routing decision provenance; existing audit stores atomic before/after snapshots. See [Detection Routing](DETECTION_ROUTING.md#architecture-and-contracts).
+
+### Investigation workspace (2026-11-01)
+
+The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).

@@ -34,7 +34,10 @@ func assertEditable(ctx context.Context, tx pgx.Tx, tenant, id string) error {
 	return nil
 }
 func AlertContext(ctx context.Context, tx pgx.Tx, tenant, id string) ([]map[string]any, []map[string]any, error) {
-	rows, err := tx.Query(ctx, `SELECT document FROM alerts WHERE tenant_id=$1 AND investigation_id=$2 ORDER BY created_at DESC,ordinal DESC`, tenant, id)
+	return alertContextLimit(ctx, tx, tenant, id, nil)
+}
+func alertContextLimit(ctx context.Context, tx pgx.Tx, tenant, id string, limit *int) ([]map[string]any, []map[string]any, error) {
+	rows, err := tx.Query(ctx, `SELECT document FROM alerts WHERE tenant_id=$1 AND investigation_id=$2 ORDER BY created_at DESC,ordinal DESC LIMIT $3`, tenant, id, limit)
 	if err != nil {
 		return nil, nil, err
 	}
