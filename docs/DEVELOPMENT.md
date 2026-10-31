@@ -224,11 +224,10 @@ calls and durable job completion/replay. See [test mapping](TESTING.md) and
 [ADR 004](adr/004-python-fastapi-grpc-service.md). These are fixture/local checks,
 not remote TLS validation, model-quality evaluation or a REST/gRPC speed comparison.
 
-For future improvements, first make Go dispatch concurrency bounded and tenant-aware;
-the current serial loop cannot consume all four Python slots. Replace the fixed
-five-second execution cap with validated workload budgets before real long-running
-inference. Remote hosts additionally need TLS/mTLS, service identity/rotation,
-observability and worker routing. Do not relax the loopback guard to deploy remotely.
+Bounded tenant-aware specialist dispatch and optional Go/Python mTLS are now
+implemented. See [configuration, migration and rollback](WORKER_DISPATCH_SECURITY.md).
+Production still needs certificate lifecycle automation, worker routing, operational
+monitoring and model-specific deadlines. Local defaults remain unchanged.
 
 ### PostgreSQL and Redis access
 
@@ -239,9 +238,11 @@ alone: rotation/revocation must serialize with the domain write. Header tenant I
 are assertions against authenticated credentials; only local demo mode allows a
 tenant selector. Repeated or comma-joined local selectors return HTTP 400.
 
-Use parameterized pgx in current code. The agreed direction is sqlc-generated
-PostgreSQL access, but no sqlc configuration/generated query package is installed
-yet. Introduce it incrementally while preserving existing immutable migrations,
+`platform/jobs` now uses sqlc v1.31.1 generated pgx/v5 queries. Edit SQL in
+`backend-go/internal/platform/jobs/queries`, run `make sqlc` from `backend-go`, and
+commit generated files together. Install with `python3 scripts/framework/install_sqlc.py`
+from the repo root; `make sqlc-check` detects drift. Continue incrementally while
+preserving existing immutable migrations,
 tenant filters, transaction boundaries and specialized query behavior. Keep go-redis
 for caching and Streams. Compose them behind domain-specific methods where useful;
 do not hide stream ACK, cache expiry or database commit behind a generic save method.

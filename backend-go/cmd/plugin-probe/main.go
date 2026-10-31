@@ -35,7 +35,11 @@ func run() error {
 		if sample.address == "" {
 			continue
 		}
-		client, err := plugins.New(sample.address, c.WorkerToken)
+		tlsConfig := config.WorkerTLS{}
+		if sample.plugin == "python.normalize" {
+			tlsConfig = c.PythonTLS
+		}
+		client, err := plugins.NewWithTLS(sample.address, c.WorkerToken, tlsConfig)
 		if err != nil {
 			return err
 		}
@@ -54,7 +58,7 @@ func run() error {
 		if string(result) != sample.expected {
 			return fmt.Errorf("unexpected result from %s", sample.plugin)
 		}
-		bad, err := plugins.New(sample.address, "incorrect-token-00000000000000000000")
+		bad, err := plugins.NewWithTLS(sample.address, "incorrect-token-00000000000000000000", tlsConfig)
 		if err != nil {
 			return err
 		}
@@ -66,7 +70,7 @@ func run() error {
 		fmt.Println("PASS", sample.plugin, "result and credential rejection")
 	}
 	if c.PythonAddress != "" {
-		client, err := plugins.New(c.PythonAddress, c.WorkerToken)
+		client, err := plugins.NewWithTLS(c.PythonAddress, c.WorkerToken, c.PythonTLS)
 		if err != nil {
 			return err
 		}
@@ -79,7 +83,7 @@ func run() error {
 		if result.Verdict != "INCONCLUSIVE" || !result.RequiresHumanReview {
 			return fmt.Errorf("unsafe mock result")
 		}
-		bad, err := plugins.New(c.PythonAddress, "incorrect-token-00000000000000000000")
+		bad, err := plugins.NewWithTLS(c.PythonAddress, "incorrect-token-00000000000000000000", c.PythonTLS)
 		if err != nil {
 			return err
 		}

@@ -6,6 +6,11 @@ notifications, live identity revocation or paid model invocation is enabled.
 The main development frontend binds to `127.0.0.1:8080`; public hosting requires
 the separate authenticated HTTPS deployment configuration.
 
+Migration 031 adds tenant-fair specialist dispatch state and its concurrency-safe
+backfill. Optional Go/Python mTLS and sqlc job queries are locally validated; see
+[configuration and rollback](WORKER_DISPATCH_SECURITY.md). Production PKI, remote
+hosting and live response activation remain outside scope.
+
 Migration 030 adds derived hot-payload/identity counters with transactional insert,
 update, delete and rollback accounting. It preserves existing rows and all source
 receipts. Workers now use bounded batches of up to 500; Redis capacity limits, fenced

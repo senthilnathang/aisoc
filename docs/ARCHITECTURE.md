@@ -86,7 +86,7 @@ sequenceDiagram
 | Safeguard | Implemented behavior |
 |---|---|
 | Service authentication | Bearer metadata; Go replaces caller-supplied authorization. Python uses constant-time comparison and rejects duplicate credentials |
-| Transport security | Literal loopback only, plaintext gRPC. TLS/mTLS and remote service identity are not implemented |
+| Transport security | Plaintext only on literal loopback; optional Go/Python mTLS with CA/SAN verification and client identity allowlist |
 | Execution time | Go caps execution at five seconds; an earlier task/caller deadline wins. Normalization subprocesses have a separate three-second bound |
 | Payload limits | Generic input/output: 65,536 bytes; wire messages: 70,000 bytes. Investigation tasks/results are further bounded to 16 KiB and at most 16 evidence items |
 | Admission | Python admits at most four concurrent RPCs, including health; overload is rejected |
@@ -94,10 +94,11 @@ sequenceDiagram
 | Recovery | PostgreSQL owns application retries. No automatic execution retry policy is configured at the RPC layer |
 | Health/lifecycle | Authenticated unary standard health, HTTP readiness, graceful shutdown and reconnect tests. Core API readiness does not depend on optional workers |
 
-The current [Go dispatcher](../backend-go/cmd/worker/main.go) executes one claimed
-job at a time per process. Python's four RPC slots therefore do not imply four
-parallel investigations in this launcher. Channels are retained by plugin clients;
-channel reuse does not provide application-level dispatch concurrency.
+The [Go dispatcher](../backend-go/cmd/worker/main.go) defaults to two bounded
+execution slots and one running lease per tenant. PostgreSQL tenant-row locks and
+last-dispatch timestamps provide equal-turn selection across eligible tenants.
+Channels are retained; jobs are claimed only when an execution slot is available.
+See [dispatch and transport details](WORKER_DISPATCH_SECURITY.md).
 
 gRPC supplies shared generated contracts and explicit deadlines/statuses for internal
 workers. REST remains the frontend and vendor-integration boundary. No equivalent
@@ -106,8 +107,8 @@ PostgreSQL commit/storage bottlenecks or confer stronger security by itself.
 Read [developer implementation guidance](DEVELOPMENT.md#working-with-grpc-workers)
 for code locations and verification.
 
-Before distributed or real-model production use, address bounded dispatcher
-concurrency, workload-specific deadlines, TLS/mTLS and credential rotation,
+Before distributed or real-model production use, address workload-specific deadlines,
+automated certificate/credential rotation,
 per-RPC metrics/tracing, multi-worker routing and contract compatibility policy.
 The investigation validators reject unknown fields, so additive Protobuf changes
 must not be assumed compatible without coordinated validation tests. Cancellation
@@ -116,7 +117,7 @@ underlying model HTTP request. Demo inference remains explicitly mocked.
 
 ## Persistence and concurrency
 
-The local foundation runs migrations through 030 (48 tables), including durable
+The local foundation supports migrations through 031 (49 tables), including durable
 source checkpoints, retained envelopes, outbox/inbox, retries/DLQ, investigation
 state, archive references and transactional payload-budget counters. Redis buffers
 delivery; PostgreSQL commits effects before ACK. Publication receipts use bounded
@@ -131,12 +132,12 @@ indexes. Mutations and audits commit together. Row locks serialize conflicting
 case/response/Skills updates; multi-query projections use repeatable-read snapshots
 where required. See the [physical and logical data model](DATA_MODEL.md).
 
-The agreed next data-access standard is **sqlc + pgx for PostgreSQL**, but sqlc
-generation has not yet been introduced: current stores use handwritten parameterized
-pgx queries. Redis continues to use go-redis; sqlc does not generate Redis operations.
+The first **sqlc + pgx for PostgreSQL** repository is `platform/jobs`: queries are
+generated from versioned SQL and actual migrations. Remaining stores retain
+parameterized pgx queries for incremental migration. Redis continues to use go-redis; sqlc does not generate Redis operations.
 Domain methods may compose cache and database adapters while keeping their distinct
 transaction, expiry and ACK semantics explicit. The PostgreSQL outbox remains the
-coordination boundary; adopting sqlc will not create a cross-store transaction.
+coordination boundary; sqlc does not create a cross-store transaction.
 
 Investigation create/patch batch ordered SQL commands within their transactions.
 Audit failure still rolls back prior commands. Typed detail responses avoid an
@@ -174,7 +175,8 @@ immediate interruption of every underlying operation.
 - Connector secrets use tenant/record-bound authenticated encryption. Recovery
   needs the private key as well as the database dump.
 - RPC uses a credential on literal loopback, a five-second deadline and 64 KiB
-  input/output limits. Remote worker deployment requires a separate TLS design.
+  input/output limits. Optional Python mTLS is locally validated; production PKI
+  and remote deployment remain separate operational work.
 - Rust provides hashing and embedded Wasmi with fuel, one-page memory and no host imports.
 - Python runs trusted allowlisted code in a limited child process, not arbitrary uploaded code.
 - Python includes an independent FastAPI/gRPC service in the development

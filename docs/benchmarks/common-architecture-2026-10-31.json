@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-31",
+  "scope": "local common architecture; no production activation or RisingWave",
+  "correctness": {
+    "passed": true,
+    "checks": [
+      "Go race tests and vet",
+      "PostgreSQL migration and readiness",
+      "response library HTTP parity and restart persistence",
+      "manual cases and runbook HTTP parity, concurrency and restart persistence",
+      "source intake, mapping, metrics and credential transaction checks",
+      "three-phase investigation worker HTTP parity, explicit retry, concurrent workers and SIGKILL rollback/recovery",
+      "operator/session/CSRF and tenant HTTP parity including case runbooks",
+      "response and case audit failure rollback, foreign keys and cascade",
+      "transaction rollback, concurrent claim, lease recovery, stale/cross-tenant/cancelled result rejection",
+      "Python and Rust unit tests",
+      "Go to Python/Rust RPC outputs and bad credential rejection",
+      "durable Go jobs dispatch to both workers",
+      "core readiness independent of optional workers",
+      "Skills authoring/material revisions, matching, suggestions, applications, feedback and outcomes",
+      "all 11 shared functional scenarios",
+      "bounded WASM transformation and Python subprocess cleanup",
+      "HTTP error/latency, pool and queue metrics",
+      "FastAPI lifecycle with authenticated standard gRPC readiness and Go-to-Python execution",
+      "Authenticated scoped JSON import, Redis delivery, typed Python investigation, Go QA, mock SOAR notes, replay idempotency and real stream-worker SIGKILL/restart",
+      "Redis ACLs, stream delivery/ACK/reclaim/gap reporting and PostgreSQL outbox/inbox duplicate-effect prevention",
+      "Durable consumer retries and DLQ, DLQ outage without ACK, bounded atomic publish/OOM backpressure, stalled TCP recovery, missing-stream replay, poison isolation and stale consumer fencing"
+    ],
+    "active_backend_modified": false
+  },
+  "performance": {
+    "passed": false,
+    "capacity_verified": false,
+    "caveats": [
+      "Shared host and 99% full filesystem; no controlled dedicated storage.",
+      "Migration regression tests overlapped run 2. These measurements are diagnostic, not a production capacity certification.",
+      "Migration trigger/backfill ordering fixed before local foundation upgrade. Telemetry hot path and durability settings unchanged."
+    ],
+    "runs": [
+      {
+        "run": 1,
+        "accepted": 60000,
+        "completed": 60000,
+        "correctness_passed": true,
+        "commit_ack_eps": 1102.646327160359,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 818.246,
+          "p95": 15742.032,
+          "p99": 16678.229
+        },
+        "max_producer_schedule_lag_ms": 13269.617,
+        "postgres_snapshot_including_one_setup_event": {
+          "accepted": 60001,
+          "completed": 60001,
+          "dead_without_disposition": 0,
+          "pending": 0,
+          "oldest_pending_seconds": 0,
+          "publication_failed": 0,
+          "historical_gap_observations": 0,
+          "dead_letters": 0,
+          "archived": 0
+        }
+      },
+      {
+        "run": 2,
+        "accepted": 60000,
+        "completed": 60000,
+        "correctness_passed": true,
+        "commit_ack_eps": 1102.677909363033,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 304.254,
+          "p95": 1988.803,
+          "p99": 2367.366
+        },
+        "max_producer_schedule_lag_ms": 1214.75,
+        "postgres_snapshot_including_one_setup_event": {
+          "accepted": 60001,
+          "completed": 60001,
+          "dead_without_disposition": 0,
+          "pending": 0,
+          "oldest_pending_seconds": 0,
+          "publication_failed": 0,
+          "historical_gap_observations": 0,
+          "dead_letters": 0,
+          "archived": 0
+        }
+      },
+      {
+        "run": 3,
+        "accepted": 60000,
+        "completed": 60000,
+        "correctness_passed": true,
+        "commit_ack_eps": 1002.8777551443338,
+        "scheduled_start_to_committed_ack_ms": {
+          "p50": 7184.662,
+          "p95": 13121.18,
+          "p99": 13814.468
+        },
+        "max_producer_schedule_lag_ms": 8533.343,
+        "postgres_snapshot_including_one_setup_event": {
+          "accepted": 60001,
+          "completed": 60001,
+          "dead_without_disposition": 0,
+          "pending": 0,
+          "oldest_pending_seconds": 0,
+          "publication_failed": 0,
+          "historical_gap_observations": 0,
+          "dead_letters": 0,
+          "archived": 0
+        }
+      }
+    ],
+    "gate": {
+      "passed": false,
+      "average_throughput_passed": true,
+      "scope": "local synthetic durable transport only; average throughput does not imply stable latency or production capacity",
+      "runs": 3,
+      "failures": [
+        "run 1: producer fell more than 1 second behind",
+        "run 1: scheduled-to-ACK p95 exceeds 2 seconds",
+        "run 2: producer fell more than 1 second behind",
+        "run 3: producer fell more than 1 second behind",
+        "run 3: scheduled-to-ACK p95 exceeds 2 seconds"
+      ]
+    }
+  },
+  "local_demo_verification": {
+    "accepted": 70000,
+    "completed": 70000,
+    "pending": 0,
+    "showcase_investigations": 10,
+    "frontend_build_operations_http_status": 200,
+    "go_ready": true
+  }
+}

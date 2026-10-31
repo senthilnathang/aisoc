@@ -1,0 +1,17 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/platform/jobs/queries
+    gen:
+      go:
+        package: jobsql
+        out: internal/platform/jobs/jobsql
+        sql_package: pgx/v5
+        omit_unused_structs: true
+        overrides:
+          - db_type: uuid
+            go_type: string
+          - db_type: uuid
+            nullable: true
+            go_type: string

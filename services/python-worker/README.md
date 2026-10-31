@@ -54,7 +54,8 @@ services/python-worker/.venv/bin/python services/python-worker/worker.py
 | `AISOC_PYTHON_HTTP_ADDR` | `127.0.0.1:8001` | FastAPI listener |
 | `AISOC_WORKER_TOKEN` | Required | Matching private service credential in Go/Python |
 
-Both listeners require literal loopback and different addresses. This supports
+By default both listeners require literal loopback and different addresses.
+Optional mTLS permits a specific non-loopback gRPC bind; HTTP stays local. This supports
 same-host or shared-network-namespace sidecars. Remote plaintext RPC is rejected.
 Use this entry point: extra Uvicorn workers/reload would compete for the gRPC port.
 
@@ -81,11 +82,10 @@ failure alone should not trigger a process restart.
 
 The three-second child limit applies to normalization, not model inference. Typed
 investigations use their task deadline and tighter 16 KiB/16-evidence-item bounds.
-The current Go dispatcher executes one job at a time per process, so the four
-server slots are capacity limits rather than a promise of parallel investigations.
-Transport is bearer-authenticated plaintext on literal loopback; TLS/mTLS and remote
-service identity are not implemented. See the [architecture boundary](../../docs/ARCHITECTURE.md#rest-grpc-and-asynchronous-work)
-and [developer workflow](../../docs/DEVELOPMENT.md#working-with-grpc-workers).
+The Go dispatcher defaults to two execution slots and one running lease per tenant.
+Transport defaults to bearer-authenticated plaintext on literal loopback. Optional
+mTLS additionally verifies CA and peer SAN identity while retaining bearer checks.
+See [TLS settings, certificate lifecycle and tests](../../docs/WORKER_DISPATCH_SECURITY.md).
 
 S07 adds a separate typed `Investigator/Investigate` RPC on the same listener,
 with authenticated named health and capabilities discovery. The default `mock-v1`

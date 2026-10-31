@@ -1,8 +1,7 @@
 # Data Model
 
-PostgreSQL is the active datastore; current foundation schema status is 2026-10-30. The authoritative physical
-schema is in `backend-go/migrations/` (30 migrations, 48 tables including the new
-streaming state). Foundation startup applies all source migrations. The separate release remains
+PostgreSQL is the active datastore; current foundation schema status is 2026-10-31. The authoritative physical
+schema is in `backend-go/migrations/` (31 migrations, 49 tables including streaming and specialist dispatcher state). Foundation startup applies all source migrations. The separate release remains
 on migration 019 with 28 tables. The entity catalog
 below retains legacy JSON-column names to explain the preserved HTTP/recovery
 contract. Go uses typed columns and JSONB documents, composite tenant keys and
@@ -14,6 +13,13 @@ Operational records are tenant-scoped. Mutable resource tables generally carry
 `created_at` and `updated_at`; immutable version/application snapshots use their
 creation timestamp only. Operator credentials are file-backed and browser
 sessions are held in backend memory, not in the domain database.
+
+## Specialist dispatcher state
+
+Migration 031 adds `job_dispatch_tenants(tenant_id, last_claimed_at)`, backfills old
+jobs after installing a write-fencing trigger, and indexes running job leases by
+tenant. This coordinates fair claims and per-tenant limits across Go processes;
+job state/effects remain in `jobs`. See [dispatch details](WORKER_DISPATCH_SECURITY.md).
 
 ## Entities
 

@@ -1,5 +1,14 @@
 # Local 1,000 EPS verification
 
+Common-architecture follow-up (2026-10-31): three more 60k diagnostic probes completed
+all events at 1,102.65 / 1,102.68 / 1,002.88 committed-ACK EPS. Scheduled-to-ACK p95
+was 15.74 / 1.99 / 13.12 seconds; producer lag 13.27 / 1.21 / 8.53 seconds. The strict
+gate still **fails**. Run 2 overlapped a small migration regression test, and the
+host remains shared with a 99%-full filesystem; this is not isolated capacity
+certification. No thresholds or durability settings were relaxed. See
+[validation evidence](benchmarks/common-architecture-2026-10-31.json).
+
+
 Date: 2026-10-30. This measures synthetic normalized telemetry through durable
 PostgreSQL admission/outbox, Redis delivery, Go processing/inbox and ACK. It does
 not measure HTTP ingress, Rust correlation, finding latency, Python/LLM reasoning,

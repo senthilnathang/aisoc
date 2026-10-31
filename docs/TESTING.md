@@ -380,3 +380,8 @@ was tested by killing an owned stream worker. Backup encryption passed an epheme
 key decrypt/compare test and rejected a changed input; this is not off-host restore
 verification. See [current limits](NEXT_DELIVERY_TASKS.md) and
 [measurements](STREAM_PERFORMANCE_REPORT.md).
+
+Common architecture checks: `python3 scripts/framework/check_jobs.py` runs real isolated
+PostgreSQL fairness/lease tests; `make sqlc-check` in `backend-go` verifies generated
+queries. The full framework suite also probes real Go/Python execution over mTLS.
+See [test boundaries](WORKER_DISPATCH_SECURITY.md#verification).

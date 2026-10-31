@@ -2,6 +2,7 @@ package jobs
 
 import (
 	pb "aisoc/backend/internal/gen/worker/v1"
+	"aisoc/backend/internal/platform/jobs/jobsql"
 	"context"
 	"crypto/rand"
 	"errors"
@@ -11,8 +12,9 @@ import (
 )
 
 type Store struct {
-	Pool    *pgxpool.Pool
-	Plugins []string
+	Pool        *pgxpool.Pool
+	Plugins     []string
+	TenantLimit int32
 }
 
 var ErrStale = errors.New("job attempt no longer owns a valid lease")
@@ -29,57 +31,66 @@ func ID() string {
 
 // Enqueue uses the caller's domain transaction: it cannot commit business work separately.
 func Enqueue(ctx context.Context, tx pgx.Tx, tenant, id, plugin string, input []byte) error {
-	_, err := tx.Exec(ctx, `INSERT INTO jobs(tenant_id,id,plugin_id,plugin_version,input) VALUES($1,$2,$3,'1',$4)`, tenant, id, plugin, input)
-	return err
+	return jobsql.New(tx).Enqueue(ctx, jobsql.EnqueueParams{TenantID: tenant, ID: id, PluginID: plugin, Input: input})
 }
+
+// Claim serializes admission per tenant, not execution. All dispatchers must use
+// the same tenant limit. Leases and fair-turn state commit atomically.
 func (s Store) Claim(ctx context.Context) (*pb.ExecuteRequest, error) {
-	// Exhausted crashed attempts must not remain running forever.
-	if _, err := s.Pool.Exec(ctx, `UPDATE jobs SET state='failed',error_code='ATTEMPTS_EXHAUSTED',lease_until=NULL,updated_at=now() WHERE state='running' AND lease_until<now() AND attempts>=max_attempts`); err != nil {
+	limit := s.TenantLimit
+	if limit == 0 {
+		limit = 1
+	}
+	if limit < 1 || limit > 4 {
+		return nil, errors.New("tenant limit must be 1..4")
+	}
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
 		return nil, err
 	}
-	r := &pb.ExecuteRequest{AttemptId: ID()}
-	err := s.Pool.QueryRow(ctx, `WITH candidate AS (
- SELECT tenant_id,id FROM jobs WHERE plugin_id=ANY($2::text[]) AND attempts<max_attempts AND
- ((state='queued' AND available_at<=now()) OR (state='running' AND lease_until<now()))
- ORDER BY available_at,created_at,id FOR UPDATE SKIP LOCKED LIMIT 1)
- UPDATE jobs j SET state='running',attempt_id=$1,attempts=attempts+1,lease_until=now()+interval '30 seconds',updated_at=now()
- FROM candidate c WHERE j.tenant_id=c.tenant_id AND j.id=c.id
- RETURNING j.tenant_id,j.id::text,j.plugin_id,j.plugin_version,j.input`, r.AttemptId, s.Plugins).Scan(&r.TenantId, &r.JobId, &r.PluginId, &r.PluginVersion, &r.Input)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+	defer tx.Rollback(ctx)
+	q := jobsql.New(tx)
+	if err := q.ExpireAttempts(ctx, s.Plugins); err != nil {
+		return nil, err
 	}
-	return r, err
+	tenant, err := q.ClaimTenant(ctx, jobsql.ClaimTenantParams{Plugins: s.Plugins, TenantLimit: limit})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, tx.Commit(ctx)
+	}
+	if err != nil {
+		return nil, err
+	}
+	attempt := ID()
+	row, err := q.Claim(ctx, jobsql.ClaimParams{AttemptID: attempt, Plugins: s.Plugins, TenantID: tenant, TenantLimit: limit})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, tx.Commit(ctx)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err = q.MarkTenantClaimed(ctx, tenant); err != nil {
+		return nil, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return &pb.ExecuteRequest{TenantId: row.TenantID, JobId: row.JobID, AttemptId: attempt, PluginId: row.PluginID, PluginVersion: row.PluginVersion, Input: row.Input}, nil
+}
+func affected(n int64, err error) error {
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return ErrStale
+	}
+	return nil
 }
 func (s Store) Complete(ctx context.Context, r *pb.ExecuteRequest, output []byte) error {
-	tag, err := s.Pool.Exec(ctx, `UPDATE jobs SET state='completed',output=$4,error_code=NULL,lease_until=NULL,updated_at=now()
- WHERE tenant_id=$1 AND id=$2 AND attempt_id=$3 AND state='running' AND lease_until>now()`, r.TenantId, r.JobId, r.AttemptId, output)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() != 1 {
-		return ErrStale
-	}
-	return nil
+	return affected(jobsql.New(s.Pool).Complete(ctx, jobsql.CompleteParams{TenantID: r.TenantId, ID: r.JobId, AttemptID: r.AttemptId, Output: output}))
 }
 func (s Store) Retry(ctx context.Context, r *pb.ExecuteRequest) error {
-	tag, err := s.Pool.Exec(ctx, `UPDATE jobs SET state=CASE WHEN attempts>=max_attempts THEN 'failed' ELSE 'queued' END,
- error_code='PLUGIN_EXECUTION_FAILED',lease_until=NULL,available_at=now()+interval '2 seconds'*attempts,updated_at=now()
- WHERE tenant_id=$1 AND id=$2 AND attempt_id=$3 AND state='running' AND lease_until>now()`, r.TenantId, r.JobId, r.AttemptId)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() != 1 {
-		return ErrStale
-	}
-	return nil
+	return affected(jobsql.New(s.Pool).Retry(ctx, jobsql.RetryParams{TenantID: r.TenantId, ID: r.JobId, AttemptID: r.AttemptId}))
 }
 func (s Store) Cancel(ctx context.Context, tenant, id string) error {
-	tag, err := s.Pool.Exec(ctx, `UPDATE jobs SET state='cancelled',lease_until=NULL,updated_at=now() WHERE tenant_id=$1 AND id=$2 AND state IN ('queued','running')`, tenant, id)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() != 1 {
-		return ErrStale
-	}
-	return nil
+	return affected(jobsql.New(s.Pool).Cancel(ctx, jobsql.CancelParams{TenantID: tenant, ID: id}))
 }

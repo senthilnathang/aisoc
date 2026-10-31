@@ -109,3 +109,104 @@ func TestPostgresTransactionsLeasesAndIsolation(t *testing.T) {
 		t.Fatal("cancelled result committed")
 	}
 }
+
+func TestTenantFairClaimsAndConcurrencyCap(t *testing.T) {
+	url := os.Getenv("AISOC_GO_TEST_DATABASE_URL")
+	if url == "" {
+		t.Skip("isolated PostgreSQL URL required")
+	}
+	ctx := context.Background()
+	pool, err := database.Open(ctx, url, 12)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	if err = database.Migrate(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	hot, small := "hot-"+ID(), "small-"+ID()
+	for _, tenant := range []string{hot, small} {
+		if _, err = pool.Exec(ctx, `INSERT INTO tenants(id) VALUES($1)`, tenant); err != nil {
+			t.Fatal(err)
+		}
+		defer pool.Exec(ctx, `DELETE FROM tenants WHERE id=$1`, tenant)
+		defer pool.Exec(ctx, `DELETE FROM jobs WHERE tenant_id=$1`, tenant)
+	}
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	for i := 0; i < 12; i++ {
+		if err = Enqueue(ctx, tx, hot, ID(), "rust.sha256", []byte("hot")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err = Enqueue(ctx, tx, small, ID(), "rust.sha256", []byte("small")); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = pool.Exec(ctx, `UPDATE jobs SET available_at=now()-interval '1 hour',created_at=now()-interval '1 hour' WHERE tenant_id=$1`, hot); err != nil {
+		t.Fatal(err)
+	}
+	store := Store{Pool: pool, Plugins: []string{"rust.sha256"}}
+	first, err := store.Claim(ctx)
+	if err != nil || first == nil {
+		t.Fatal("first claim", err)
+	}
+	if err = store.Complete(ctx, first, []byte("ok")); err != nil {
+		t.Fatal(err)
+	}
+	second, err := store.Claim(ctx)
+	if err != nil || second == nil {
+		t.Fatal("second claim", err)
+	}
+	if second.TenantId == first.TenantId {
+		t.Fatal("busy tenant starved other eligible tenant")
+	}
+	if err = store.Complete(ctx, second, []byte("ok")); err != nil {
+		t.Fatal(err)
+	}
+	// Only hot tenant has work left. Concurrent dispatchers must share the cap.
+	var wg sync.WaitGroup
+	results := make(chan *pb.ExecuteRequest, 8)
+	errs := make(chan error, 8)
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r, e := store.Claim(ctx)
+			if e != nil {
+				errs <- e
+			}
+			if r != nil {
+				results <- r
+			}
+		}()
+	}
+	wg.Wait()
+	close(results)
+	close(errs)
+	for e := range errs {
+		t.Fatal(e)
+	}
+	if len(results) != 1 {
+		t.Fatalf("tenant cap violated: %d concurrent claims", len(results))
+	}
+	running := <-results
+	if err = store.Retry(ctx, running); err != nil {
+		t.Fatal(err)
+	}
+	next, err := store.Claim(ctx)
+	if err != nil || next == nil {
+		t.Fatal("retry did not release capacity", err)
+	}
+	if err = store.Cancel(ctx, next.TenantId, next.JobId); err != nil {
+		t.Fatal(err)
+	}
+	if err = store.Complete(ctx, next, []byte("late")); err != ErrStale {
+		t.Fatal("cancelled attempt accepted", err)
+	}
+}

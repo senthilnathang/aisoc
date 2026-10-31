@@ -151,6 +151,7 @@ def main():
                 run(['go','build','-o','bin/'+name,'./cmd/'+name], ROOT/'backend-go')
             run(['cargo','test','--locked','--manifest-path','services/wasm-worker/Cargo.toml'])
             run(['cargo','build','--locked','--manifest-path','services/wasm-worker/Cargo.toml'])
+            env['AISOC_TLS_GO_PROBE']=str(ROOT/'backend-go/bin/plugin-probe')
             python=ROOT/'services/python-worker/.venv/bin/python'
             run([python,'-m','unittest','-v'],ROOT/'services/python-worker')
             api=spawn([ROOT/'backend-go/bin/api']);wait_port(apiport)

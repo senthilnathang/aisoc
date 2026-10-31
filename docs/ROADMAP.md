@@ -56,12 +56,14 @@ Remote deployment and vendor/model validation remain outside the selected local 
 
 - [x] Verify existing source-key/tenant boundary and reject ambiguous local tenant
   selectors. Preserve the transaction-level credential recheck and existing intake.
-- [ ] Introduce sqlc incrementally for a bounded PostgreSQL repository, preserving
-  transaction ownership and tenant predicates; generated access is not yet installed.
-- [ ] Add bounded tenant-fair worker dispatch with starvation/concurrency tests.
+- [x] Introduce sqlc for the specialist job repository, preserving transaction
+  ownership, tenant predicates and lease fencing. Other repositories remain incremental work.
+- [x] Add bounded tenant-fair specialist worker dispatch with starvation/concurrency tests.
   PostgreSQL remains authoritative for durable job state.
-- [ ] Define remote worker identity/TLS and connector credential lifecycle before
-  enabling remote deployments. Existing loopback gRPC remains the local path.
+- [x] Add optional Go/Python mTLS and peer identity checks, validated locally.
+  Existing source key rotation/revocation remains transactional.
+- [ ] Automate production PKI/secret rotation and remote deployment. Local-only
+  authorization remains in effect.
 - [ ] Re-run the strict performance gate on controlled storage; stable 1,000 EPS
   remains unverified. No new throughput claim follows from authentication changes.
 

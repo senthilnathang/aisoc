@@ -20,3 +20,13 @@ worker:
 	go run ./cmd/worker
 probe:
 	go run ./cmd/plugin-probe
+
+# Install the pinned release as described in DEVELOPMENT.md; no runtime dependency.
+SQLC ?= .tools/sqlc
+.PHONY: sqlc sqlc-check
+sqlc:
+	@test "$$($(SQLC) version)" = "v1.31.1"
+	$(SQLC) generate
+sqlc-check:
+	@test "$$($(SQLC) version)" = "v1.31.1"
+	$(SQLC) diff

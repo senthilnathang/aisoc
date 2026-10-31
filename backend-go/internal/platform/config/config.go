@@ -9,6 +9,9 @@ import (
 )
 
 type Config struct {
+	PythonTLS                                                     WorkerTLS
+	WorkerConcurrency                                             int
+	TenantWorkerLimit                                             int32
 	ConnectorKey                                                  []byte
 	Auth                                                          Auth
 	Address, DatabaseURL, PythonAddress, RustAddress, WorkerToken string
@@ -39,14 +42,34 @@ func Load() (Config, error) {
 		return c, errors.New("AISOC_GO_POOL_SIZE must be 1..64")
 	}
 	c.PoolSize = int32(n)
+	c.WorkerConcurrency, err = strconv.Atoi(value("AISOC_GO_WORKER_CONCURRENCY", "2"))
+	if err != nil || c.WorkerConcurrency < 1 || c.WorkerConcurrency > 4 {
+		return c, errors.New("worker concurrency must be 1..4")
+	}
+	tenantLimit, err := strconv.Atoi(value("AISOC_GO_TENANT_WORKER_LIMIT", "1"))
+	if err != nil || tenantLimit < 1 || tenantLimit > 4 {
+		return c, errors.New("tenant worker limit must be 1..4")
+	}
+	c.TenantWorkerLimit = int32(tenantLimit)
+
 	c.Auth, err = loadAuth()
 	if err != nil {
 		return c, err
 	}
-	for _, address := range []string{c.PythonAddress, c.RustAddress} {
+	c.PythonTLS = WorkerTLS{CAFile: os.Getenv("AISOC_PYTHON_TLS_CA_FILE"), CertFile: os.Getenv("AISOC_GO_WORKER_TLS_CERT_FILE"), KeyFile: os.Getenv("AISOC_GO_WORKER_TLS_KEY_FILE"), ServerName: os.Getenv("AISOC_PYTHON_TLS_SERVER_NAME")}
+	if c.PythonTLS.Enabled() && c.PythonAddress == "" {
+		return c, errors.New("TLS requires a Python worker address")
+	}
+	for i, address := range []string{c.PythonAddress, c.RustAddress} {
 		if address != "" {
-			if err := Loopback(address); err != nil {
-				return c, err
+			var addressErr error
+			if i == 0 {
+				addressErr = c.PythonTLS.Validate(address)
+			} else {
+				addressErr = Loopback(address)
+			}
+			if addressErr != nil {
+				return c, addressErr
 			}
 			if len(c.WorkerToken) < 32 {
 				return c, errors.New("AISOC_WORKER_TOKEN must contain at least 32 characters when workers are configured")
@@ -57,7 +80,7 @@ func Load() (Config, error) {
 }
 
 // Plaintext RPC is confined to literal loopback during framework development.
-// Remote deployment requires a later authenticated TLS transport configuration.
+// Python may opt into mTLS separately; other plaintext listeners stay local.
 func Loopback(address string) error {
 	host, port, err := net.SplitHostPort(address)
 	ip := net.ParseIP(host)

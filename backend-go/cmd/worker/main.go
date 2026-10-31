@@ -1,16 +1,17 @@
 package main
 
 import (
+	pb "aisoc/backend/internal/gen/worker/v1"
 	"aisoc/backend/internal/platform/config"
 	"aisoc/backend/internal/platform/database"
 	"aisoc/backend/internal/platform/jobs"
 	"aisoc/backend/internal/platform/plugins"
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -40,7 +41,11 @@ func run() error {
 		if address == "" {
 			continue
 		}
-		client, err := plugins.New(address, c.WorkerToken)
+		tlsConfig := config.WorkerTLS{}
+		if name == "python.normalize" || name == "python.investigate_mock" {
+			tlsConfig = c.PythonTLS
+		}
+		client, err := plugins.NewWithTLS(address, c.WorkerToken, tlsConfig)
 		if err != nil {
 			return err
 		}
@@ -51,36 +56,12 @@ func run() error {
 	for name := range clients {
 		allowed = append(allowed, name)
 	}
-	store := jobs.Store{Pool: pool, Plugins: allowed}
-	ticker := time.NewTicker(250 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			request, err := store.Claim(ctx)
-			if err != nil {
-				slog.Error("job claim failed")
-				continue
-			}
-			if request == nil {
-				continue
-			}
-			client := clients[request.PluginId]
-			if client == nil {
-				_ = store.Retry(ctx, request)
-				continue
-			}
-			result, err := client.Execute(ctx, request)
-			if err != nil {
-				_ = store.Retry(ctx, request)
-				slog.Warn("plugin execution failed", "job_id", request.JobId)
-				continue
-			}
-			if err = store.Complete(ctx, request, result); err != nil {
-				slog.Warn("job result not committed", "job_id", request.JobId)
-			}
+	store := jobs.Store{Pool: pool, Plugins: allowed, TenantLimit: c.TenantWorkerLimit}
+	return jobs.Dispatch(ctx, store, func(ctx context.Context, request *pb.ExecuteRequest) ([]byte, error) {
+		client := clients[request.PluginId]
+		if client == nil {
+			return nil, errors.New("plugin unavailable")
 		}
-	}
+		return client.Execute(ctx, request)
+	}, c.WorkerConcurrency, func(error) { slog.Warn("job dispatch or execution failed; lease recovery remains available") })
 }

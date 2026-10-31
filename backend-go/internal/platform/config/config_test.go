@@ -39,3 +39,28 @@ func TestReleaseCanRetainLegacyAPIPort(t *testing.T) {
 		t.Fatal("release accepted frontend port")
 	}
 }
+
+func TestWorkerConcurrencyBounds(t *testing.T) {
+	t.Setenv("AISOC_GO_DATABASE_URL", "postgres://localhost/aisoc_go_test")
+	t.Setenv("AISOC_GO_ADDR", "127.0.0.1:3003")
+	t.Setenv("AISOC_PYTHON_ADDR", "")
+	t.Setenv("AISOC_RUST_ADDR", "")
+	t.Setenv("AISOC_GO_WORKER_CONCURRENCY", "2")
+	t.Setenv("AISOC_GO_TENANT_WORKER_LIMIT", "1")
+	c, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.WorkerConcurrency != 2 || c.TenantWorkerLimit != 1 {
+		t.Fatal("incorrect concurrency")
+	}
+	for _, key := range []string{"AISOC_GO_WORKER_CONCURRENCY", "AISOC_GO_TENANT_WORKER_LIMIT"} {
+		for _, v := range []string{"0", "5", "invalid"} {
+			t.Setenv(key, v)
+			if _, err = Load(); err == nil {
+				t.Fatal("accepted invalid limit", key, v)
+			}
+		}
+		t.Setenv(key, "1")
+	}
+}

@@ -210,3 +210,6 @@ records and version-checked note drafts while preserving analyst updates.
 
 [Local IOC caching](docs/ENRICHMENT_CACHE.md) is opt-in, tenant-scoped and invalidated
 by PostgreSQL source changes. Cache failures fall back to authoritative reads.
+
+Common backend architecture now includes sqlc-generated job queries, bounded tenant-fair
+specialist dispatch and optional Go/Python mTLS. See [configuration and verification](docs/WORKER_DISPATCH_SECURITY.md).

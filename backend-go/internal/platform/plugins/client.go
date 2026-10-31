@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
@@ -23,13 +24,24 @@ type Client struct {
 }
 
 func New(address, token string) (*Client, error) {
-	if err := config.Loopback(address); err != nil {
+	return NewWithTLS(address, token, config.WorkerTLS{})
+}
+func NewWithTLS(address, token string, settings config.WorkerTLS) (*Client, error) {
+	if err := settings.Validate(address); err != nil {
 		return nil, err
 	}
 	if len(token) < 32 {
 		return nil, errors.New("worker token too short")
 	}
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(70000), grpc.MaxCallSendMsgSize(70000)))
+	var transport credentials.TransportCredentials = insecure.NewCredentials()
+	if settings.Enabled() {
+		cfg, err := settings.ClientConfig()
+		if err != nil {
+			return nil, err
+		}
+		transport = credentials.NewTLS(cfg)
+	}
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(transport), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(70000), grpc.MaxCallSendMsgSize(70000)))
 	if err != nil {
 		return nil, err
 	}
