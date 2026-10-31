@@ -42,8 +42,10 @@ func TestBreadcrumbLabelsTenantIsolation(t *testing.T) {
 	defer pool.Exec(ctx, `DELETE FROM detection_rules WHERE tenant_id=$1`, tenant)
 	defer pool.Exec(ctx, `DELETE FROM threat_intel_reports WHERE tenant_id=$1`, tenant)
 	defer pool.Exec(ctx, `DELETE FROM skills WHERE tenant_id=$1`, tenant)
+	defer pool.Exec(ctx, `DELETE FROM hunts WHERE tenant_id=$1`, tenant)
 	defer pool.Exec(ctx, `DELETE FROM investigations WHERE tenant_id=$1`, tenant)
 	for _, query := range []string{
+		`INSERT INTO hunts(tenant_id,id,document,updated_at) VALUES($1,'hunt','{"name":"Evidence hunt"}',now())`,
 		`INSERT INTO detection_rules(tenant_id,id,document,updated_at) VALUES($1,'sparse','{"enabled":true}',now())`,
 		`INSERT INTO skills(tenant_id,id,document,updated_at) VALUES($1,'skill','{"name":"<script>untrusted title</script>"}',now())`,
 		`INSERT INTO threat_intel_reports(tenant_id,id,title,severity,published_at,created_at,updated_at) VALUES($1,'report','Threat report','high',now(),now(),now())`,
@@ -54,7 +56,7 @@ func TestBreadcrumbLabelsTenantIsolation(t *testing.T) {
 		}
 	}
 	store := Store{Pool: pool}
-	for _, fixture := range [][3]string{{"detection-rules", "sparse", "sparse"}, {"skills", "skill", "<script>untrusted title</script>"}, {"investigations", "case", "Suspicious login"}, {"threat-intel", "report", "Threat report"}} {
+	for _, fixture := range [][3]string{{"hunts", "hunt", "Evidence hunt"}, {"detection-rules", "sparse", "sparse"}, {"skills", "skill", "<script>untrusted title</script>"}, {"investigations", "case", "Suspicious login"}, {"threat-intel", "report", "Threat report"}} {
 		label, err := store.Label(ctx, tenant, fixture[0], fixture[1])
 		if err != nil || label != fixture[2] {
 			t.Fatalf("label=%q err=%v", label, err)

@@ -327,3 +327,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Respond workspace (2026-11-01)
 
 React uses the existing case and versioned procedure APIs plus tenant-scoped Go workflow policy/preview endpoints. Migration 037 stores policy configuration, atomic policy history and dry-run receipts in PostgreSQL through sqlc/pgx. Policy updates lock the workflow and compare policy/plan versions; previews evaluate the stored policy against an owned case without executing instructions or changing case/action state. The canvas is a policy gate and linear steps, not a provider execution engine. See [flow and boundaries](RESPONSE_WORKSPACE.md).
+
+
+## Hunt evidence search
+
+Go owns bounded tenant-scoped literal search over stored cases/artifacts, request replay and transactional audit. Migration 038 persists search snapshots and analyst notes through sqlc/pgx. The UI separates current hunt input from historical receipt queries. Legacy simulated execution remains compatible but is not used by these screens. See [Hunt architecture and safety](HUNT_WORKSPACE.md).

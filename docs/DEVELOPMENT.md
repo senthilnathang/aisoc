@@ -350,3 +350,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Respond development
 
 See [Response workspace](RESPONSE_WORKSPACE.md) for the JSON runbook import shape and policy/preview contracts. Edit `backend-go/internal/modules/response/queries/workspace.sql`, regenerate with `make -C backend-go sqlc`, and run the disposable database harness for policy concurrency/audit tests. Frontend components are `ResponseCases.jsx`, `ResponsePolicies.jsx`, `WorkflowCanvas.jsx` and the preserved `ResponsePlans.jsx` editor. Use `scripts/framework/response-workspace-browser-check.js` for intercepted browser mutations. Migration 037 must be applied before using the new APIs.
+
+
+## Hunt development
+
+Use `HuntWorkspace.jsx` and `internal/modules/hunts/workspace.go`; new SQL is in `hunts/queries/workspace.sql`. Regenerate with `make -C backend-go sqlc`. Apply migration 038 through normal startup. The isolated workspace harness includes hunts/navigation; browser fixtures are in `scripts/framework/hunt-workspace-browser-check.js`. See [contracts and local limits](HUNT_WORKSPACE.md).

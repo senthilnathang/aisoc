@@ -432,3 +432,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Respond workspace checks
 
 Migration 037 and response policy/preview behavior are covered by `workspace_test.go`, `workspace_integration_test.go` and HTTP `response_workspace_test.go`. The disposable `check_detection_intelligence.py` harness includes the response package and uses serial package execution with the race detector. It checks isolation, version conflicts, concurrent policy saves, audit rollback and no case/action effects from previews. Browser fixtures in `response-workspace-browser-check.js` exercise the screens without writing demo data. See [test scope and limits](RESPONSE_WORKSPACE.md).
+
+
+## Hunt verification
+
+Hunt workspace tests cover tenant isolation, stored case/artifact matches, literal input, bounded results, timestamp conflicts, concurrent idempotent retries, notes and audit rollback. Browser fixtures cover registry/TI creation, search results, historical query attribution and responsive panels. See [commands and exact scope](HUNT_WORKSPACE.md).

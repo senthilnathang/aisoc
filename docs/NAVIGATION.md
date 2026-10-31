@@ -78,3 +78,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Respond additions
 
 Cases uses `/respond/cases`; workflow policy configuration uses `/respond/remediation-actions` (Remediation policies). Existing execution records remain `/respond/actions` (Action records). Workflows and Runbooks retain `/respond/workflows` and `/respond/runbooks`; the canvas opens from a stored workflow. Breadcrumbs and active submenu ownership follow the shared menu configuration.
+
+
+## Hunt routes
+
+`/hunt/threat-hunting` is the registry (`/hunt` alias); `/hunt/threat-intelligence` is the report hunting table; `/hunt/threat-hunting/{id}` opens the detail workspace. Hunt detail remains under the Threat hunting submenu. Breadcrumb labels use authenticated tenant-scoped `hunts` metadata.

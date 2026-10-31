@@ -10,4 +10,7 @@ FROM threat_intel_reports WHERE tenant_id=sqlc.arg(tenant_id)::text AND id=sqlc.
 UNION ALL
 SELECT left(COALESCE(NULLIF(document->>'name',''),id),160)::text AS label
 FROM skills WHERE tenant_id=sqlc.arg(tenant_id)::text AND id=sqlc.arg(id)::text AND sqlc.arg(resource)::text='skills'
+UNION ALL
+SELECT left(COALESCE(NULLIF(document->>'name',''),id),160)::text AS label
+FROM hunts WHERE tenant_id=sqlc.arg(tenant_id)::text AND id=sqlc.arg(id)::text AND sqlc.arg(resource)::text='hunts'
 LIMIT 1;

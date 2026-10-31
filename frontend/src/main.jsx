@@ -53,6 +53,7 @@ import DetectionIntelligence from "./DetectionIntelligence";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import ResponsePlans from "./ResponsePlans";
 import ResponseWorkspace from "./Response";
+import HuntWorkspace from "./HuntWorkspace";
 import ResponseCases from "./ResponseCases";
 import ResponsePolicies from "./ResponsePolicies";
 import Navigation from "./Navigation";
@@ -99,6 +100,9 @@ const Icon = {
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/hunt") pathname = "/hunt/threat-hunting";
+  const huntDetail = pathname.match(/^\/hunt\/threat-hunting\/([^/]+)$/);
+  if (huntDetail) return {view:"huntDetail",huntId:decodeURIComponent(huntDetail[1])};
   if (pathname === "/investigate/investigations") pathname = "/investigations";
   if (pathname.startsWith("/investigate/investigations/")) pathname = pathname.replace("/investigate/investigations/", "/investigations/");
   if (pathname === "/detect/detection-routing" || pathname === "/detect/detection-routing/") pathname = "/detect/routing";
@@ -1525,260 +1529,6 @@ function DetectionRuleDetail({ id, setView }) {
   );
 }
 
-function HuntDashboard({ setView }) {
-  const toast = useToast();
-  const [huntQuery, setHuntQuery] = useState("");
-  const [huntContext, setHuntContext] = useState("");
-  const [hunts, setHunts] = useState([]);
-  const [runningHunt, setRunningHunt] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [huntMode, setHuntMode] = useState("mode1");
-  const [lifecycleFilter, setLifecycleFilter] = useState("all");
-  const fallbackHunts = [
-    { id: "HUNT-001", name: "TH for CVE-2026-42897 — Exchange Server XSS", query: "CVE-2026-42897", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 3, author: "Robert Kim", updated_at: "2026-05-18T14:22:00Z" },
-    { id: "HUNT-002", name: "Lumma Stealer C2 beacon detection", query: "lumma stealer", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 5, author: "AISOC Engine", updated_at: "2026-05-17T09:15:00Z" },
-    { id: "HUNT-003", name: "APT42 phishing infrastructure overlap", query: "APT42 phishing", source: "threat_intel", status: "completed", verdict: "no_findings", findings_count: 0, author: "Maria Santos", updated_at: "2026-05-16T11:40:00Z" },
-    { id: "HUNT-004", name: "Black Basta lateral movement patterns", query: "Black Basta", source: "ad_hoc", status: "completed", verdict: "review_required", findings_count: 2, author: "James Chen", updated_at: "2026-05-15T16:30:00Z" },
-    { id: "HUNT-005", name: "Cobalt Strike malleable C2 profiles", query: "cobalt strike C2", source: "ad_hoc", status: "completed", verdict: "no_findings", findings_count: 0, author: "Robert Kim", updated_at: "2026-05-14T08:55:00Z" },
-    { id: "HUNT-006", name: "UNC1549 MINIBIKE/MINIBUS backdoor hunt", query: "UNC1549", source: "threat_intel", status: "completed", verdict: "review_required", findings_count: 1, author: "AISOC Engine", updated_at: "2026-05-13T13:20:00Z" },
-  ];
-  useEffect(() => {
-    let active = true;
-    api.hunts().then((result) => active && setHunts(result.items)).catch(() => active && setLoadFailed(true));
-    return () => { active = false; };
-  }, []);
-  const displayHunts = hunts.length ? hunts : fallbackHunts;
-  const runHunt = async () => {
-    if (runningHunt) return;
-    if (!huntQuery.trim()) { toast({ title: "Enter a hunt question", status: "warning", duration: 2000 }); return; }
-    setRunningHunt(true);
-    try {
-      const created = await api.create("hunts", { name: huntQuery.trim().slice(0, 90), query: huntQuery.trim(), source: "ad_hoc", insight_refs: huntContext.split(",").map(value => value.trim()).filter(Boolean) });
-      const completed = await api.runHunt(created.id);
-      setHunts((current) => [completed, ...current]);
-      setHuntQuery("");
-      setHuntContext("");
-      const applied = completed.applied_skills || [];
-      toast({ title: "Hunt completed", description: `${completed.findings_count} findings require review.${applied.length ? ` ${applied.length} skill${applied.length === 1 ? "" : "s"} attached: ${applied.map(skill => `${skill.name} v${skill.version}`).join(", ")}.` : " No enabled skills matched this hunt."}`, status: "success", duration: 4500 });
-    } catch (error) {
-      toast({ title: "Hunt failed", description: error.message, status: "error", duration: 3000 });
-    } finally { setRunningHunt(false); }
-  };
-  const verdictColor = (v) => v === "review_required" ? ui.amber : v === "no_findings" ? ui.green : ui.muted;
-  const verdictLabel = (v) => v === "review_required" ? "Review Required" : v === "no_findings" ? "No Findings" : v || "Pending";
-  const totalFindings = displayHunts.reduce((s, h) => s + (h.findings_count || 0), 0);
-  const withFindings = displayHunts.filter((h) => h.findings_count > 0).length;
-  return (
-    <Box className="page-enter" px="15px">
-      <SampleDataNotice show={loadFailed} />
-      <Flex mb="12px" gap="8px" align="center">
-        <Button variant="outline" leftIcon={Icon.calendar({ size: 12 })}>Last 7 days</Button>
-        <Button variant="outline" leftIcon={Icon.calendar({ size: 12 })}>Last 30 days</Button>
-        <Button variant="ghost" ml="auto" onClick={() => setView("threatIntel")}>View threat intel →</Button>
-      </Flex>
-      <Grid templateColumns={{ base: "1fr", lg: "minmax(0,2.4fr) 1fr" }} gap="8px">
-        <Stack spacing="8px">
-          <Panel>
-            <Box p="10px" borderBottom="1px solid" borderColor={ui.line}>
-              <Label>Hunt details</Label>
-            </Box>
-            <SimpleGrid columns={5} p="14px 26px">
-              {[
-                ["17", "Reports processed"],
-                ["218", "IOC processed"],
-                [String(27 + displayHunts.length), "Hunts"],
-                [String(totalFindings || 3), "Findings"],
-                [String(withFindings || 2), "Hunts with findings"],
-              ].map(([v, l]) => (
-                <Metric key={l} value={v} label={l} size="30px" />
-              ))}
-            </SimpleGrid>
-          </Panel>
-          <Panel p="10px">
-            <Flex justify="space-between">
-              <Label>Hunt lifecycle</Label>
-              <HStack>
-                {["all", "emerging", "ad_hoc"].map((f) => (
-                  <Badge key={f} bg={lifecycleFilter === f ? ui.violet : undefined} color={lifecycleFilter === f ? "white" : undefined} cursor="pointer" onClick={() => setLifecycleFilter(f)}>
-                    {f === "all" ? "All" : f === "emerging" ? "Emerging" : "Ad hoc"}
-                  </Badge>
-                ))}
-              </HStack>
-            </Flex>
-            <HuntSankey />
-          </Panel>
-          <Panel>
-            <Box p="10px" borderBottom="1px solid" borderColor={ui.line}>
-              <Flex justify="space-between" align="center">
-                <Label>Ad hoc hunts</Label>
-                <Text fontSize="9px" color={ui.muted}>{displayHunts.length} hunt{displayHunts.length !== 1 ? "s" : ""}</Text>
-              </Flex>
-            </Box>
-            <Box overflowX="auto">
-              <Box as="table" w="100%" fontSize="11px">
-                <Box as="thead">
-                  <Box as="tr" borderBottom="1px solid" borderColor={ui.line}>
-                    {["Name", "Author", "Last Updated", "Findings", "Verdict", "Skills"].map((h) => (
-                      <Box as="th" key={h} p="8px 12px" textAlign="left" fontSize="9px" color={ui.muted} fontWeight="600" textTransform="uppercase" letterSpacing=".04em">{h}</Box>
-                    ))}
-                  </Box>
-                </Box>
-                <Box as="tbody">
-                  {displayHunts.slice(0, 8).map((h) => (
-                    <Box as="tr" key={h.id} borderBottom="1px solid" borderColor={ui.line} _hover={{ bg: ui.soft }} cursor="pointer">
-                      <Box as="td" p="8px 12px" color={ui.violet} maxW="340px" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">{h.name}</Box>
-                      <Box as="td" p="8px 12px" color={ui.muted}>{h.author || h.source || "Analyst"}</Box>
-                      <Box as="td" p="8px 12px" color={ui.muted}>{h.updated_at ? new Date(h.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</Box>
-                      <Box as="td" p="8px 12px" fontWeight="600">{h.findings_count ?? 0}</Box>
-                      <Box as="td" p="8px 12px"><Badge bg={verdictColor(h.verdict)} color="white" fontSize="8px">{verdictLabel(h.verdict)}</Badge></Box>
-                      <Box as="td" p="8px 12px"><Badge colorScheme="purple" fontSize="8px">{h.applied_skills?.length || 0}</Badge></Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            </Box>
-            {displayHunts.length > 8 && (
-              <Flex p="8px 12px" justify="center">
-                <Text fontSize="9px" color={ui.violet} cursor="pointer">View all {displayHunts.length} hunts</Text>
-              </Flex>
-            )}
-          </Panel>
-        </Stack>
-        <Stack spacing="8px">
-          <Panel p="10px">
-            <Flex justify="space-between" align="center">
-              <Label>Ad hoc hunt</Label>
-              <HStack spacing="4px">
-                <Badge bg={huntMode === "mode1" ? ui.violet : undefined} color={huntMode === "mode1" ? "white" : undefined} cursor="pointer" onClick={() => setHuntMode("mode1")}>Mode 1</Badge>
-                <Badge bg={huntMode === "mode2" ? ui.violet : undefined} color={huntMode === "mode2" ? "white" : undefined} cursor="pointer" onClick={() => setHuntMode("mode2")}>Mode 2</Badge>
-              </HStack>
-            </Flex>
-            <Text mt="6px" fontSize="8px" color={ui.muted}>
-              {huntMode === "mode1" ? "Quick IOC and keyword search across all connected data sources" : "Deep behavioral analysis using AI-driven hypothesis generation"}
-            </Text>
-            <HStack mt="12px">
-              <Input
-                placeholder={huntMode === "mode1" ? "Search IOCs, CVEs, threat actors..." : "Describe suspicious behavior to investigate..."}
-                value={huntQuery}
-                onChange={(event) => setHuntQuery(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && runHunt()}
-              />
-              <Button isLoading={runningHunt} onClick={runHunt}>Run</Button>
-            </HStack>
-            <Input mt="8px" aria-label="Enterprise context references" placeholder="Enterprise context IDs (optional, comma separated)" value={huntContext} onChange={event => setHuntContext(event.target.value)} />
-            <Text mt="12px" fontSize="7px" color={ui.muted}>MOST RECENT</Text>
-            <Stack mt="5px" spacing="4px">
-              {displayHunts.slice(0, 3).map((h) => (
-                <Flex key={h.id} align="center" justify="space-between">
-                  <Text fontSize="8px" maxW="200px" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">{h.name}</Text>
-                  <Badge bg={verdictColor(h.verdict)} color="white" fontSize="7px">{h.findings_count || 0}</Badge>
-                </Flex>
-              ))}
-            </Stack>
-          </Panel>
-          <Panel p="12px">
-            <Flex justify="space-between">
-              <Text fontWeight="600">Threat intel hunt quota</Text>
-              <Text fontSize="7px">83 hunts remaining</Text>
-            </Flex>
-            <Text mt="8px"><b>17 /100</b> &nbsp; Monthly threat intelligence hunts</Text>
-            <Box mt="7px" w="100%" h="4px" bg="#e7e8ed"><Box w="17%" h="full" bg={ui.violet} /></Box>
-          </Panel>
-          <Panel p="12px">
-            <Label>AISOC activity</Label>
-            <Text mt="15px" fontSize="8px"><b>17 threat reports</b> ingested and reviewed</Text>
-            <Text mt="12px" color={ui.violet} fontSize="8px">2 emerging threats identified in your environment</Text>
-            <Text mt="12px" fontSize="8px"><b>218 IOCs</b> checked across 4 connectors</Text>
-            <Button mt="14px" float="right" variant="outline" onClick={() => setView("investigations")}>View investigations</Button>
-          </Panel>
-          <Panel p="12px">
-            <Label>Threat intelligence feeds</Label>
-            <HStack mt="14px">
-              <Badge bg={ui.amber}>G</Badge>
-              <Box>
-                <Text fontSize="8px" fontWeight="600">Google Threat Intelligence</Text>
-                <Text fontSize="7px" color={ui.muted}>8 reports · 8 hunts</Text>
-              </Box>
-            </HStack>
-            <HStack mt="12px">
-              <Badge bg="#111827" color="white">AISOC</Badge>
-              <Box>
-                <Text fontSize="8px" fontWeight="600">AISOC Threat Intelligence</Text>
-                <Text fontSize="7px" color={ui.muted}>9 reports · 9 hunts</Text>
-              </Box>
-            </HStack>
-            <HStack mt="12px">
-              <Badge bg={ui.red}>M</Badge>
-              <Box>
-                <Text fontSize="8px" fontWeight="600">MITRE ATT&CK</Text>
-                <Text fontSize="7px" color={ui.muted}>Technique mapping active</Text>
-              </Box>
-            </HStack>
-          </Panel>
-        </Stack>
-      </Grid>
-    </Box>
-  );
-}
-function HuntSankey() {
-  return (
-    <Box h="285px" position="relative" mt="12px" overflow="hidden">
-      <Flex justify="space-around" fontSize="7px">
-        <Text>Trigger</Text>
-        <Text>Filtering</Text>
-        <Text>Hunt outcome</Text>
-        <Text>Escalation</Text>
-        <Text>Output</Text>
-      </Flex>
-      {[
-        ["Threat intel ingest · 142", 12, 22],
-        ["Analyst initiated · 74", 12, 160],
-        ["Relevant reports · 142", 170, 22],
-        ["Not applicable · 74", 170, 160],
-        ["IOCs found · 13", 340, 22],
-        ["No findings · 59", 340, 195],
-        ["Escalated · 13", 505, 25],
-        ["Not escalated · 203", 505, 100],
-        ["10 Cases created", 675, 30],
-        ["206 Rules created", 675, 110],
-      ].map(([t, l, top], i) => (
-        <HStack
-          key={t}
-          position="absolute"
-          left={`${l / 8.2}%`}
-          top={`${top}px`}
-        >
-          <Text fontSize="7px" whiteSpace="nowrap">
-            {t}
-          </Text>
-          <Box
-            w="11px"
-            h={i === 4 ? "115px" : "42px"}
-            bg={i === 6 ? ui.red : i > 6 ? ui.teal : "#080a0f"}
-          />
-        </HStack>
-      ))}
-      {[45, 105, 170].map((top, i) => (
-        <Box
-          key={top}
-          position="absolute"
-          left="13%"
-          top={`${top}px`}
-          w="70%"
-          h={`${65 - i * 8}px`}
-          bg={
-            i === 0
-              ? "linear-gradient(90deg,#8e929b,#efd4d7)"
-              : "linear-gradient(90deg,#a3a6ad,#dce5e3)"
-          }
-          opacity=".75"
-          transform={`skewY(${i - 1}deg)`}
-        />
-      ))}
-    </Box>
-  );
-}
-
 const fallbackMemory = [
   {
     id: "INV-4819",
@@ -2683,6 +2433,7 @@ function App() {
       path = `/threat-intel/${encodeURIComponent(detailId || "TIR-001")}`;
     else if (view === "detectionRuleDetail")
       path = `/detect/rules/${encodeURIComponent(detailId || "RULE-001")}`;
+    else if (view === "huntDetail") path = `/hunt/threat-hunting/${encodeURIComponent(detailId)}`;
     else if (view === "skillDetail") path = `/skills/${encodeURIComponent(detailId)}`;
     else path = pathForView[view] || "/";
     if (window.location.pathname !== path)
@@ -2690,7 +2441,7 @@ function App() {
     setRoute(routeFromPath(path));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const { view, investigationId, reportId, ruleId, skillId } = route;
+  const { view, investigationId, reportId, ruleId, skillId, huntId } = route;
   const pages = {
     queue: <QueueDashboard setView={setView} />,
     investigations: <InvestigationQueue setView={setView} />,
@@ -2708,7 +2459,9 @@ function App() {
     responseActivity: <ResponseWorkspace key="responseActivity" setView={setView} mode="responseActivity" />,
     responseWorkflows: <ResponsePlans key="responseWorkflows" kind="workflow" setView={setView} />,
     responseRunbooks: <ResponsePlans key="responseRunbooks" kind="runbook" setView={setView} />,
-    hunt: <HuntDashboard setView={setView} />,
+    hunt: <HuntWorkspace key="hunts" setView={setView} />,
+    huntIntel: <HuntWorkspace key="huntIntel" mode="intel" setView={setView}/>,
+    huntDetail: <HuntWorkspace key={huntId} id={huntId} setView={setView}/>,
     threatIntel: <ThreatIntelDashboard setView={setView} />,
     threatIntelDetail: <ThreatIntelReportDetail id={reportId} setView={setView} />,
     memory: <MemoryCenter setView={setView} />,
@@ -2723,7 +2476,7 @@ function App() {
     skillDetail: <SkillEditor key={skillId} id={skillId} setView={setView} />,
   };
   return (
-    <Shell view={view} setView={setView} ids={{ investigationId, ruleId, reportId, skillId }}>
+    <Shell view={view} setView={setView} ids={{ investigationId, ruleId, reportId, skillId, huntId }}>
       {pages[view]}
     </Shell>
   );

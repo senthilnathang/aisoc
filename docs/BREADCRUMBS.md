@@ -57,3 +57,8 @@ Rollback consists of reverting the breadcrumb commit, rebuilding frontend/backen
 Work through supplied Seven AI screenshots one screen at a time. For each screen: identify the intended workflow, compare it with existing UI and APIs, implement the visible states and required tenant-scoped backend behavior, then verify responsive layout, loading/empty/error states and permissions. A screenshot is visual evidence, not proof of hidden product logic; clarify behavior that cannot be inferred rather than inventing integrations or live autonomous actions. Reuse current components and keep production response disabled under the existing local-only scope.
 
 The first supplied reference is now reviewed in [7AI Detect: five-screen assessment](SEVENAI_DETECT_REVIEW.md), including URLs shown inside each screenshot.
+
+
+## Hunt detail labels
+
+The backend allowlist now includes `hunts`, resolving `document.name` with tenant scope and the existing 160-character bound. `huntDetail` uses `huntId`; successful hunt mutations invalidate metadata through the shared resource event.

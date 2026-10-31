@@ -14,3 +14,8 @@ test('detail labels use allowlisted tenant-scoped resource lookup',()=>{
  assert.equal(m.items[1].view,'detect');
  assert.equal(breadcrumbModel('queue',{}).lookup,null);
 });
+test('hunt details remain in Hunt with tenant-scoped labels',()=>{
+ const m=breadcrumbModel('huntDetail',{huntId:'HUNT-test'});
+ assert.deepEqual(m.items.map(x=>x.label),['Hunt','Threat hunting','Hunt']);
+ assert.deepEqual(m.lookup,{resource:'hunts',id:'HUNT-test'});
+});

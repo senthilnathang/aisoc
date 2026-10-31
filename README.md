@@ -257,3 +257,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Respond workspace
 
 The [Respond workspace](docs/RESPONSE_WORKSPACE.md) now includes the Cases board, remediation policy configuration, workflow canvas/dry previews and a runbook table with JSON import. Open `/respond/cases` on the main frontend. Policies remain local sandbox only; no provider execution is enabled.
+
+
+## Hunt workspace
+
+The [Hunt workspace](docs/HUNT_WORKSPACE.md) provides a registry, TI report hunting table and routed Plan/notes/Entities/Findings detail. Open `/hunt/threat-hunting`. New searches use real stored evidence with persisted receipts; no live telemetry query or LLM reasoning is implied.

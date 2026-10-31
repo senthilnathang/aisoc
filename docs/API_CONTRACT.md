@@ -400,3 +400,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Response policies and preview
 
 New endpoints: GET `/response-workflow-policies`; GET/PATCH `/response-plans/{id}/policy`; POST `/response-plans/{id}/preview`; GET `/response-plans/{id}/previews`, all under `/api/v1`. Policy writes compare `expected_version` and `plan_version`; preview supplies `expected_version` and `case_id`. Only local sandbox calling modes are supported. Case PATCH optionally accepts `expected_updated_at` for optimistic concurrency. See [exact fields, validation and safety semantics](RESPONSE_WORKSPACE.md).
+
+
+## Hunt workspace APIs
+
+Added GET `/hunts/{id}/workspace`, POST `/hunts/{id}/search` with `{id,expected_updated_at}` and POST `/hunts/{id}/notes` with `{id,body}`, under `/api/v1`. Tenant/actor derive from authentication. Replays are idempotent, conflicting reuse returns 409. Legacy `/run` remains simulated and is not called by the new UI. See [details](HUNT_WORKSPACE.md).

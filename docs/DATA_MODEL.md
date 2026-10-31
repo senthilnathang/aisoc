@@ -216,3 +216,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Response workspace tables (037)
 
 `response_workflow_policies` holds one versioned configuration per tenant/workflow. `response_workflow_policy_history` stores atomic actor-attributed snapshots. `response_workflow_previews` stores dry-run receipts, case references/titles and per-step outcomes. Composite foreign keys bind these tables to tenant response plans. Existing plan/runbook JSON is unchanged. See [retention and rollback](RESPONSE_WORKSPACE.md).
+
+
+## Hunt workspace tables (038)
+
+`hunt_search_runs` stores bounded evidence snapshots and request identity; `hunt_notes` stores actor-attributed notes. Both use composite tenant/hunt keys and cascade on hunt deletion. Resource audit remains separate. Limits are 100 receipts and 100 notes per hunt, with latest 20 receipts displayed. See [retention semantics](HUNT_WORKSPACE.md).

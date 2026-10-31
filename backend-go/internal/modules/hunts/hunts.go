@@ -121,6 +121,11 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation string, raw map
 	}
 	var applied []map[string]any
 	now := time.Now().UTC().Truncate(time.Millisecond)
+	if previous, ok := record["updated_at"].(string); ok {
+		if at, e := time.Parse(time.RFC3339Nano, previous); e == nil && !now.After(at) {
+			now = at.Add(time.Millisecond)
+		}
+	}
 	switch operation {
 	case "create", "patch", "run":
 		for k, v := range values {

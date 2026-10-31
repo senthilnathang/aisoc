@@ -166,3 +166,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Respond workspace (2026-11-01)
 
 Implemented Cases board/list, guarded local status updates, version-bound sandbox workflow policies, deterministic persisted dry-run previews and runbook table/JSON import. Existing action approvals and case assignments are preserved. Remaining: arbitrary workflow branches/drag editing, scheduler, live connector bindings, preview retention, case archive/global board counts and broader case search within the preview selector. These are not enabled by choosing automatic dry run. See [implementation and limits](RESPONSE_WORKSPACE.md).
+
+
+## Hunt workspace (2026-11-01)
+
+Implemented screenshot-based registry, TI report table, Plan/notes/Entities/Findings panels and bounded evidence search with persisted audit-backed receipts. Removed invented Hunt dashboard metrics/fallbacks. Remaining: AI-generated plans/chat, live provider queries, feed automation, asynchronous hunt workers and retention tooling. See [implemented boundaries](HUNT_WORKSPACE.md).

@@ -1,5 +1,6 @@
 import { activeItem, sectionForView } from './navigation.js';
 const detail = {
+ huntDetail: {resource:"hunts",key:"huntId",label:"Hunt"},
  investigationDetail: {resource:'investigations',key:'investigationId',label:'Investigation'},
  detectionRuleDetail: {resource:'detection-rules',key:'ruleId',label:'Rule'},
  threatIntelDetail: {resource:'threat-intel',key:'reportId',label:'Report'},

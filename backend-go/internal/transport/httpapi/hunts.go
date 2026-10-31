@@ -10,6 +10,7 @@ import (
 
 func registerHunts(mux *http.ServeMux, pool *pgxpool.Pool) {
 	store := hunts.Store{Pool: pool}
+	registerHuntWorkspace(mux, store)
 	mux.HandleFunc("GET /api/v1/hunts", respond(func(r *http.Request) (any, int, error) {
 		o, err := threatOptions(r)
 		if err != nil {

@@ -15,10 +15,10 @@ import (
 type Store struct{ Pool *pgxpool.Pool }
 
 // Label returns bounded display metadata only. No caller-supplied tenant or SQL
-// identifier is accepted; all four indexed lookups use the authenticated tenant.
+// identifier is accepted; the indexed lookups use the authenticated tenant.
 func (s Store) Label(ctx context.Context, tenant, resource, id string) (string, error) {
 	switch resource {
-	case "investigations", "detection-rules", "threat-intel", "skills":
+	case "investigations", "detection-rules", "threat-intel", "skills", "hunts":
 	default:
 		return "", fault.New(400, "VALIDATION_ERROR", "Invalid breadcrumb resource")
 	}

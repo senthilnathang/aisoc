@@ -21,6 +21,9 @@ FROM threat_intel_reports WHERE tenant_id=$1::text AND id=$2::text AND $3::text=
 UNION ALL
 SELECT left(COALESCE(NULLIF(document->>'name',''),id),160)::text AS label
 FROM skills WHERE tenant_id=$1::text AND id=$2::text AND $3::text='skills'
+UNION ALL
+SELECT left(COALESCE(NULLIF(document->>'name',''),id),160)::text AS label
+FROM hunts WHERE tenant_id=$1::text AND id=$2::text AND $3::text='hunts'
 LIMIT 1
 `
 
