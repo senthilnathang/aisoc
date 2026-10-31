@@ -33,3 +33,12 @@ sql:
         out: internal/modules/detection/detectionsql
         sql_package: pgx/v5
         omit_unused_structs: true
+  - engine: postgresql
+    schema: migrations
+    queries: internal/modules/routing/queries
+    gen:
+      go:
+        package: routingsql
+        out: internal/modules/routing/routingsql
+        sql_package: pgx/v5
+        omit_unused_structs: true

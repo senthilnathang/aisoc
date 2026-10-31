@@ -203,3 +203,7 @@ Demo imports use the same Go acceptance transaction as mock intake, committing
 source checkpoints, events and outbox intent together. JSON files never bypass
 tenant/source binding or write directly to PostgreSQL. Reimport preserves identity
 and content-hash conflict semantics; it is not a bulk overwrite operation.
+
+### Detection Routing (2026-11-01)
+
+Migration 035 adds tenant routing configuration and short-lived preview receipt tables. Alert JSON stores routing decision provenance; existing audit stores atomic before/after snapshots. See [Detection Routing](DETECTION_ROUTING.md#architecture-and-contracts).

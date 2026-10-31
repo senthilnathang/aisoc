@@ -1,6 +1,6 @@
 // Single source of truth for section ownership, links and active states.
 export const sections = [
-  { label: 'Detect', items: [{view:'queue',label:'Overview',path:'/'},{view:'detect',label:'Rule registry',path:'/detect/rules'},{view:'detectionIntelligence',label:'Intelligence',path:'/detect/intelligence'},{view:'detectionCoverage',label:'Coverage',path:'/detect/coverage'}] },
+  { label: 'Detect', items: [{view:'queue',label:'Overview',path:'/'},{view:'detect',label:'Rule registry',path:'/detect/rules'},{view:'detectionIntelligence',label:'Intelligence',path:'/detect/intelligence'},{view:'detectionCoverage',label:'Coverage',path:'/detect/coverage'},{view:'detectionRouting',label:'Routing',path:'/detect/routing'}] },
   { label: 'Investigate', items: [{view:'investigations',label:'Investigations',path:'/investigations'}] },
   { label: 'Respond', items: [
     {view:'respond',label:'Overview',path:'/respond'},

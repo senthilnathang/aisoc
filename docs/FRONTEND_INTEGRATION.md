@@ -97,3 +97,7 @@ is not a substitute for persisted API results or evidence of live integrations.
 Shared HTTP scenarios and operator-driven browser checks are described in
 [testing](TESTING.md). Production bundles and the compatibility alias remain in
 `frontend/dist/`; source assets live in `frontend/public/`.
+
+### Detection Routing (2026-11-01)
+
+Detect → Routing uses `/detect/routing` (alias `/detect/detection-routing`) with universal/per-rule policies, audit and entity-list tabs. All persisted operations use Go APIs. See [Detection Routing](DETECTION_ROUTING.md).

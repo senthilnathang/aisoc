@@ -387,3 +387,7 @@ Definition updates and checklist changes save their history transactionally.
 Cross-tenant and cross-case IDs return 404. The legacy SQLite migration seeded
 demo plans once; those records were preserved by the PostgreSQL import. Fresh Go
 databases and new tenants do not automatically seed response templates.
+
+### Detection Routing (2026-11-01)
+
+Tenant-scoped routing configuration, preview and audit contracts are documented in [Detection Routing](DETECTION_ROUTING.md#architecture-and-contracts). Active changes require an exact-configuration replay receipt and expected revision.

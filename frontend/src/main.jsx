@@ -47,6 +47,7 @@ import ApiSources from "./ApiSources";
 import StreamOperations from "./StreamOperations";
 import CreateDetectionRule from "./CreateDetectionRule";
 import DetectionCoverage from "./DetectionCoverage";
+import DetectionRouting from "./DetectionRouting";
 import DetectionRegistry, { RuleWorkspace } from "./DetectionRegistry";
 import DetectionIntelligence from "./DetectionIntelligence";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
@@ -96,6 +97,7 @@ const Icon = {
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/detect/detection-routing" || pathname === "/detect/detection-routing/") pathname = "/detect/routing";
   if (pathname === "/detect/detection-coverage" || pathname === "/detect/detection-coverage/") pathname = "/detect/coverage";
   if (pathname === "/detect/detection-rules/recommendations") pathname = "/detect/rules";
   if (pathname === "/detect/detection-rules" || pathname === "/detect/detection-rules/") pathname = "/detect/rules";
@@ -2692,6 +2694,7 @@ function App() {
     detect: <DetectionRegistry setView={setView} />,
     detectionIntelligence: <DetectionIntelligence setView={setView} />,
     detectionCoverage: <DetectionCoverage setView={setView} />,
+    detectionRouting: <DetectionRouting />,
     detectionRuleDetail: <Box p={{ base: "12px", md: "20px" }}><RuleWorkspace key={ruleId} id={ruleId} standalone onClose={() => setView("detect")} onChanged={() => {}} onSelect={id => setView("detectionRuleDetail", id)} /></Box>,
     respond: <ResponseWorkspace key="respond" setView={setView} />,
     responseCases: <ResponseWorkspace key="responseCases" setView={setView} mode="responseCases" />,

@@ -2,7 +2,7 @@
 
 Reviewed 2026-10-31 against the public [Detection page](https://7ai.com/platform/detection) and its five product images. URL paths below are transcribed from the browser chrome drawn inside those images, not verified authenticated application routes. The site is `7ai.com`; the screenshot chrome uses `app.sevenai.com`.
 
-This is a proposed UI/backend plan. This review initially described proposed work. Detection Intelligence and the Rules workspace are now implemented locally; see [Intelligence](DETECTION_INTELLIGENCE.md) and [Rules](DETECTION_RULES.md) for metric differences and validation. Coverage is also implemented locally; see [Coverage](DETECTION_COVERAGE.md) for the pinned reference and assessment semantics. [Local Recommendations](RULE_RECOMMENDATIONS.md) is now implemented; provider query validation/sync and Routing remain proposals; no production integrations were enabled. Preserve the current local/mock response boundary and existing working features.
+This is a proposed UI/backend plan. This review initially described proposed work. Detection Intelligence and the Rules workspace are now implemented locally; see [Intelligence](DETECTION_INTELLIGENCE.md) and [Rules](DETECTION_RULES.md) for metric differences and validation. Coverage is also implemented locally; see [Coverage](DETECTION_COVERAGE.md) for the pinned reference and assessment semantics. [Local Recommendations](RULE_RECOMMENDATIONS.md) is now implemented; provider query validation/sync remains proposed; [local Routing](DETECTION_ROUTING.md) is implemented; no production integrations were enabled. Preserve the current local/mock response boundary and existing working features.
 
 ## Screen 1 — Detection Intelligence
 
@@ -62,7 +62,7 @@ Visible: Universal Rule Routing, Per-Rule Routing, Audit Logs and Entity Lists; 
 
 Assessment: this is a policy-management screen, more substantial than adding another routing dropdown. Show precedence and provide an event-based “why this route?” preview before activation.
 
-Reuse/gap: current detection rules and `backend-go/internal/modules/intake` implement per-rule investigate/sample/suppress/escalate handling. Extend with versioned universal policies, deterministic precedence, tenant entity lists/exceptions, explainable evaluation, draft/active/archive lifecycle and simulation. Impact counts must come from an actual evaluation set. The screenshot's quarantine actions require the existing Go authorization/approval boundary; begin with mock execution and do not make suppression/quarantine automatic merely because a screenshot displays it.
+Original reuse/gap (local policy/simulation/intake subset now implemented; see [Routing](DETECTION_ROUTING.md)): current detection rules and `backend-go/internal/modules/intake` implement per-rule investigate/sample/suppress/escalate handling. Extend with versioned universal policies, deterministic precedence, tenant entity lists/exceptions, explainable evaluation, draft/active/archive lifecycle and simulation. Impact counts must come from an actual evaluation set. The screenshot's quarantine actions require the existing Go authorization/approval boundary; begin with mock execution and do not make suppression/quarantine automatic merely because a screenshot displays it.
 
 ## Navigation and implementation order
 

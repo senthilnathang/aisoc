@@ -2,6 +2,7 @@ package intake
 
 import (
 	"aisoc/backend/internal/modules/investigations"
+	routingpolicy "aisoc/backend/internal/modules/routing"
 	"aisoc/backend/internal/modules/skills"
 	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
@@ -244,6 +245,12 @@ func (s Store) ingest(ctx context.Context, tx pgx.Tx, tenant string, input Alert
 		return nil, fault.New(409, "RULE_DISABLED", "Enable the detection rule before ingesting alerts.")
 	}
 	routing, _ := rule["routing"].(string)
+	routingState, err := routingpolicy.Load(ctx, tx, tenant)
+	if err != nil {
+		return nil, err
+	}
+	routingDecision := routingpolicy.Evaluate(routingState.Config, routingState.Version, routingpolicy.Event{Source: input.Source, ExternalID: input.ExternalID, RuleID: input.RuleID, Severity: input.Severity, Entity: input.PrimaryEntity, Fallback: routing, Enabled: true})
+	routing = routingDecision.Outcome
 	sampleKey, _ := jsonBytes([]string{tenant, input.Source, input.ExternalID})
 	sampleHash := sha256.Sum256(sampleKey)
 	sampled := binary.BigEndian.Uint32(sampleHash[:4])%10 == 0
@@ -275,7 +282,7 @@ func (s Store) ingest(ctx context.Context, tx pgx.Tx, tenant string, input Alert
 			return nil, err
 		}
 	}
-	document := map[string]any{"id": alertID, "tenant_id": tenant, "source": input.Source, "external_id": input.ExternalID, "rule_id": input.RuleID, "investigation_id": caseID, "title": input.Title, "severity": input.Severity, "routing": routing, "disposition": disposition, "payload": input, "created_at": investigations.Timestamp(now), "updated_at": investigations.Timestamp(now)}
+	document := map[string]any{"id": alertID, "tenant_id": tenant, "source": input.Source, "external_id": input.ExternalID, "rule_id": input.RuleID, "investigation_id": caseID, "title": input.Title, "severity": input.Severity, "routing": routing, "disposition": disposition, "routing_decision": routingDecision, "payload": input, "created_at": investigations.Timestamp(now), "updated_at": investigations.Timestamp(now)}
 	docJSON, err := json.Marshal(document)
 	if err != nil {
 		return nil, err
