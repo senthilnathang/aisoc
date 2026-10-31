@@ -28,7 +28,7 @@ export default function InvestigationCase({ id }) {
     setRecord(null); setError(""); setTab("Summary"); setComment(""); setSearch(""); setBusy(false);
     api.investigation(caseId).then(result => { if (current === generation.current) setRecord(result); })
       .catch(e => { if (current === generation.current) setError(e.message); });
-    return () => { generation.current++; };
+    return () => { generation.current = current + 1; };
   }, [caseId]);
   useEffect(() => {
     if (!running || busy) return;
