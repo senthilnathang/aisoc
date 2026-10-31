@@ -133,7 +133,7 @@ case/response/Skills updates; multi-query projections use repeatable-read snapsh
 where required. See the [physical and logical data model](DATA_MODEL.md).
 
 The first **sqlc + pgx for PostgreSQL** repository is `platform/jobs`: queries are
-generated from versioned SQL and actual migrations. Remaining stores retain
+generated from versioned SQL and actual migrations. `modules/navigation` now also uses sqlc for tenant-scoped breadcrumb labels. Remaining stores retain
 parameterized pgx queries for incremental migration. Redis continues to use go-redis; sqlc does not generate Redis operations.
 Domain methods may compose cache and database adapters while keeping their distinct
 transaction, expiry and ACK semantics explicit. The PostgreSQL outbox remains the
@@ -296,3 +296,5 @@ The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively e
 ## Frontend navigation boundary
 
 The shared `frontend/src/navigation.js` route configuration drives the desktop header, section submenus and mobile drawer. `/` belongs to Detect → Overview. Detail pages retain their section and submenu selection; native link semantics coexist with client-side navigation. Navigation does not grant API permissions or change Go authorization. See the [route map and component ownership](NAVIGATION.md).
+
+Breadcrumb hierarchy comes from the shared frontend navigation map; bounded resource names come from a read-only Go endpoint using generated PostgreSQL queries. No cross-tenant name cache or schema migration is introduced. See [breadcrumb contract and ownership](BREADCRUMBS.md).

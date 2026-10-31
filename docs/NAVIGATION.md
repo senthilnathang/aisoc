@@ -47,3 +47,5 @@ Menu availability describes navigation, not authorization. Go API authorization,
 Validation passed against both the development app and a local production preview: 1440px desktop and 375px mobile. Build, Hooks lint, frontend Node tests and Markdown links passed. The temporary preview was stopped after validation; normal access remains port 8080.
 
 See [developer instructions](DEVELOPMENT.md), [test guide](TESTING.md) and [React migration notes](REACT_19_MIGRATION.md).
+
+See [clickable breadcrumbs and tenant-scoped resource labels](BREADCRUMBS.md) for frontend/backend behavior and regression coverage.

@@ -15,3 +15,12 @@ sql:
           - db_type: uuid
             nullable: true
             go_type: string
+  - engine: postgresql
+    schema: migrations
+    queries: internal/modules/navigation/queries
+    gen:
+      go:
+        package: navigationsql
+        out: internal/modules/navigation/navigationsql
+        sql_package: pgx/v5
+        omit_unused_structs: true

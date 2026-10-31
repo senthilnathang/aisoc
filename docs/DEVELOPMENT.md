@@ -238,8 +238,8 @@ alone: rotation/revocation must serialize with the domain write. Header tenant I
 are assertions against authenticated credentials; only local demo mode allows a
 tenant selector. Repeated or comma-joined local selectors return HTTP 400.
 
-`platform/jobs` now uses sqlc v1.31.1 generated pgx/v5 queries. Edit SQL in
-`backend-go/internal/platform/jobs/queries`, run `make sqlc` from `backend-go`, and
+`platform/jobs` and `modules/navigation` use sqlc v1.31.1 generated pgx/v5 queries. Edit SQL in
+`backend-go/internal/platform/jobs/queries` or `backend-go/internal/modules/navigation/queries`, run `make sqlc` from `backend-go`, and
 commit generated files together. Install with `python3 scripts/framework/install_sqlc.py`
 from the repo root; `make sqlc-check` detects drift. Continue incrementally while
 preserving existing immutable migrations,
@@ -319,3 +319,5 @@ The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively e
 Run `node --test tests/frontend/navigation.test.mjs` and the local Playwright snippet `scripts/framework/navigation-browser-check.js` to verify ownership, submenu links, deep-link reloads, browser Back and mobile focus/navigation.
 
 See the [workspace navigation reference](NAVIGATION.md) for the current menu hierarchy, route ownership and responsive behavior.
+
+Breadcrumb development uses `breadcrumbs.js` plus `Breadcrumbs.jsx` and the Go navigation module. See [API contract, resource allowlist, cancellation and tests](BREADCRUMBS.md).

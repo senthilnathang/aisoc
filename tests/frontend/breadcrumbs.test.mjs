@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { breadcrumbModel } from '../../frontend/src/breadcrumbs.js';
+test('breadcrumbs follow section hierarchy and root ownership',()=>{
+ assert.deepEqual(breadcrumbModel('queue',{}).items.map(i=>i.label),['Detect','Overview']);
+ assert.deepEqual(breadcrumbModel('streamOperations',{}).items.map(i=>i.label),['Build','Stream operations']);
+ assert.deepEqual(breadcrumbModel('skillCreate',{}).items.map(i=>i.label),['Skills','Library','Create skill']);
+});
+test('detail labels use allowlisted tenant-scoped resource lookup',()=>{
+ const m=breadcrumbModel('detectionRuleDetail',{ruleId:'rule / special'});
+ assert.deepEqual(m.items.map(i=>i.label),['Detect','Rule registry','Rule']);
+ assert.deepEqual(m.lookup,{resource:'detection-rules',id:'rule / special'});
+ assert.equal(m.items[1].view,'detect');
+ assert.equal(breadcrumbModel('queue',{}).lookup,null);
+});

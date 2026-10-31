@@ -131,3 +131,9 @@ separate gates. JSON fixtures do not establish live integration compatibility.
 - Desktop/mobile checks cover direct URLs, reloads, Back, keyboard focus and section navigation; production build and lint pass.
 - The sparse demo detection-rule API failure is fixed and covered by database and desktop/mobile regressions.
 - See the [navigation map](NAVIGATION.md) and [test guide](TESTING.md).
+
+## Breadcrumbs — completed locally 2026-10-31
+
+Shared menu hierarchy, clickable parent navigation and bounded tenant-scoped Go resource labels are implemented. Sparse metadata, missing resources, escaped labels and late responses are covered by tests. No schema migration is needed. Next UI work can proceed screenshot by screenshot, pairing visual states with verified backend behavior; Detect has been selected as the first screen family; the five public screenshots have been reviewed. See [contract and tests](BREADCRUMBS.md).
+
+Proposed Detect work is recorded in the [five-screen 7AI review](SEVENAI_DETECT_REVIEW.md). Screenshot replication remains planned, not implemented. Start with Intelligence and its aggregation contract.

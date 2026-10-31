@@ -226,3 +226,5 @@ See [investigation review visibility](docs/INVESTIGATION_VISIBILITY.md) for the 
 ## React 19 frontend
 
 The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively enabled React Compiler 1.0. See [migration, verification and rollback notes](docs/REACT_19_MIGRATION.md) for pinned tooling, the telemetry opt-out, browser checks and measured limitations.
+
+See [clickable breadcrumbs and tenant-scoped resource labels](docs/BREADCRUMBS.md) for frontend/backend behavior and regression coverage.

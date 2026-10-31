@@ -1,3 +1,4 @@
+import { changedResource } from "./resourceEvents";
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 const TENANT_ID = import.meta.env.VITE_TENANT_ID || "demo";
 
@@ -27,6 +28,9 @@ class ApiClient {
       },
       body: options.body && typeof options.body !== "string" ? JSON.stringify(options.body) : options.body
     });
+    // Invalidate display metadata only after a successful resource mutation.
+    const changed = response.ok ? changedResource(path, options.method) : null;
+    if (changed) window.dispatchEvent(new CustomEvent("aisoc:resource-updated", { detail: changed }));
     if (response.status === 204) return null;
     const payload = await response.json();
     if (!response.ok) {

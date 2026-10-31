@@ -52,6 +52,7 @@ import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import ResponsePlans from "./ResponsePlans";
 import ResponseWorkspace from "./Response";
 import Navigation from "./Navigation";
+import Breadcrumbs from "./Breadcrumbs";
 import { pathForView } from "./navigation";
 import "./app.css";
 
@@ -175,33 +176,12 @@ function ToolRail() {
   );
 }
 
-function Breadcrumb({ section, title }) {
-  return (
-    <HStack
-      px={{ base: "16px", md: "24px" }}
-      h="46px"
-      color={ui.muted}
-      fontSize="11px"
-    >
-      {Icon.grid({ size: 13, color: ui.quiet })}
-      <Text>{section}</Text>
-      {Icon.chevronRight({ size: 12, color: ui.quiet })}
-      <Text color={ui.ink} fontWeight="600">
-        {title}
-      </Text>
-    </HStack>
-  );
-}
-
-function Shell({ view, setView, children, breadcrumb }) {
+function Shell({ view, setView, children, ids }) {
   return (
     <Box minH="100vh" bg={ui.page}>
       <Navigation view={view} setView={setView} />
       <Box className="main-content">
-        <Breadcrumb
-          section={breadcrumb?.[0] || "Detect"}
-          title={breadcrumb?.[1] || "Operations Queue"}
-        />
+        <Breadcrumbs view={view} ids={ids} setView={setView} />
         {children}
       </Box>
     </Box>
@@ -2764,34 +2744,8 @@ function App() {
     skillCreate: <SkillEditor setView={setView} />,
     skillDetail: <SkillEditor key={skillId} id={skillId} setView={setView} />,
   };
-  const crumbs = {
-    queue: ["Detect", "Overview"],
-    investigations: ["Investigate", "Investigations Dashboard"],
-    investigationDetail: [
-      "Investigate",
-      "Investigation detail",
-    ],
-    detect: ["Detect", "Detection Rules"],
-    detectionIntelligence: ["Detect", "Detection Intelligence"],
-    detectionRuleDetail: ["Detect", "Detection Rule Detail"],
-    respond: ["Respond", "Response Center"],
-    responseCases: ["Respond", "Cases"],
-    responseActions: ["Respond", "Actions"],
-    responseApprovals: ["Respond", "Approvals"],
-    responseActivity: ["Respond", "Activity"],
-    responseWorkflows: ["Respond", "Workflows"],
-    responseRunbooks: ["Respond", "Runbooks"],
-    hunt: ["Hunt", "Hunt Dashboard"],
-    threatIntel: ["Threat Intel", "Threat Intelligence"],
-    threatIntelDetail: ["Threat Intel", "Report Detail"],
-    memory: ["Memory", "Investigation Memory"],
-    connector: ["Configuration", "Log Connectors › Cribl"],
-    apiSources: ["Build", "API Sources"],
-    streamOperations: ["Build", "Stream operations"],
-    skills: ["Skills", "Library"], skillTemplates: ["Skills", "Starter templates"], skillSuggestions: ["Skills", "Environment suggestions"], skillOutcomes: ["Skills", "Outcomes"], skillCreate: ["Skills", "Create skill"], skillDetail: ["Skills", "Skill details"],
-  };
   return (
-    <Shell view={view} setView={setView} breadcrumb={crumbs[view]}>
+    <Shell view={view} setView={setView} ids={{ investigationId, ruleId, reportId, skillId }}>
       {pages[view]}
     </Shell>
   );
