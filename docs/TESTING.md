@@ -395,3 +395,7 @@ The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively e
 ### Sparse detection rule regression
 
 `TestRegistrySparseRuleDocument` runs with `AISOC_GO_TEST_DATABASE_URL` against disposable PostgreSQL. It reproduces the sandbox routing-only JSON shape, checks registry/list/detail canonical identity and empty ATT&CK mappings, tenant isolation, and absence of read-time persistence changes. `scripts/framework/detection-registry-browser-check.js` checks HTTP 200, rule search, desktop inspector and mobile detail using the existing mock-stream-login fixture. The migration browser suite now fails on unsuccessful GET API responses, not just rendering errors.
+
+### Navigation regression
+
+The navigation unit test verifies that `/` belongs to **Detect → Overview**, every menu target has a route, and detail views select the correct parent. `scripts/framework/navigation-browser-check.js` verifies desktop/mobile active links, all response submenus, direct reload, Back, drawer Escape/focus restoration and access to Build links without clipped horizontal primary navigation. This test performs no API writes.

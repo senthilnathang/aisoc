@@ -24,15 +24,8 @@ import {
 } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
-export const responseNavigation = [
-  ["respond", "Overview", "Your response workspace"],
-  ["responseCases", "Cases", "Actions grouped by investigation"],
-  ["responseActions", "Actions", "Contain and remediate threats"],
-  ["responseApprovals", "Approvals", "Review pending decisions"],
-  ["responseWorkflows", "Workflows", "Explore automation patterns"],
-  ["responseRunbooks", "Runbooks", "Follow response procedures"],
-  ["responseActivity", "Activity", "Review recorded simulations"],
-];
+import { sections } from "./navigation";
+const responseNavigation = sections.find(section => section.label === "Respond").items.map(item => [item.view, item.label]);
 const Panel = ({ children, ...props }) => (
   <Box
     bg="white"

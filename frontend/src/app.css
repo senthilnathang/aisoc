@@ -68,7 +68,7 @@ select {
 }
 .section-subnav {
   position: sticky;
-  top: 48px;
+  top: 52px;
   z-index: 19;
   scrollbar-width: none;
 }
@@ -205,7 +205,7 @@ select {
   .primary-nav {
     min-width: max-content;
   }
-  .section-subnav { top: 44px; }
+  .section-subnav { top: 52px; }
   .tool-rail {
     display: none !important;
   }

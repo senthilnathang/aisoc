@@ -50,7 +50,9 @@ import DetectionRegistry, { RuleWorkspace } from "./DetectionRegistry";
 import DetectionIntelligence from "./DetectionIntelligence";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import ResponsePlans from "./ResponsePlans";
-import ResponseWorkspace, { responseNavigation } from "./Response";
+import ResponseWorkspace from "./Response";
+import Navigation from "./Navigation";
+import { pathForView } from "./navigation";
 import "./app.css";
 
 const I = ({ d, size = 14, color = "currentColor", ...props }) => (
@@ -89,52 +91,6 @@ const Icon = {
   target: (p) => <I {...p} d={<><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>} />,
   layers: (p) => <I {...p} d={<><polygon points="12,2 2,7 12,12 22,7" /><polyline points="2,17 12,22 22,17" /><polyline points="2,12 12,17 22,12" /></>} />,
   compass: (p) => <I {...p} d={<><circle cx="12" cy="12" r="10" /><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88" /></>} />,
-};
-
-const nav = ["Detect", "Investigate", "Respond", "Hunt", "Threat Intel", "Skills", "Memory", "Build"];
-const viewForNav = {
-  Detect: "detect",
-  Investigate: "investigations",
-  Respond: "respond",
-  Hunt: "hunt",
-  "Threat Intel": "threatIntel",
-  Skills: "skills",
-  Memory: "memory",
-  Build: "apiSources",
-};
-const navIsActive = (item, view) =>
-  view === viewForNav[item] ||
-  (item === "Respond" && view === "queue") ||
-  (item === "Respond" && view.startsWith("response")) ||
-  (item === "Build" && ["connector", "streamOperations"].includes(view)) ||
-  (item === "Detect" && view === "detectionRuleDetail") ||
-  (item === "Detect" && view === "detectionIntelligence") ||
-  (item === "Threat Intel" && view === "threatIntelDetail") ||
-  (item === "Skills" && ["skillCreate", "skillDetail", "skillTemplates", "skillSuggestions", "skillOutcomes"].includes(view));
-
-const pathForView = {
-  queue: "/",
-  detect: "/detect/rules",
-  detectionIntelligence: "/detect/intelligence",
-  investigations: "/investigations",
-  respond: "/respond",
-  responseCases: "/respond/cases",
-  responseActions: "/respond/actions",
-  responseApprovals: "/respond/approvals",
-  responseWorkflows: "/respond/workflows",
-  responseRunbooks: "/respond/runbooks",
-  responseActivity: "/respond/activity",
-  hunt: "/hunt",
-  threatIntel: "/threat-intel",
-  memory: "/memory",
-  connector: "/build/connectors/cribl",
-  apiSources: "/build/api-sources",
-  streamOperations: "/build/stream-operations",
-  skills: "/skills",
-  skillCreate: "/skills/new",
-  skillTemplates: "/skills/templates",
-  skillSuggestions: "/skills/suggestions",
-  skillOutcomes: "/skills/outcomes",
 };
 
 function routeFromPath(pathname) {
@@ -190,97 +146,6 @@ function Logo() {
   );
 }
 
-function TopNav({ view, setView }) {
-  return (
-    <Flex
-      className="desktop-nav"
-      h={{ base: "44px", md: "48px" }}
-      bg={ui.nav}
-      align="center"
-      px={{ base: "12px", md: "20px" }}
-      gap={{ base: "12px", md: "28px" }}
-      position="sticky"
-      top="0"
-      zIndex="20"
-      color="#f7f7fa"
-    >
-      <Box w="56px" flexShrink={0}>
-        <Logo />
-      </Box>
-      <HStack
-        className="primary-nav"
-        spacing={{ base: "14px", md: "26px" }}
-        h="full"
-      >
-        {nav.map((item) => (
-          <Button
-            key={item}
-            variant="unstyled"
-            color={navIsActive(item, view) ? "white" : "#c7cad2"}
-            fontSize="12px"
-            h="full"
-            borderRadius="0"
-            borderBottom="2px solid"
-            borderColor={navIsActive(item, view) ? "white" : "transparent"}
-            onClick={() => setView(viewForNav[item])}
-          >
-            {item}
-          </Button>
-        ))}
-      </HStack>
-      <HStack className="account-nav" ml="auto" spacing="18px" flexShrink="0">
-        <Button variant="unstyled" fontSize="11px">
-          Enterprise Demo {Icon.chevronDown({ size: 10 })}
-        </Button>
-        <Button
-          variant="unstyled"
-          fontSize="11px"
-          onClick={() => setView("connector")}
-        >
-          Configuration
-        </Button>
-        <Box
-          position="relative"
-          role="img"
-          aria-label="Notifications"
-          cursor="pointer"
-        >
-          {Icon.bell({ size: 16, color: "#c7cad2" })}
-          <Badge
-            position="absolute"
-            top="-7px"
-            right="-9px"
-            bg={ui.red}
-            color="white"
-          >
-            15
-          </Badge>
-        </Box>
-        <Flex
-          w="24px"
-          h="24px"
-          rounded="full"
-          bg="#6056e8"
-          color="white"
-          align="center"
-          justify="center"
-          fontSize="10px"
-          fontWeight="600"
-        >
-          WA
-        </Flex>
-        <Box className="hide-mobile">
-          <Text fontSize="9px">Walter Abeson</Text>
-          <Text color="#8c929f" fontSize="7px">
-            AISOC
-          </Text>
-        </Box>
-        {Icon.chevronDown({ size: 12, color: "#8c929f" })}
-      </HStack>
-    </Flex>
-  );
-}
-
 // Reserved for a future location with working toolbar actions.
 function ToolRail() {
   return (
@@ -329,23 +194,12 @@ function Breadcrumb({ section, title }) {
 }
 
 function Shell({ view, setView, children, breadcrumb }) {
-  const responseViews = responseNavigation.map(([target]) => target);
-  const detectViews = ["detect", "detectionIntelligence", "detectionRuleDetail"];
-  const skillViews = ["skills", "skillTemplates", "skillSuggestions", "skillOutcomes", "skillCreate", "skillDetail"];
-  const section = responseViews.includes(view) ? "Response" : detectViews.includes(view) ? "Detect" : skillViews.includes(view) ? "Skills" : null;
-  const tabs = section === "Response" ? responseNavigation : section === "Detect"
-    ? [["detect", "Rule registry"], ["detectionIntelligence", "Intelligence"]]
-    : [["skills", "Library"], ["skillTemplates", "Starter templates"], ["skillSuggestions", "Environment suggestions"], ["skillOutcomes", "Outcomes"]];
-  const activeTab = view === "detectionRuleDetail" ? "detect" : ["skillCreate", "skillDetail"].includes(view) ? "skills" : view;
   return (
     <Box minH="100vh" bg={ui.page}>
-      <TopNav view={view} setView={setView} />
-      {section && <Flex as="nav" aria-label={section + " navigation"} className="section-subnav" px={{ base: "12px", md: "24px" }} gap={{ base: "2px", md: "8px" }} overflowX="auto" bg="white" borderBottom="1px solid" borderColor={ui.line}>
-        {tabs.map(([target, label]) => <Button aria-current={activeTab === target ? "page" : undefined} key={target} variant="unstyled" flexShrink="0" h="42px" px={{ base: "10px", md: "14px" }} borderBottom="2px solid" borderColor={activeTab === target ? ui.ink : "transparent"} color={activeTab === target ? ui.ink : ui.muted} fontSize="11px" fontWeight={activeTab === target ? "700" : "500"} onClick={() => setView(target)}>{label}</Button>)}
-      </Flex>}
+      <Navigation view={view} setView={setView} />
       <Box className="main-content">
         <Breadcrumb
-          section={breadcrumb?.[0] || "Respond"}
+          section={breadcrumb?.[0] || "Detect"}
           title={breadcrumb?.[1] || "Operations Queue"}
         />
         {children}
@@ -2911,7 +2765,7 @@ function App() {
     skillDetail: <SkillEditor key={skillId} id={skillId} setView={setView} />,
   };
   const crumbs = {
-    queue: ["Respond", "Operations Queue"],
+    queue: ["Detect", "Overview"],
     investigations: ["Investigate", "Investigations Dashboard"],
     investigationDetail: [
       "Investigate",
