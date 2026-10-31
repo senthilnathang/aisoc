@@ -53,6 +53,8 @@ import DetectionIntelligence from "./DetectionIntelligence";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import ResponsePlans from "./ResponsePlans";
 import ResponseWorkspace from "./Response";
+import ResponseCases from "./ResponseCases";
+import ResponsePolicies from "./ResponsePolicies";
 import Navigation from "./Navigation";
 import Breadcrumbs from "./Breadcrumbs";
 import { pathForView } from "./navigation";
@@ -2699,7 +2701,8 @@ function App() {
     detectionRouting: <DetectionRouting />,
     detectionRuleDetail: <Box p={{ base: "12px", md: "20px" }}><RuleWorkspace key={ruleId} id={ruleId} standalone onClose={() => setView("detect")} onChanged={() => {}} onSelect={id => setView("detectionRuleDetail", id)} /></Box>,
     respond: <ResponseWorkspace key="respond" setView={setView} />,
-    responseCases: <ResponseWorkspace key="responseCases" setView={setView} mode="responseCases" />,
+    responseCases: <ResponseCases setView={setView} />,
+    responsePolicies: <ResponsePolicies setView={setView} />,
     responseActions: <ResponseWorkspace key="responseActions" setView={setView} mode="responseActions" />,
     responseApprovals: <ResponseWorkspace key="responseApprovals" setView={setView} mode="responseApprovals" />,
     responseActivity: <ResponseWorkspace key="responseActivity" setView={setView} mode="responseActivity" />,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   AlertIcon,
@@ -24,8 +24,15 @@ import {
   Stack,
   Text,
   Textarea,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
 } from "@chakra-ui/react";
 import { api } from "./api";
+import WorkflowCanvas from "./WorkflowCanvas";
 import { ui } from "./theme";
 
 const Panel = ({ children, ...props }) => (
@@ -116,6 +123,7 @@ function History({ items }) {
   );
 }
 export default function ResponsePlans({ kind, setView }) {
+  const importInput = useRef(null);
   const [items, setItems] = useState([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
@@ -160,6 +168,26 @@ export default function ResponsePlans({ kind, setView }) {
       active = false;
     };
   }, []);
+  const importRunbook = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setError("");
+    setBusy(true);
+    try {
+      if (file.size > 131072)
+        throw new Error("Runbook JSON must be no larger than 128 KiB.");
+      const value = JSON.parse(await file.text());
+      if (!value || Array.isArray(value) || value.kind !== "runbook")
+        throw new Error("Upload a JSON runbook with kind: runbook.");
+      await api.create("response-plans", inputFields(value));
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const open = async (plan, edit = false) => {
     setBusy(true);
     setDetailError("");
@@ -292,18 +320,40 @@ export default function ResponsePlans({ kind, setView }) {
               : "Build analyst procedures and track their completion on investigation cases."}
           </Text>
         </Box>
-        <Button
-          onClick={() => {
-            setSelected(null);
-            setDraft(blank(kind));
-            setEditing(true);
-            setHistory([]);
-            setDetailError("");
-            setMessage("");
-          }}
-        >
-          Create {noun}
-        </Button>
+        <Flex gap="10px" wrap="wrap">
+          {kind === "runbook" && (
+            <>
+              <Button
+                variant="outline"
+                isDisabled={busy}
+                onClick={() => importInput.current?.click()}
+              >
+                Upload runbook JSON
+              </Button>
+              <Input
+                ref={importInput}
+                type="file"
+                accept=".json,application/json"
+                aria-label="Upload runbook JSON"
+                display="none"
+                disabled={busy}
+                onChange={importRunbook}
+              />
+            </>
+          )}
+          <Button
+            onClick={() => {
+              setSelected(null);
+              setDraft(blank(kind));
+              setEditing(true);
+              setHistory([]);
+              setDetailError("");
+              setMessage("");
+            }}
+          >
+            Create {noun}
+          </Button>
+        </Flex>
       </Flex>
       <Flex gap="12px" wrap="wrap" mb="20px">
         <Input
@@ -364,50 +414,69 @@ export default function ResponsePlans({ kind, setView }) {
             <Text mb="12px" fontSize="11px" color={ui.muted}>
               {visible.length} {visible.length === 1 ? noun : noun + "s"}
             </Text>
-            <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} gap="18px">
-              {visible.map((plan) => (
-                <Panel key={plan.id} display="flex" flexDirection="column">
-                  <Flex justify="space-between" gap="8px">
-                    <Badge>{plan.domain}</Badge>
-                    <Text color={ui.muted} fontSize="11px">
-                      v{plan.version} · {plan.state}
-                    </Text>
-                  </Flex>
-                  <Heading fontSize="20px" fontWeight="500" mt="22px">
-                    {plan.title}
-                  </Heading>
-                  <Text mt="10px" color={ui.muted} flex="1">
-                    {plan.description || "No description added."}
-                  </Text>
-                  <Text mt="18px" fontSize="11px" color={ui.muted}>
-                    {kind === "workflow" ? "Trigger" : "Owner / usage"}:{" "}
-                    {plan.trigger}
-                  </Text>
-                  <Flex
-                    justify="space-between"
-                    mt="22px"
-                    gap="8px"
-                    align="center"
-                  >
-                    <Text fontSize="11px" color={ui.muted}>
-                      {plan.steps.length}{" "}
-                      {plan.steps.length === 1 ? "step" : "steps"} ·{" "}
-                      {
-                        plan.steps.filter((step) => step.approval_required)
-                          .length
-                      }{" "}
-                      {plan.steps.filter((step) => step.approval_required)
-                        .length === 1
-                        ? "approval gate"
-                        : "approval gates"}
-                    </Text>
-                    <Button variant="outline" onClick={() => open(plan)}>
-                      Open {noun} →
-                    </Button>
-                  </Flex>
-                </Panel>
-              ))}
-            </SimpleGrid>
+            <Box
+              bg="white"
+              border="1px solid"
+              borderColor={ui.line}
+              borderRadius="8px"
+              overflowX="auto"
+            >
+              <Table size="sm">
+                <Thead bg="#f5f7f9">
+                  <Tr>
+                    {[
+                      "Name",
+                      "Description",
+                      "Domain",
+                      "Created",
+                      "Last modified",
+                      "Status",
+                      "",
+                    ].map((h) => (
+                      <Th key={h} py="16px">
+                        {h}
+                      </Th>
+                    ))}
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {visible.map((plan) => (
+                    <Tr key={plan.id}>
+                      <Td minW="220px">
+                        <Text fontWeight="600">{plan.title}</Text>
+                        <Text color={ui.muted} fontSize="11px" mt="6px">
+                          {plan.steps.length} steps · v{plan.version}
+                        </Text>
+                      </Td>
+                      <Td maxW="360px" minW="200px">
+                        <Text noOfLines={2} color={ui.muted}>
+                          {plan.description || "No description added."}
+                        </Text>
+                      </Td>
+                      <Td>
+                        <Badge>{plan.domain}</Badge>
+                      </Td>
+                      <Td whiteSpace="nowrap">{formatTime(plan.created_at)}</Td>
+                      <Td whiteSpace="nowrap">{formatTime(plan.updated_at)}</Td>
+                      <Td>
+                        <Badge
+                          colorScheme={
+                            plan.state === "active" ? "green" : "gray"
+                          }
+                        >
+                          {plan.state}
+                        </Badge>
+                      </Td>
+                      <Td>
+                        <Button variant="outline" onClick={() => open(plan)}>
+                          Open {noun} →
+                        </Button>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
             {!visible.length && (
               <Panel textAlign="center">
                 <Heading size="sm">No matching {noun}s</Heading>
@@ -438,7 +507,7 @@ export default function ResponsePlans({ kind, setView }) {
       <Drawer
         isOpen={Boolean(draft)}
         onClose={close}
-        size="lg"
+        size={kind === "workflow" && !editing ? "full" : "lg"}
         closeOnOverlayClick={!busy}
         closeOnEsc={!busy}
       >
@@ -462,6 +531,13 @@ export default function ResponsePlans({ kind, setView }) {
             </Text>
           </DrawerHeader>
           <DrawerBody py="22px">
+            {kind === "workflow" && selected && !editing && (
+              <WorkflowCanvas
+                key={`${selected.id}:${selected.version}`}
+                plan={selected}
+                setView={setView}
+              />
+            )}
             {detailError && (
               <Alert status="error" mb="16px">
                 <AlertIcon />

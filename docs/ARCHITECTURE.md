@@ -322,3 +322,8 @@ The Routing workspace adds ordered universal policies, per-rule defaults, entity
 ### Investigation workspace (2026-11-01)
 
 The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).
+
+
+## Respond workspace (2026-11-01)
+
+React uses the existing case and versioned procedure APIs plus tenant-scoped Go workflow policy/preview endpoints. Migration 037 stores policy configuration, atomic policy history and dry-run receipts in PostgreSQL through sqlc/pgx. Policy updates lock the workflow and compare policy/plan versions; previews evaluate the stored policy against an owned case without executing instructions or changing case/action state. The canvas is a policy gate and linear steps, not a provider execution engine. See [flow and boundaries](RESPONSE_WORKSPACE.md).

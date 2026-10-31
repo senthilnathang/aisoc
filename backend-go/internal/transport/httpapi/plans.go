@@ -237,6 +237,62 @@ func registerPlans(mux *http.ServeMux, store response.Store) {
 			write(w, status, data)
 		})
 	}
+	handle("GET /api/v1/response-workflow-policies", func(r *http.Request) (any, int, error) {
+		p := auth.From(r.Context())
+		items, err := store.Policies(r.Context(), p.Tenant)
+		return map[string]any{"items": items}, 200, err
+	})
+	handle("GET /api/v1/response-plans/{id}/policy", func(r *http.Request) (any, int, error) {
+		p := auth.From(r.Context())
+		result, err := store.Policy(r.Context(), p.Tenant, r.PathValue("id"))
+		return result, 200, err
+	})
+	handle("PATCH /api/v1/response-plans/{id}/policy", func(r *http.Request) (any, int, error) {
+		var in struct {
+			ExpectedVersion int    `json:"expected_version"`
+			PlanVersion     int    `json:"plan_version"`
+			Enabled         bool   `json:"enabled"`
+			Connector       string `json:"connector"`
+			Calling         string `json:"calling"`
+			Severity        string `json:"severity"`
+			Source          string `json:"source"`
+		}
+		raw, err := body(r)
+		if err != nil {
+			return nil, 0, err
+		}
+		data, _ := json.Marshal(raw)
+		decoder := json.NewDecoder(strings.NewReader(string(data)))
+		decoder.DisallowUnknownFields()
+		if decoder.Decode(&in) != nil || in.ExpectedVersion < 0 || in.PlanVersion < 1 || raw["expected_version"] == nil || string(raw["expected_version"]) == "null" || raw["enabled"] == nil || string(raw["enabled"]) == "null" {
+			return nil, 0, invalid()
+		}
+		p := auth.From(r.Context())
+		result, err := store.SavePolicy(r.Context(), p.Tenant, r.PathValue("id"), p.ID, in.ExpectedVersion, in.PlanVersion, response.Policy{Enabled: in.Enabled, Connector: in.Connector, Calling: in.Calling, Severity: in.Severity, Source: in.Source})
+		return result, 200, err
+	})
+	handle("POST /api/v1/response-plans/{id}/preview", func(r *http.Request) (any, int, error) {
+		raw, err := responseBody(r, objectRule(responseField{"expected_version", versionRule}, responseField{"case_id", textRule(1, 100)}))
+		if err != nil {
+			return nil, 0, err
+		}
+		v, err := version(raw)
+		if err != nil {
+			return nil, 0, err
+		}
+		id, err := stringField(raw, "case_id", 1, 100)
+		if err != nil {
+			return nil, 0, err
+		}
+		p := auth.From(r.Context())
+		result, err := store.Preview(r.Context(), p.Tenant, r.PathValue("id"), p.ID, id, v)
+		return result, 201, err
+	})
+	handle("GET /api/v1/response-plans/{id}/previews", func(r *http.Request) (any, int, error) {
+		p := auth.From(r.Context())
+		result, err := store.Previews(r.Context(), p.Tenant, r.PathValue("id"))
+		return map[string]any{"items": result}, 200, err
+	})
 	handle("GET /api/v1/response-plans", func(r *http.Request) (any, int, error) {
 		p := auth.From(r.Context())
 		items, err := store.List(r.Context(), p.Tenant)

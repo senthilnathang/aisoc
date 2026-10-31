@@ -252,3 +252,8 @@ The Routing workspace adds ordered universal policies, per-rule defaults, entity
 ### Investigation workspace (2026-11-01)
 
 The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](docs/INVESTIGATION_WORKSPACE.md).
+
+
+## Respond workspace
+
+The [Respond workspace](docs/RESPONSE_WORKSPACE.md) now includes the Cases board, remediation policy configuration, workflow canvas/dry previews and a runbook table with JSON import. Open `/respond/cases` on the main frontend. Policies remain local sandbox only; no provider execution is enabled.

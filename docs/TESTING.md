@@ -427,3 +427,8 @@ The Routing workspace adds ordered universal policies, per-rule defaults, entity
 ### Investigation workspace (2026-11-01)
 
 The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).
+
+
+## Respond workspace checks
+
+Migration 037 and response policy/preview behavior are covered by `workspace_test.go`, `workspace_integration_test.go` and HTTP `response_workspace_test.go`. The disposable `check_detection_intelligence.py` harness includes the response package and uses serial package execution with the race detector. It checks isolation, version conflicts, concurrent policy saves, audit rollback and no case/action effects from previews. Browser fixtures in `response-workspace-browser-check.js` exercise the screens without writing demo data. See [test scope and limits](RESPONSE_WORKSPACE.md).

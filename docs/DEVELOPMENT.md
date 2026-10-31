@@ -345,3 +345,8 @@ The Routing workspace adds ordered universal policies, per-rule defaults, entity
 ### Investigation workspace (2026-11-01)
 
 The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).
+
+
+## Respond development
+
+See [Response workspace](RESPONSE_WORKSPACE.md) for the JSON runbook import shape and policy/preview contracts. Edit `backend-go/internal/modules/response/queries/workspace.sql`, regenerate with `make -C backend-go sqlc`, and run the disposable database harness for policy concurrency/audit tests. Frontend components are `ResponseCases.jsx`, `ResponsePolicies.jsx`, `WorkflowCanvas.jsx` and the preserved `ResponsePlans.jsx` editor. Use `scripts/framework/response-workspace-browser-check.js` for intercepted browser mutations. Migration 037 must be applied before using the new APIs.

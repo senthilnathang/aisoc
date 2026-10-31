@@ -5,7 +5,8 @@ export const sections = [
   { label: 'Respond', items: [
     {view:'respond',label:'Overview',path:'/respond'},
     {view:'responseCases',label:'Cases',path:'/respond/cases'},
-    {view:'responseActions',label:'Actions',path:'/respond/actions'},
+    {view:'responsePolicies',label:'Remediation policies',path:'/respond/remediation-actions'},
+    {view:'responseActions',label:'Action records',path:'/respond/actions'},
     {view:'responseApprovals',label:'Approvals',path:'/respond/approvals'},
     {view:'responseWorkflows',label:'Workflows',path:'/respond/workflows'},
     {view:'responseRunbooks',label:'Runbooks',path:'/respond/runbooks'},

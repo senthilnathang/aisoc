@@ -161,3 +161,8 @@ The Routing workspace adds ordered universal policies, per-rule defaults, entity
 ### Investigation workspace (2026-11-01)
 
 The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).
+
+
+## Respond workspace (2026-11-01)
+
+Implemented Cases board/list, guarded local status updates, version-bound sandbox workflow policies, deterministic persisted dry-run previews and runbook table/JSON import. Existing action approvals and case assignments are preserved. Remaining: arbitrary workflow branches/drag editing, scheduler, live connector bindings, preview retention, case archive/global board counts and broader case search within the preview selector. These are not enabled by choosing automatic dry run. See [implementation and limits](RESPONSE_WORKSPACE.md).

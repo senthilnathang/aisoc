@@ -7,7 +7,7 @@ test('home belongs to Detect and response has its own reachable submenu',()=>{
  assert.equal(pathForView.queue,'/');
  assert.equal(sectionForView('queue').items[0].label,'Overview');
  assert.equal(sectionForView('respond').label,'Respond');
- assert.deepEqual(sectionForView('respond').items.map(i=>i.view),['respond','responseCases','responseActions','responseApprovals','responseWorkflows','responseRunbooks','responseActivity']);
+ assert.deepEqual(sectionForView('respond').items.map(i=>i.view),['respond','responseCases','responsePolicies','responseActions','responseApprovals','responseWorkflows','responseRunbooks','responseActivity']);
 });
 test('detail routes retain parent section and submenu selection',()=>{
  for(const [view,label,item] of [['investigationDetail','Investigate','investigations'],['detectionRuleDetail','Detect','detect'],['skillDetail','Skills','skills'],['skillCreate','Skills','skills'],['threatIntelDetail','Threat Intel','threatIntel'],['streamOperations','Build','streamOperations']]){

@@ -395,3 +395,8 @@ Tenant-scoped routing configuration, preview and audit contracts are documented 
 ### Investigation workspace (2026-11-01)
 
 The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).
+
+
+## Response policies and preview
+
+New endpoints: GET `/response-workflow-policies`; GET/PATCH `/response-plans/{id}/policy`; POST `/response-plans/{id}/preview`; GET `/response-plans/{id}/previews`, all under `/api/v1`. Policy writes compare `expected_version` and `plan_version`; preview supplies `expected_version` and `case_id`. Only local sandbox calling modes are supported. Case PATCH optionally accepts `expected_updated_at` for optimistic concurrency. See [exact fields, validation and safety semantics](RESPONSE_WORKSPACE.md).

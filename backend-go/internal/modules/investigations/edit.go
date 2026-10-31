@@ -23,6 +23,24 @@ func (s Store) Patch(ctx context.Context, tenant, id string, fields map[string]j
 	if err = Lock(ctx, tx, tenant, id); err != nil {
 		return Record{}, err
 	}
+	// Optional optimistic concurrency for the response board; older clients remain compatible.
+	if raw, ok := fields["expected_updated_at"]; ok {
+		var expected string
+		if json.Unmarshal(raw, &expected) != nil {
+			return Record{}, fault.New(400, "VALIDATION_ERROR", "Invalid case version.")
+		}
+		at, err := time.Parse(time.RFC3339Nano, expected)
+		if err != nil {
+			return Record{}, fault.New(400, "VALIDATION_ERROR", "Invalid case version.")
+		}
+		var current time.Time
+		if err = tx.QueryRow(ctx, `SELECT updated_at FROM investigations WHERE tenant_id=$1 AND id=$2`, tenant, id).Scan(&current); err != nil {
+			return Record{}, err
+		}
+		if !current.Truncate(time.Millisecond).Equal(at) {
+			return Record{}, fault.New(409, "VERSION_CONFLICT", "This case changed. Refresh the board before updating its status.")
+		}
+	}
 	args := []any{tenant, id}
 	for _, key := range []string{"status", "determination", "summary", "risk_score", "replay_count"} {
 		if _, ok := fields[key]; ok {
@@ -38,7 +56,7 @@ func (s Store) Patch(ctx context.Context, tenant, id string, fields map[string]j
 		return Record{}, fault.New(400, "VALIDATION_ERROR", "Invalid investigation fields.")
 	}
 	for _, key := range keys {
-		if key != "secret" {
+		if key != "secret" && key != "expected_updated_at" {
 			auditKeys = append(auditKeys, key)
 		}
 		raw := fields[key]
@@ -83,7 +101,7 @@ func (s Store) Patch(ctx context.Context, tenant, id string, fields map[string]j
 	query := `SELECT ` + columns + ` FROM investigations WHERE tenant_id=$1 AND id=$2`
 	if len(sets) > 0 {
 		args = append(args, time.Now().UTC().Truncate(time.Millisecond))
-		sets = append(sets, fmt.Sprintf("updated_at=$%d", len(args)))
+		sets = append(sets, fmt.Sprintf("updated_at=GREATEST($%d, date_trunc('milliseconds', updated_at) + interval '1 millisecond')", len(args)))
 		query = `UPDATE investigations SET ` + strings.Join(sets, ",") + ` WHERE tenant_id=$1 AND id=$2 RETURNING ` + columns
 	}
 	rawAudit, err := json.Marshal(map[string]any{"fields": auditKeys})
