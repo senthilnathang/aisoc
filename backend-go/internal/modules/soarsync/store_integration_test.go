@@ -304,3 +304,29 @@ func TestEscalationRejectsUnfinishedAndInvalidResults(t *testing.T) {
 		t.Fatal("same-version edit", err)
 	}
 }
+
+func TestCaseReviewReadIsolationAndInvalidOutput(t *testing.T) {
+	s, tenant, id, incident, _ := setup(t)
+	ctx := context.Background()
+	view, err := l1.CaseReview(ctx, s.Pool, tenant, incident)
+	if err != nil || view.State != "completed" || view.Result == nil || view.Result.Verdict != "INCONCLUSIVE" || len(view.Evidence) != 4 {
+		t.Fatalf("review missing: %+v %v", view, err)
+	}
+	if _, err = l1.CaseReview(ctx, s.Pool, "foreign", incident); err == nil {
+		t.Fatal("foreign case exposed")
+	}
+	if _, err = s.Pool.Exec(ctx, `UPDATE jobs SET output='broken' WHERE tenant_id=$1 AND id=$2`, tenant, id); err != nil {
+		t.Fatal(err)
+	}
+	view, err = l1.CaseReview(ctx, s.Pool, tenant, incident)
+	if err != nil || view.Result != nil || view.ResultStatus != "invalid" {
+		t.Fatal("invalid result exposed", err)
+	}
+	if _, err = s.Pool.Exec(ctx, `UPDATE jobs SET state='failed',error_code='ATTEMPTS_EXHAUSTED' WHERE tenant_id=$1 AND id=$2`, tenant, id); err != nil {
+		t.Fatal(err)
+	}
+	view, err = l1.CaseReview(ctx, s.Pool, tenant, incident)
+	if err != nil || view.State != "failed" || view.ErrorCode != "ATTEMPTS_EXHAUSTED" {
+		t.Fatal("worker failure hidden", err)
+	}
+}

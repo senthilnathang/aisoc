@@ -1,7 +1,7 @@
 # Data Model
 
 PostgreSQL is the active datastore; current foundation schema status is 2026-10-31. The authoritative physical
-schema is in `backend-go/migrations/` (31 migrations, 49 tables including streaming and specialist dispatcher state). Foundation startup applies all source migrations. The separate release remains
+schema is in `backend-go/migrations/` (32 migrations, 49 tables including streaming and specialist dispatcher state). Foundation startup applies all source migrations. The separate release remains
 on migration 019 with 28 tables. The entity catalog
 below retains legacy JSON-column names to explain the preserved HTTP/recovery
 contract. Go uses typed columns and JSONB documents, composite tenant keys and

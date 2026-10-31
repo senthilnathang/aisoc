@@ -213,3 +213,5 @@ by PostgreSQL source changes. Cache failures fall back to authoritative reads.
 
 Common backend architecture now includes sqlc-generated job queries, bounded tenant-fair
 specialist dispatch and optional Go/Python mTLS. See [configuration and verification](docs/WORKER_DISPATCH_SECURITY.md).
+
+See [investigation review visibility](docs/INVESTIGATION_VISIBILITY.md) for the tenant-scoped read-only L1 projection, frontend states and validation.

@@ -6,6 +6,10 @@ notifications, live identity revocation or paid model invocation is enabled.
 The main development frontend binds to `127.0.0.1:8080`; public hosting requires
 the separate authenticated HTTPS deployment configuration.
 
+Migration 032 repairs dispatcher backfill for the exact known historical 031
+checksum without rewriting recorded migration history. Unrecognized drift still
+fails. See the compatibility note in the dispatch documentation.
+
 Migration 031 adds tenant-fair specialist dispatch state and its concurrency-safe
 backfill. Optional Go/Python mTLS and sqlc job queries are locally validated; see
 [configuration and rollback](WORKER_DISPATCH_SECURITY.md). Production PKI, remote

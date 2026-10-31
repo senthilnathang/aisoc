@@ -3,6 +3,7 @@ import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Gri
 import { CaseRunbooks } from "./ResponsePlans";
 import { api } from "./api";
 import { ui } from "./theme";
+import InvestigationReview from "./InvestigationReview";
 
 const Card = ({ children, ...props }) => <Box bg="white" border="1px solid" borderColor={ui.line} rounded="6px" minW="0" overflowWrap="anywhere" p={{ base: "14px", md: "16px" }} {...props}>{children}</Box>;
 const Json = ({ value }) => <Box as="pre" bg="#151820" color="#e6edf3" p="16px" rounded="5px" overflowX="auto" fontSize="11px" whiteSpace="pre-wrap" overflowWrap="anywhere">{JSON.stringify(value, null, 2)}</Box>;
@@ -78,8 +79,9 @@ export default function InvestigationCase({ id }) {
         <Flex gap="12px" wrap="wrap" align="center"><Box flex="1"><Text fontSize="10px" color={ui.muted} letterSpacing=".08em">LOCAL INVESTIGATION WORKER</Text><Heading fontSize="16px" mt="6px">{currentJob.status === "completed" ? "Processing complete · Analyst review required" : currentJob.status === "failed" ? "Processing failed" : currentJob.status === "queued" ? "Queued for processing" : "Investigation in progress"}</Heading></Box><Badge colorScheme={currentJob.status === "completed" ? "green" : currentJob.status === "failed" ? "red" : "blue"}>{currentJob.status} · {currentJob.phase}/3</Badge></Flex>
         <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap="12px" mt="12px">{["Record supplied evidence", "Compare local indicators", "Record review outcome"].map((label, i) => <Box key={label} borderTop="3px solid" borderColor={currentJob.phase > i ? ui.green : ui.line} pt="10px"><Text fontSize="12px">{currentJob.phase > i ? "✓" : `${i + 1}.`} {label}</Text></Box>)}</Grid>
         {currentJob.error && <Text color="red.600" mt="14px">{currentJob.error}</Text>}
-        {record.alerts?.[0] && <Flex gap="12px" mt="16px" align="center" wrap="wrap"><Text color={ui.muted} fontSize="11px">Source alert: {record.alerts[0].external_id} · Routing: {record.alerts[0].routing}</Text><Button as="a" href={`/detect/rules/${encodeURIComponent(record.alerts[0].rule_id)}`} variant="outline">View detection rule</Button></Flex>}
+        {record.alerts?.[0] && <Flex gap="12px" mt="16px" align="center" wrap="wrap"><Text color={ui.muted} fontSize="11px" minW="0" maxW="100%" overflowWrap="anywhere">Source alert: {record.alerts[0].external_id} · Routing: {record.alerts[0].routing}</Text><Button as="a" href={`/detect/rules/${encodeURIComponent(record.alerts[0].rule_id)}`} variant="outline">View detection rule</Button></Flex>}
       </Card>}
+      {tab === "Summary" && <InvestigationReview key={caseId} caseId={caseId} />}
       {tab === "Summary" && <Grid templateColumns={{ base: "minmax(0, 1fr)", lg: "minmax(220px, .7fr) minmax(0, 2.3fr)" }} gap="14px" alignItems="start">
         <Card><Text fontSize="10px" color={ui.muted} textTransform="uppercase" letterSpacing=".08em">Source alert</Text><Heading fontSize="16px" mt="12px">{record.source}</Heading><HStack mt="12px" flexWrap="wrap"><Badge>{record.category}</Badge><Badge bg={color} color="white">{record.severity}</Badge></HStack>
           <Text mt="16px" fontSize="11px" color={ui.muted}>PRIMARY ENTITY</Text><Text mt="5px" overflowWrap="anywhere">{record.primary_entity || "Not recorded"}</Text>

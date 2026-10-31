@@ -100,4 +100,29 @@ func TestDispatchUpgradeIncludesConcurrentWriter(t *testing.T) {
 	if count != 2 {
 		t.Fatalf("upgrade lost concurrent tenant: registered=%d, want 2", count)
 	}
+	// Simulate a tenant missed by the historical pre-fence 031 deployment.
+	if _, err = setup.Exec(ctx, `DELETE FROM job_dispatch_tenants WHERE tenant_id='concurrent'`); err != nil {
+		t.Fatal(err)
+	}
+	repair, err := migrations.Files.ReadFile("032_job_dispatch_backfill_repair.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// LOCK TABLE requires the same explicit transaction used by Migrate.
+	repairTx, err := setup.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repairTx.Rollback(context.Background())
+	for i := 0; i < 2; i++ {
+		if _, err = repairTx.Exec(ctx, string(repair)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err = repairTx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err = setup.QueryRow(ctx, `SELECT count(*) FROM job_dispatch_tenants`).Scan(&count); err != nil || count != 2 {
+		t.Fatalf("repair lost tenant: %d %v", count, err)
+	}
 }

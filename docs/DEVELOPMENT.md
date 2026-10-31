@@ -305,3 +305,5 @@ Open `/build/stream-operations` or `/build-operations` on 8080. The ten
 `python3 scripts/framework/demo.py` replays safely. The supervisor owns child
 restarts: use `run.sh stop backend` before manual maintenance. Do not start an
 extra preview on 8082. See [delivery details](NEXT_DELIVERY_TASKS.md).
+
+See [investigation review visibility](INVESTIGATION_VISIBILITY.md) for the tenant-scoped read-only L1 projection, frontend states and validation.

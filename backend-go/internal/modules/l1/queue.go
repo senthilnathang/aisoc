@@ -24,9 +24,7 @@ func QueueMock(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, fin
 	if maxActive < 1 || maxActive > 100 {
 		return "", ErrInvalid
 	}
-	key, _ := json.Marshal([]string{b.TenantID, b.ConnectorID, b.Source, findingID, Plugin, "1"})
-	sum := sha256.Sum256(key)
-	id := fmt.Sprintf("%x-%x-%x-%x-%x", sum[:4], sum[4:6], sum[6:8], sum[8:10], sum[10:16])
+	id := mockJobID(b, findingID)
 	task, err := LoadTask(ctx, pool, b, findingID, id, "pending", time.Now().Add(10*time.Second))
 	if err != nil {
 		return "", err
@@ -69,4 +67,10 @@ func QueueMock(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, fin
 		return "", err
 	}
 	return id, tx.Commit(ctx)
+}
+
+func mockJobID(b telemetry.Binding, findingID string) string {
+	key, _ := json.Marshal([]string{b.TenantID, b.ConnectorID, b.Source, findingID, Plugin, "1"})
+	sum := sha256.Sum256(key)
+	return fmt.Sprintf("%x-%x-%x-%x-%x", sum[:4], sum[4:6], sum[6:8], sum[8:10], sum[10:16])
 }

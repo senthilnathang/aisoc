@@ -34,7 +34,7 @@
     "caveats": [
       "Shared host and 99% full filesystem; no controlled dedicated storage.",
       "Migration regression tests overlapped run 2. These measurements are diagnostic, not a production capacity certification.",
-      "Migration trigger/backfill ordering fixed before local foundation upgrade. Telemetry hot path and durability settings unchanged."
+      "Migration ordering corrected in canonical 031. A later restart revealed the early 031 hash had already been applied locally; exact-history compatibility and additive repair 032 now preserve and repair it. Telemetry hot path and durability settings unchanged."
     ],
     "runs": [
       {

@@ -385,3 +385,5 @@ Common architecture checks: `python3 scripts/framework/check_jobs.py` runs real 
 PostgreSQL fairness/lease tests; `make sqlc-check` in `backend-go` verifies generated
 queries. The full framework suite also probes real Go/Python execution over mTLS.
 See [test boundaries](WORKER_DISPATCH_SECURITY.md#verification).
+
+See [investigation review visibility](INVESTIGATION_VISIBILITY.md) for the tenant-scoped read-only L1 projection, frontend states and validation.

@@ -57,7 +57,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		var prior string
 		err = tx.QueryRow(ctx, `SELECT checksum FROM schema_migrations WHERE version=$1`, file.Name()).Scan(&prior)
 		if err == nil {
-			if prior != checksum {
+			if !migrationMatches(file.Name(), prior, checksum) {
 				return fmt.Errorf("migration checksum mismatch: %s", file.Name())
 			}
 			continue
@@ -92,9 +92,21 @@ func Ready(ctx context.Context, pool *pgxpool.Pool) error {
 		if err = pool.QueryRow(ctx, `SELECT checksum FROM schema_migrations WHERE version=$1`, file.Name()).Scan(&checksum); err != nil {
 			return err
 		}
-		if checksum != fmt.Sprintf("%x", sha256.Sum256(data)) {
+		if !migrationMatches(file.Name(), checksum, fmt.Sprintf("%x", sha256.Sum256(data))) {
 			return fmt.Errorf("schema version mismatch")
 		}
 	}
 	return nil
+}
+
+// The local foundation applied pre-fence 031 before its ordering correction.
+// Preserve that immutable recorded hash. Only this exact historical pair is
+// compatible; 032 repairs any missing dispatcher tenants under a writer fence.
+func migrationMatches(name, recorded, current string) bool {
+	if recorded == current {
+		return true
+	}
+	return name == "031_job_dispatch.sql" &&
+		recorded == "cbc21a936b5f240e6481b9807d519894d8fd9085fcbec2b3253899b0baa09abf" &&
+		current == "474fa303d5e3a4679567f85dd608e1c3fea68604a9a17708f5d39afe0d42c107"
 }

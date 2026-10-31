@@ -27,7 +27,7 @@ transaction; completion, retry and cancellation retain tenant/attempt fencing.
 Other repositories still use parameterized pgx. Redis still uses go-redis; there
 is no generic transaction spanning PostgreSQL and Redis.
 
-Migration 031 creates `job_dispatch_tenants`, backfills existing jobs, and installs
+Canonical migration 031 creates `job_dispatch_tenants`, backfills existing jobs, and installs
 an insert trigger covering all job writers. It adds a partial running-lease index.
 Claiming locks a tenant row with `SKIP LOCKED`, then rechecks capacity and claims a
 job in the same transaction. Last-dispatch time is updated only on a successful
@@ -103,3 +103,15 @@ fail closed, never silently downgrade to plaintext.
 
 References: [sqlc configuration](https://docs.sqlc.dev/en/latest/reference/config.html),
 [pinned sqlc release](https://github.com/sqlc-dev/sqlc/releases/tag/v1.31.1).
+
+
+## Historical 031 compatibility and repair
+
+A local foundation applied the original pre-fence 031 checksum before the ordering
+correction was finalized. A subsequent restart correctly rejected that history.
+The loader now recognizes only that exact historical SHA-256 paired with the exact
+canonical corrected 031 SHA-256; other drift still fails. It does not overwrite
+`schema_migrations`. Migration 032 fences job writers and idempotently backfills
+missing dispatcher tenants. Readiness also requires 032. Fresh canonical installs
+apply the same repair safely. This compatibility exception is not permission to
+edit applied migration files or disable checksum checks.

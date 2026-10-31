@@ -117,7 +117,7 @@ underlying model HTTP request. Demo inference remains explicitly mocked.
 
 ## Persistence and concurrency
 
-The local foundation supports migrations through 031 (49 tables), including durable
+The local foundation supports migrations through 032 (49 tables), including durable
 source checkpoints, retained envelopes, outbox/inbox, retries/DLQ, investigation
 state, archive references and transactional payload-budget counters. Redis buffers
 delivery; PostgreSQL commits effects before ACK. Publication receipts use bounded

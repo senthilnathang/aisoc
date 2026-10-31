@@ -54,6 +54,11 @@ Remote deployment and vendor/model validation remain outside the selected local 
 
 ### Common architecture improvements (2026-10-31)
 
+- [x] Expose finding-linked L1 progress, evidence, verdict, escalation and worker
+  failures in the case Summary, with explicit mock labels and stale-data states.
+- [ ] Connect and evaluate an actual local model: deferred by user; mock results
+  are not a model-quality assessment.
+
 - [x] Verify existing source-key/tenant boundary and reject ambiguous local tenant
   selectors. Preserve the transaction-level credential recheck and existing intake.
 - [x] Introduce sqlc for the specialist job repository, preserving transaction

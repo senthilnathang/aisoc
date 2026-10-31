@@ -67,3 +67,6 @@ htmlcov/
 # Specialist runtime build output; keep Cargo.lock and dependency lockfiles tracked
 /services/*/.venv/
 /services/*/target/
+
+# Browser MCP snapshots and console captures
+.playwright-mcp/
