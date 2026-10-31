@@ -317,3 +317,5 @@ The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively e
 `frontend/src/navigation.js` owns section labels, route links and detail-view parent mapping. `Navigation.jsx` renders desktop section links, persistent subnavigation and the mobile drawer; `main.jsx` uses the same route map. Keep these definitions shared when adding a screen. Root `/` is **Detect → Overview**, followed by Rule registry and Intelligence. Respond owns Overview, Cases, Actions, Approvals, Workflows, Runbooks and Activity. Build owns API sources, Stream operations and Connectors. Detail routes retain their parent section. Mobile navigation exposes every child link and restores keyboard focus on Escape.
 
 Run `node --test tests/frontend/navigation.test.mjs` and the local Playwright snippet `scripts/framework/navigation-browser-check.js` to verify ownership, submenu links, deep-link reloads, browser Back and mobile focus/navigation.
+
+See the [workspace navigation reference](NAVIGATION.md) for the current menu hierarchy, route ownership and responsive behavior.

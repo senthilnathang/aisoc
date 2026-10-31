@@ -31,7 +31,7 @@ deduplication. The installation retains 70,000 demo events and ten showcase
 investigations. [Import instructions](BENCHMARK_DATA_IMPORT.md) cover preparation,
 scope changes, service restarts and verification.
 
-The current local foundation uses migration 030, a supervised Go/Python stack,
+The current local foundation uses migration 032, a supervised Go/Python stack,
 fixture-tested configurable source readers, mock responses and archive-inclusive
 restore validation. Three consecutive 60k runs exceeded 1,000 EPS, but a later
 diagnostic baseline fell to 823 EPS. Repeatable throughput and latency stability
@@ -123,3 +123,11 @@ separate gates. JSON fixtures do not establish live integration compatibility.
 - Documented limitation: telemetry component opts out of Compiler 1.0; unsupported functions remain uncompiled.
 - Follow-up: route-level bundle reduction, longer memory/browser-matrix evaluation, and targeted Actions/optimistic UX only where appropriate. These are not backend migration blockers.
 - [Validation and performance report](REACT_19_MIGRATION.md).
+
+## Navigation usability — completed 2026-10-31
+
+- Detect → Overview is the default home selection; Overview is not a separate primary item.
+- Shared menu configuration, consistent submenus, detail-page parent selection and mobile drawer are implemented.
+- Desktop/mobile checks cover direct URLs, reloads, Back, keyboard focus and section navigation; production build and lint pass.
+- The sparse demo detection-rule API failure is fixed and covered by database and desktop/mobile regressions.
+- See the [navigation map](NAVIGATION.md) and [test guide](TESTING.md).

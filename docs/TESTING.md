@@ -399,3 +399,5 @@ The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively e
 ### Navigation regression
 
 The navigation unit test verifies that `/` belongs to **Detect → Overview**, every menu target has a route, and detail views select the correct parent. `scripts/framework/navigation-browser-check.js` verifies desktop/mobile active links, all response submenus, direct reload, Back, drawer Escape/focus restoration and access to Build links without clipped horizontal primary navigation. This test performs no API writes.
+
+See the [workspace navigation reference](NAVIGATION.md) for the current menu hierarchy, route ownership and responsive behavior.

@@ -1,6 +1,6 @@
 # Application architecture
 
-Current as of 2026-10-30. Go/PostgreSQL is active; Node is retained for comparison
+Current as of 2026-10-31. Go/PostgreSQL is active; Node is retained for comparison
 and rollback. The frontend remains React/Chakra/Vite.
 
 ```mermaid
@@ -292,3 +292,7 @@ user-selected local release.
 ## React 19 frontend
 
 The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively enabled React Compiler 1.0. See [migration, verification and rollback notes](REACT_19_MIGRATION.md) for pinned tooling, the telemetry opt-out, browser checks and measured limitations.
+
+## Frontend navigation boundary
+
+The shared `frontend/src/navigation.js` route configuration drives the desktop header, section submenus and mobile drawer. `/` belongs to Detect → Overview. Detail pages retain their section and submenu selection; native link semantics coexist with client-side navigation. Navigation does not grant API permissions or change Go authorization. See the [route map and component ownership](NAVIGATION.md).

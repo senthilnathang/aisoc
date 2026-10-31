@@ -16,6 +16,13 @@ throughput is not consistently repeatable and latency still fails the two-second
 p95 gate. These are synthetic transport results, not
 live-provider or AI investigation capacity.
 
+## Workspace navigation
+
+Open [localhost:8080](http://localhost:8080) for **Detect → Overview**.
+Detect also contains Rule registry and Intelligence. Respond has its own response
+workspace and submenus; Build contains API sources, Stream operations and Connectors.
+On mobile, use **Menu** to access every section. See the [complete navigation map](docs/NAVIGATION.md).
+
 ## Run the initialized application
 
 The local showcase now uses **one frontend on port 8080**, backed by the Go
