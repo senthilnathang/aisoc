@@ -6,7 +6,7 @@ Implemented 2026-10-31 from the reviewed [Detection Rules screenshot](https://47
 
 Open http://localhost:8080/detect/rules. `/detect/detection-rules` is an alias matching the pictured route. Existing `/detect/rules/{id}` full-page details still work.
 
-The workspace has registry-rule, triggered-alert and mapped-rule KPIs; search and filters; Detection Rules/Catalog tabs; Name, MITRE, Execution, Status, Detections, Investigations and FPR columns; and a selected-rule inspector. The inspector contains 7/30/90-day metrics, determination distribution, Rule Details, Recommendations, History and Versions. Existing version-checked editing, enable/disable, disabled cloning, guarded deletion and audit history are retained. Query/schedule fields are registry configuration, not an external query engine deployment.
+The workspace has registry-rule, triggered-alert and mapped-rule KPIs; search and filters; Detection Rules/Catalog tabs; Name, MITRE, Execution, Status, Detections, Investigations and FP share columns; and a selected-rule inspector. The inspector contains 7/30/90-day metrics, determination distribution, Rule Details, Recommendations, History and Versions. Existing version-checked editing, enable/disable, disabled cloning, guarded deletion and audit history are retained. Query/schedule fields are registry configuration, not an external query engine deployment.
 
 Selection and filters persist in the URL, for example:
 
@@ -22,9 +22,9 @@ Supported panel tabs: `details`, `recommendations`, `history`, `versions`. Catal
 - Triggered Alerts counts received alerts for those rules within the chosen rolling UTC window. Future timestamps are excluded.
 - Detections is the per-rule alert count. Investigations and determination distribution count **distinct tenant-owned linked cases**, even when multiple alerts refer to the same case. A case linked to different rules can appear in each rule's metrics.
 - Daily average is detections / selected number of 24-hour days, rounded to one decimal.
-- **Rules with MITRE mappings** is the percentage of matching rules carrying technique tags. This is not ATT&CK technique coverage or measured detection effectiveness. Assessed coverage remains unknown pending the separate Coverage workflow.
-- FPR stays `null` / Not assessed. Benign determinations are not automatically false-positive labels. No fabricated confidence or tuning claim is shown.
-- Recommendations is an explicit Not assessed state. Persisted evidence-backed proposals, validation/replay, apply/dismiss and provider synchronization remain future work.
+- **Rules with MITRE mappings** is the percentage of matching rules carrying technique tags. This is not ATT&CK technique coverage or measured detection effectiveness. See [Coverage](DETECTION_COVERAGE.md) for explicit evidence-backed assessments.
+- Period FP share now uses explicit analyst labels; it stays null/Not assessed until reviewed. Benign determinations are not false-positive labels. The legacy all-time API remains unchanged.
+- [Recommendations](RULE_RECOMMENDATIONS.md) now provides persisted local proposals, syntax/replay receipts and guarded apply/dismiss. Provider validation/synchronization remains future work.
 - The Catalog exposes ten existing local starter metadata templates through Go. They are not downloaded vendor detections or production-ready queries. Use template populates the normal create form; query starts empty and creation is disabled by default.
 - Source filters select rules with a matching provider binding or historical source; their metrics include all of the selected rules' alerts in the requested window. Source bindings/history in the inspector remains explicitly all-time.
 
@@ -52,7 +52,7 @@ The window projection is one sqlc/pgx statement in `backend-go/internal/modules/
 - Existing breadcrumb browser suite exercises rule navigation and intercepted rename refresh after these changes.
 - Run frontend lint/build, sqlc diff, Go vet and the compiled-preview browser suite before release.
 
-No demo records are changed by browser validation. No scalability/throughput claim is made for this dashboard. The existing application-wide build warning for large chunks remains. Rollback is restoring previous Go/frontend binaries; no database rollback is needed.
+No demo records are changed by browser validation. No scalability/throughput claim is made for this dashboard. The existing application-wide build warning for large chunks remains. Rollback is restoring previous Go/frontend binaries. The subsequent Recommendations extension adds migration 034; retain its evidence tables on application rollback.
 
 ### Verified result (2026-10-31)
 

@@ -3,3 +3,29 @@
 //   sqlc v1.31.1
 
 package detectionsql
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type DetectionRuleRecommendation struct {
+	TenantID      string
+	ID            string
+	RuleID        string
+	BaseVersion   int32
+	BaseQuery     string
+	ProposedQuery string
+	Title         string
+	Rationale     string
+	Sample        []byte
+	SampleHash    string
+	WindowStart   pgtype.Timestamptz
+	WindowEnd     pgtype.Timestamptz
+	Status        string
+	Validation    []byte
+	TestResult    []byte
+	TestedAt      pgtype.Timestamptz
+	CreatedBy     string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}

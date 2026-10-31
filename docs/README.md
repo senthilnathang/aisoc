@@ -78,3 +78,7 @@ user-selected local release.
 - [Production preparation](../deploy/production/README.md)
 
 Use the main frontend on 8080 for the showcase; no separate 8082 demo is needed.
+
+### Rule Recommendations (2026-10-31)
+
+The Rules inspector now provides explicit analyst labels, deterministic proposals, local query validation, bounded replay receipts and version-checked apply/dismiss. Apply is limited to disabled, unbound local rules; provider sync remains unavailable. Migration 034 adds tenant-scoped labels and proposals with atomic audit. See [workflow, API, architecture, tests and rollback](RULE_RECOMMENDATIONS.md).

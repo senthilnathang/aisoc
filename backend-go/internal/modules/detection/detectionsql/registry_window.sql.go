@@ -21,22 +21,23 @@ WITH matched AS MATERIALIZED (
  AND ($8::text='' OR COALESCE(r.document->>'enabled','false')=$8::text)
  AND ($9::text='' OR EXISTS(SELECT 1 FROM api_sources s WHERE s.tenant_id=r.tenant_id AND s.rule_id=r.id AND s.provider=$9::text) OR EXISTS(SELECT 1 FROM alerts a WHERE a.tenant_id=r.tenant_id AND a.rule_id=r.id AND a.source=$9::text))
 ), window_alerts AS MATERIALIZED (
- SELECT a.rule_id,a.created_at,a.source,a.document,i.id AS investigation_id,i.determination
+ SELECT a.rule_id,a.created_at,a.source,a.document,i.id AS investigation_id,i.determination,l.label AS analyst_label
  FROM alerts a JOIN matched m ON m.id=a.rule_id
  LEFT JOIN investigations i ON i.tenant_id=a.tenant_id AND i.id=a.investigation_id
+ LEFT JOIN detection_alert_labels l ON l.tenant_id=a.tenant_id AND l.alert_id=a.id
  WHERE a.tenant_id=$1::text
  AND a.created_at>=statement_timestamp()-($2::int*interval '24 hours') AND a.created_at<=statement_timestamp()
 ), metrics AS (
- SELECT rule_id,count(*) AS detections,count(DISTINCT investigation_id) AS investigations,
+ SELECT rule_id,count(*) FILTER(WHERE analyst_label IN ('false_positive','true_positive')) AS reviewed, count(*) FILTER(WHERE analyst_label='false_positive') AS false_positives,count(*) AS detections,count(DISTINCT investigation_id) AS investigations,
  max(created_at) AS last_activity_at,count(*) FILTER(WHERE document->>'disposition'='suppressed') AS suppressed,
  jsonb_agg(DISTINCT source) AS sources
  FROM window_alerts GROUP BY rule_id
 ), ranked AS (
- SELECT m.id, m.document, m.version, m.updated_at, m.name, m.techniques,COALESCE(a.detections,0) AS detections,COALESCE(a.investigations,0) AS investigations,
+ SELECT m.id, m.document, m.version, m.updated_at, m.name, m.techniques,COALESCE(a.reviewed,0) AS reviewed,COALESCE(a.false_positives,0) AS false_positives,COALESCE(a.detections,0) AS detections,COALESCE(a.investigations,0) AS investigations,
  a.last_activity_at,COALESCE(a.suppressed,0) AS suppressed,COALESCE(a.sources,'[]'::jsonb) AS sources
  FROM matched m LEFT JOIN metrics a ON a.rule_id=m.id
 ), sorted AS (
- SELECT id, document, version, updated_at, name, techniques, detections, investigations, last_activity_at, suppressed, sources,row_number() OVER (ORDER BY
+ SELECT id, document, version, updated_at, name, techniques, reviewed, false_positives, detections, investigations, last_activity_at, suppressed, sources,row_number() OVER (ORDER BY
  CASE WHEN $10::text='name' AND $11::text='asc' THEN lower(name) END COLLATE "C" ASC,
  CASE WHEN $10::text='name' AND $11::text<>'asc' THEN lower(name) END COLLATE "C" DESC,
  CASE WHEN $10::text='detections' AND $11::text='asc' THEN detections END ASC,
@@ -47,13 +48,13 @@ WITH matched AS MATERIALIZED (
  CASE WHEN $10::text IN ('','updated_at') AND $11::text<>'asc' THEN updated_at END DESC,
  id COLLATE "C" ASC) AS position FROM ranked
 ), paged AS MATERIALIZED (
- SELECT id, document, version, updated_at, name, techniques, detections, investigations, last_activity_at, suppressed, sources, position FROM sorted ORDER BY position LIMIT $3::int OFFSET $4::bigint
+ SELECT id, document, version, updated_at, name, techniques, reviewed, false_positives, detections, investigations, last_activity_at, suppressed, sources, position FROM sorted ORDER BY position LIMIT $3::int OFFSET $4::bigint
 )
 SELECT jsonb_build_object(
  'items',(SELECT COALESCE(jsonb_agg(p.document || jsonb_build_object(
  'id',p.id,'tenant_id',$1::text,'name',p.name,'mitre_techniques',p.techniques,'version',p.version,
  'detections',p.detections,'investigations',p.investigations,'last_activity_at',p.last_activity_at,'suppressed',p.suppressed,'sources',p.sources,
- 'false_positive_rate',NULL,'period',$2::int||'_days','daily_average',round(p.detections::numeric/$2::int,1),
+ 'false_positive_rate',round(100.0*p.false_positives/NULLIF(p.reviewed,0),1),'reviewed_alerts',p.reviewed,'false_positive_alerts',p.false_positives,'period',$2::int||'_days','daily_average',round(p.detections::numeric/$2::int,1),
  'outcomes',(SELECT COALESCE(jsonb_agg(to_jsonb(o) ORDER BY determination),'[]'::jsonb) FROM (SELECT w.determination,count(DISTINCT w.investigation_id) AS count FROM window_alerts w WHERE w.rule_id=p.id AND w.investigation_id IS NOT NULL GROUP BY w.determination) o),
  'bindings',(SELECT COALESCE(jsonb_agg(jsonb_build_object('id',s.id,'name',s.name,'provider',s.provider) ORDER BY s.name,s.id),'[]'::jsonb) FROM api_sources s WHERE s.tenant_id=$1::text AND s.rule_id=p.id)
  ) ORDER BY p.position),'[]'::jsonb) FROM paged p),

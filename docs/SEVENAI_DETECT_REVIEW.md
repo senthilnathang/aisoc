@@ -2,7 +2,7 @@
 
 Reviewed 2026-10-31 against the public [Detection page](https://7ai.com/platform/detection) and its five product images. URL paths below are transcribed from the browser chrome drawn inside those images, not verified authenticated application routes. The site is `7ai.com`; the screenshot chrome uses `app.sevenai.com`.
 
-This is a proposed UI/backend plan. This review initially described proposed work. Detection Intelligence and the Rules workspace are now implemented locally; see [Intelligence](DETECTION_INTELLIGENCE.md) and [Rules](DETECTION_RULES.md) for metric differences and validation. Coverage is also implemented locally; see [Coverage](DETECTION_COVERAGE.md) for the pinned reference and assessment semantics. Recommendations execution and Routing remain proposals; no production integrations were enabled. Preserve the current local/mock response boundary and existing working features.
+This is a proposed UI/backend plan. This review initially described proposed work. Detection Intelligence and the Rules workspace are now implemented locally; see [Intelligence](DETECTION_INTELLIGENCE.md) and [Rules](DETECTION_RULES.md) for metric differences and validation. Coverage is also implemented locally; see [Coverage](DETECTION_COVERAGE.md) for the pinned reference and assessment semantics. [Local Recommendations](RULE_RECOMMENDATIONS.md) is now implemented; provider query validation/sync and Routing remain proposals; no production integrations were enabled. Preserve the current local/mock response boundary and existing working features.
 
 ## Screen 1 — Detection Intelligence
 
@@ -50,7 +50,7 @@ Visible: the same registry with Recommendations selected in the side panel, fals
 
 Assessment: implement this as a rule-workspace subview, not a disconnected recommendations application. The screenshot URL omits a rule ID; our URLs must retain which rule is being reviewed. Exact hidden routing behavior cannot be established from this image.
 
-Backend gap: persisted recommendations tied to rule version and evidence window; explicit analyst false-positive labels and denominator; proposed query diff; provider/dialect validation; sandbox replay/test receipts; approval, audit and optimistic concurrency for apply/dismiss/sync. Python may draft explanations, while Go verifies evidence references and gates any writes. Benign determinations are not automatically false-positive labels, and insufficient samples should produce unknown statistics rather than fabricated confidence.
+Original backend gap (local subset now implemented; see [current boundaries](RULE_RECOMMENDATIONS.md)): persisted recommendations tied to rule version and evidence window; explicit analyst false-positive labels and denominator; proposed query diff; provider/dialect validation; sandbox replay/test receipts; approval, audit and optimistic concurrency for apply/dismiss/sync. Python may draft explanations, while Go verifies evidence references and gates any writes. Benign determinations are not automatically false-positive labels, and insufficient samples should produce unknown statistics rather than fabricated confidence.
 
 ## Screen 5 — Detection Routing
 

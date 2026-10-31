@@ -16,6 +16,7 @@ export function ruleLocation(search,changes) {
 }
 export function useRuleNavigation() {
  const search=useSyncExternalStore(subscribe,snapshot,()=> '');
+ const impliedTab=window.location.pathname==='/detect/detection-rules/recommendations'&&!new URLSearchParams(search).has('tab')?'&tab=recommendations':'';
  const navigate=(changes,replace=false)=>{
   const query=ruleLocation(window.location.search,changes);
   const next=window.location.pathname+(query?'?'+query:'');
@@ -23,5 +24,5 @@ export function useRuleNavigation() {
   window.history[replace?'replaceState':'pushState']({},'',next);
   window.dispatchEvent(new PopStateEvent('popstate'));
  };
- return {...parseRuleLocation(search),navigate};
+ return {...parseRuleLocation(search+impliedTab),navigate};
 }
