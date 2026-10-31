@@ -288,3 +288,7 @@ intake, independent Python FastAPI/gRPC, recovery UI, monitoring, verified archi
 export, startup and measured limits. Earlier task entries are historical checkpoints.
 Live vendor/model validation and privileged response activation are outside this
 user-selected local release.
+
+## React 19 frontend
+
+The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively enabled React Compiler 1.0. See [migration, verification and rollback notes](REACT_19_MIGRATION.md) for pinned tooling, the telemetry opt-out, browser checks and measured limitations.

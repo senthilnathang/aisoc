@@ -116,3 +116,10 @@ runs completed 180,000/180,000 events at 1,063–1,104 EPS; the strict latency g
 remains open (p95 3.50–6.05 s). Live Ariel/source
 mapping, SOAR write-back, Sentinel, model quality and production activation remain
 separate gates. JSON fixtures do not establish live integration compatibility.
+
+## React modernization — 2026-10-31
+
+- Completed locally: React 19.3.1 upgrade, Chakra 2 compatibility, selective compiler activation, Hooks lint, browser regressions, clean install/audit and rollback documentation.
+- Documented limitation: telemetry component opts out of Compiler 1.0; unsupported functions remain uncompiled.
+- Follow-up: route-level bundle reduction, longer memory/browser-matrix evaluation, and targeted Actions/optimistic UX only where appropriate. These are not backend migration blockers.
+- [Validation and performance report](REACT_19_MIGRATION.md).

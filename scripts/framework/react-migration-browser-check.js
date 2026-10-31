@@ -39,12 +39,16 @@ async page => {
     await navigate('/investigations');
     const search=page.getByRole('textbox',{name:'Search investigations and alerts'});
     await page.getByRole('button',{name:'Open case',exact:true}).first().waitFor();
+    await page.evaluate(()=>{ if(window.__AISOC_REACT_PROFILE__)window.__AISOC_REACT_PROFILE__=[]; });
     for(let i=0;i<35;i++) {
       const start=Date.now(); await search.fill('no-matching-migration-fixture');
       await page.getByText('No matching records.',{exact:true}).waitFor();
       await search.fill(''); await page.getByRole('button',{name:'Open case',exact:true}).first().waitFor();
       if(i>=5)timings.push(Date.now()-start);
     }
+    const profile = await page.evaluate(()=>window.__AISOC_REACT_PROFILE__ || []);
+    const durations=profile.filter(p=>p.phase!=='mount').map(p=>p.actualDuration).sort((a,b)=>a-b);
+    const profiling=durations.length?{commits:durations.length,median_ms:durations[Math.floor(durations.length/2)],p95_ms:durations[Math.floor(durations.length*.95)]}:null;
     await page.unroute('**/api/v1/investigation-queue**',freeze);
     let writes=0;
     await page.route('**/api/v1/alerts',async route=>{
@@ -62,9 +66,14 @@ async page => {
     checks.push({single_submit:true});
     await page.keyboard.press('Escape');
     for(const [path,text] of [['/build/api-sources','API Sources'],['/build-operations','Retained telemetry'],['/detect/rules','Detection Rules'],['/detect/intelligence','Detection Intelligence'],['/respond/actions','Actions']]) {
-      await navigate(path); await page.getByText(text,{exact:false}).first().waitFor();
+      await navigate(path); await page.getByRole('heading',{name:new RegExp('^'+text+'$','i')}).first().waitFor();
       checks.push({route:path,loaded:true});
     }
+    await navigate('/skills/new');
+    const skillName=page.getByLabel('Skill name',{exact:true});
+    await skillName.pressSequentially('Migration typing');
+    if(await skillName.inputValue()!=='Migration typing' || !await skillName.evaluate(el=>el===document.activeElement))throw Error('Skill field remounted while typing');
+    checks.push({skill_typing_focus:true});
     await page.route('**/api/v1/auth/session',r=>r.fulfill({json:{mode:'token',authenticated:false}}));
     await navigate('/investigations'); await page.getByRole('heading',{name:'Sign in to your workspace'}).waitFor();
     if(await page.getByRole('button',{name:'Open case',exact:true}).count())throw Error('Session exposes cases');
@@ -74,7 +83,7 @@ async page => {
     checks.push({unauthenticated_hidden:true,login_error:true});
     if(errors.length)throw Error(errors.join('\n'));
     timings.sort((a,b)=>a-b);
-    return {passed:true,checks,interaction:{samples:30,warmups:5,median_ms:timings[15],p95_ms:timings[28]},errors,mutations:'intercepted'};
+    return {passed:true,checks,interaction:{samples:30,warmups:5,median_ms:timings[15],p95_ms:timings[28]},profiling,errors,mutations:'intercepted'};
   } finally {
     await page.unrouteAll({behavior:'wait'}); page.off('pageerror',error);page.off('console',consoleError);
   }

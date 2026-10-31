@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { Profiler, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Alert,
@@ -2945,8 +2945,17 @@ function App() {
 
 const reactRoot = import.meta.hot?.data.reactRoot || createRoot(document.getElementById("root"));
 if (import.meta.hot) import.meta.hot.dispose(data => { data.reactRoot = reactRoot; });
-reactRoot.render(
+// Opt-in local profiling build only. Keep samples bounded and free of case data.
+const profileRender = (_id, phase, actualDuration, baseDuration) => {
+  const samples = window.__AISOC_REACT_PROFILE__ ||= [];
+  if (samples.length >= 1000) samples.shift();
+  samples.push({ phase, actualDuration, baseDuration });
+};
+const app = (
   <ChakraProvider theme={theme}>
     <AuthGate><App /></AuthGate>
-  </ChakraProvider>,
+  </ChakraProvider>
 );
+reactRoot.render(import.meta.env.VITE_REACT_PROFILE === "1"
+  ? <Profiler id="app" onRender={profileRender}>{app}</Profiler>
+  : app);

@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { compilerPlugins } from "./compiler.config.js";
 import { readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 
@@ -29,7 +30,12 @@ const previewSpaFallback = {
 
 export default defineConfig({
   base: "/",
-  plugins: [react(), previewSpaFallback],
+  resolve: {
+    alias: process.env.VITE_REACT_PROFILE === "1"
+      ? [{ find: "react-dom/client", replacement: "react-dom/profiling" }]
+      : [],
+  },
+  plugins: [react({ babel: { plugins: compilerPlugins(process.env.AISOC_REACT_COMPILER) } }), previewSpaFallback],
   build: {
     rollupOptions: {
       input: resolve(import.meta.dirname, "index.html"),

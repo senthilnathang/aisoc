@@ -387,3 +387,7 @@ queries. The full framework suite also probes real Go/Python execution over mTLS
 See [test boundaries](WORKER_DISPATCH_SECURITY.md#verification).
 
 See [investigation review visibility](INVESTIGATION_VISIBILITY.md) for the tenant-scoped read-only L1 projection, frontend states and validation.
+
+## React 19 frontend
+
+The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively enabled React Compiler 1.0. See [migration, verification and rollback notes](REACT_19_MIGRATION.md) for pinned tooling, the telemetry opt-out, browser checks and measured limitations.

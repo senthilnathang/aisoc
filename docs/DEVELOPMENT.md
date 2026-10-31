@@ -60,7 +60,7 @@ for format, receipts, verification and the distinction between benchmark and dem
 
 - Go toolchain required by `backend-go/go.mod` (currently 1.26.10).
 - PostgreSQL 16 binaries; launchers default to `/usr/lib/postgresql/16/bin`.
-- Node.js 22+ and npm for frontend and legacy comparison tooling.
+- Node.js ^20.19.0, ^22.13.0, or >=24 and npm for frontend and legacy comparison tooling.
 - Python 3.12; Rust 1.88+ and Cargo for specialist verification.
 - Run local PostgreSQL tools as an ordinary user, not root.
 
@@ -307,3 +307,7 @@ restarts: use `run.sh stop backend` before manual maintenance. Do not start an
 extra preview on 8082. See [delivery details](NEXT_DELIVERY_TASKS.md).
 
 See [investigation review visibility](INVESTIGATION_VISIBILITY.md) for the tenant-scoped read-only L1 projection, frontend states and validation.
+
+## React 19 frontend
+
+The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively enabled React Compiler 1.0. See [migration, verification and rollback notes](REACT_19_MIGRATION.md) for pinned tooling, the telemetry opt-out, browser checks and measured limitations.

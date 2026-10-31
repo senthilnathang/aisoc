@@ -1,8 +1,8 @@
 // Run through the Playwright browser tool against the local foundation.
 // Only GET requests and browser-local response fixtures; no case mutations.
 async page => {
-  const origin='http://127.0.0.1:8080';
-  if(new URL(page.url()).origin!==origin)throw Error('Local foundation required');
+  const origin=new URL(page.url()).origin;
+  if(!['http://127.0.0.1:8080','http://127.0.0.1:8084'].includes(origin))throw Error('Local foundation required');
   const caseURL=page.url().split('#')[0];
   const caseID=decodeURIComponent(new URL(caseURL).pathname.split('/').pop());
   const apiURL=origin+'/api/v1/investigations/'+encodeURIComponent(caseID)+'/l1';
