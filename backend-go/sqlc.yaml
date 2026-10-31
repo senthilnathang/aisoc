@@ -24,3 +24,12 @@ sql:
         out: internal/modules/navigation/navigationsql
         sql_package: pgx/v5
         omit_unused_structs: true
+  - engine: postgresql
+    schema: migrations
+    queries: internal/modules/detection/queries
+    gen:
+      go:
+        package: detectionsql
+        out: internal/modules/detection/detectionsql
+        sql_package: pgx/v5
+        omit_unused_structs: true

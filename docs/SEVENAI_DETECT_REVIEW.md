@@ -2,7 +2,7 @@
 
 Reviewed 2026-10-31 against the public [Detection page](https://7ai.com/platform/detection) and its five product images. URL paths below are transcribed from the browser chrome drawn inside those images, not verified authenticated application routes. The site is `7ai.com`; the screenshot chrome uses `app.sevenai.com`.
 
-This is a proposed UI/backend plan. No screenshot replication or production integrations have been implemented by writing this review. Preserve the current local/mock response boundary and existing working features.
+This is a proposed UI/backend plan. This review initially described proposed work. The first screen is now implemented locally; see [Detection Intelligence](DETECTION_INTELLIGENCE.md) for metric differences and validation. Remaining screens are still proposals; no production integrations were enabled. Preserve the current local/mock response boundary and existing working features.
 
 ## Screen 1 — Detection Intelligence
 

@@ -228,3 +228,7 @@ See [investigation review visibility](docs/INVESTIGATION_VISIBILITY.md) for the 
 The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively enabled React Compiler 1.0. See [migration, verification and rollback notes](docs/REACT_19_MIGRATION.md) for pinned tooling, the telemetry opt-out, browser checks and measured limitations.
 
 See [clickable breadcrumbs and tenant-scoped resource labels](docs/BREADCRUMBS.md) for frontend/backend behavior and regression coverage.
+
+### Detection Intelligence screenshot implementation (2026-10-31)
+
+Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](docs/DETECTION_INTELLIGENCE.md). Other Detect screenshots remain future work.

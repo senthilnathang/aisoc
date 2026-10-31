@@ -298,3 +298,7 @@ The frontend uses React/React DOM 19.3.1 with Chakra UI 2.10.9 and selectively e
 The shared `frontend/src/navigation.js` route configuration drives the desktop header, section submenus and mobile drawer. `/` belongs to Detect → Overview. Detail pages retain their section and submenu selection; native link semantics coexist with client-side navigation. Navigation does not grant API permissions or change Go authorization. See the [route map and component ownership](NAVIGATION.md).
 
 Breadcrumb hierarchy comes from the shared frontend navigation map; bounded resource names come from a read-only Go endpoint using generated PostgreSQL queries. No cross-tenant name cache or schema migration is introduced. See [breadcrumb contract and ownership](BREADCRUMBS.md).
+
+### Detection Intelligence screenshot implementation (2026-10-31)
+
+Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](DETECTION_INTELLIGENCE.md). Other Detect screenshots remain future work.

@@ -403,3 +403,7 @@ The navigation unit test verifies that `/` belongs to **Detect → Overview**, e
 See the [workspace navigation reference](NAVIGATION.md) for the current menu hierarchy, route ownership and responsive behavior.
 
 See [clickable breadcrumbs and tenant-scoped resource labels](BREADCRUMBS.md) for frontend/backend behavior and regression coverage.
+
+### Detection Intelligence screenshot implementation (2026-10-31)
+
+Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](DETECTION_INTELLIGENCE.md). Other Detect screenshots remain future work.

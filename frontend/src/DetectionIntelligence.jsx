@@ -1,59 +1,68 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Alert, AlertIcon, Badge, Box, Button, Flex, Grid, Heading, Select, Stack, Text } from "@chakra-ui/react";
-import { api } from "./api";
-import { ui } from "./theme";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, AlertIcon, Badge, Box, Button, Flex, Heading, Input, Select, Text } from '@chakra-ui/react';
+import { api } from './api';
+import { coverage, dailySeries, palette, treemap } from './detectionIntelligenceModel';
+import './detection-intelligence.css';
 
-const colors = { critical: "#a41d32", high: "#e55255", medium: "#edaa40", low: "#75a8b8" };
-const dispositionColor = { investigate: ui.green, suppressed: ui.steel, not_sampled: ui.amber };
-const Panel = ({ children, ...props }) => <Box bg="white" border="1px solid" borderColor={ui.line} rounded="5px" minW="0" {...props}>{children}</Box>;
-const integer = value => Number(value || 0).toLocaleString();
-
+const number = value => Number(value || 0).toLocaleString();
+const severityColors = { critical: '#7b383f', high: '#a76b6d', medium: '#8aa9a1', low: '#ccd8d4' };
+function Breakdown({ title, rows = [], total, onSelect }) {
+  return <section className="di-summary"><h2>{title}</h2><strong>{number(total)}</strong>{rows.map(row => <button type="button" disabled={!onSelect} key={row.name || 'unknown'} onClick={() => onSelect?.(row.name)} className="di-breakdown"><span>{row.name || 'Unknown'}</span><b>{number(row.count)}</b><small>{total ? (row.count / total * 100).toFixed(1) : 0}%</small></button>)}</section>;
+}
 export default function DetectionIntelligence({ setView }) {
-  const [days, setDays] = useState(7);
-  const [source, setSource] = useState("");
-  const [severity, setSeverity] = useState("");
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [days, setDays] = useState(7), [source, setSource] = useState(''), [severity, setSeverity] = useState('');
+  const [search, setSearch] = useState(''), [query, setQuery] = useState(''), [rule, setRule] = useState('');
+  const [tab, setTab] = useState('coverage'), [table, setTable] = useState(false), [cases, setCases] = useState(false);
+  const [data, setData] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
+  useEffect(() => { const timer = setTimeout(() => setQuery(search.trim()), 250); return () => clearTimeout(timer); }, [search]);
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    api.request(`/detection-intelligence?${new URLSearchParams({ days: String(days), ...(source ? { source } : {}), ...(severity ? { severity } : {}) })}`)
-      .then(result => { if (active) { setData(result); setError(""); } })
-      .catch(e => { if (active) setError(e.message); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [days, source, severity, revision]);
-  const series = useMemo(() => {
-    const rows = new Map((data?.daily || []).map(row => [row.date, row]));
-    return Array.from({ length: Number(days) }, (_, index) => {
-      const date = new Date(); date.setUTCHours(0, 0, 0, 0); date.setUTCDate(date.getUTCDate() - Number(days) + 1 + index);
-      const key = date.toISOString().slice(0, 10);
-      return rows.get(key) || { date: key, total: 0, critical: 0, high: 0, medium: 0, low: 0 };
-    });
-  }, [data, days]);
-  const maxDaily = Math.max(1, ...series.map(row => Number(row.total)));
-  const bySeverity = data?.by_severity || [];
-  const totalSeverity = bySeverity.reduce((sum, row) => sum + Number(row.count), 0);
-  return <Box className="page-enter detection-intelligence" p={{ base: "12px", md: "20px" }} w="100%" minW="0">
-    <Flex align="center" gap="12px" wrap="wrap" mb="14px"><Box flex="1" minW="200px"><Text fontSize="10px" color={ui.muted} letterSpacing=".1em">DETECT / INTELLIGENCE</Text><Heading fontSize="26px" mt="4px">Detection intelligence</Heading><Text color={ui.muted} fontSize="12px" mt="6px">Alert inventory and linked investigations from your connected sources.</Text></Box><Button variant="outline" onClick={() => setView("detect")}>Rule registry</Button><Button variant="outline" isDisabled={loading} onClick={() => setRevision(v => v + 1)}>Refresh</Button></Flex>
-    <Flex gap="8px" wrap="wrap" mb="14px"><Select aria-label="Time range" w="auto" value={days} onChange={e => setDays(Number(e.target.value))}>{[[7,"Last 7 days"],[30,"Last 30 days"],[90,"Last 90 days"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}</Select><Select aria-label="Source filter" maxW="260px" w="auto" value={source} onChange={e=>setSource(e.target.value)}><option value="">All sources</option>{data?.sources.map(value=><option key={value}>{value}</option>)}</Select><Select aria-label="Severity filter" w="auto" value={severity} onChange={e=>setSeverity(e.target.value)}><option value="">All severities</option>{["critical","high","medium","low"].map(value=><option key={value}>{value}</option>)}</Select><Text alignSelf="center" fontSize="11px" color={ui.muted}>UTC · Metrics use received alerts for the selected period</Text></Flex>
-    {error && <Alert status="error" mb="12px"><AlertIcon />{error}<Button ml="auto" variant="outline" onClick={()=>setRevision(v=>v+1)}>Retry</Button></Alert>}
-    <Grid templateColumns={{base:"repeat(2,minmax(0,1fr))",lg:"repeat(4,minmax(0,1fr))"}} gap="10px" mb="12px">{[[data?.totals.total_alerts,"Received alerts"],[data?.totals.investigated,"Linked investigations"],[data?.totals.pending_review,"Pending analyst review"],[data?.totals.suppressed,"Suppressed by rule"]].map(([value,label])=><Panel key={label} p={{base:"12px",md:"16px"}}><Text color={ui.muted} fontSize="11px">{label}</Text><Text fontSize={{base:"24px",md:"30px"}} fontWeight="700" mt="4px">{loading?"—":integer(value)}</Text></Panel>)}</Grid>
-    <Grid templateColumns={{base:"minmax(0,1fr)",xl:"minmax(0,1.55fr) minmax(300px,.75fr)"}} gap="12px" alignItems="stretch" mb="12px">
-      <Panel p={{base:"14px",md:"18px"}}><Flex justify="space-between" gap="8px" align="start"><Box><Heading fontSize="15px">Alert activity</Heading><Text color={ui.muted} fontSize="11px" mt="4px">{days}-day volume, grouped by severity</Text></Box><Badge>{integer(data?.totals.total_alerts)} total</Badge></Flex>
-        <Flex className="intel-chart" align="end" gap={{base:"2px",md:"5px"}} h={{base:"170px",md:"220px"}} mt="16px" borderBottom="1px solid" borderColor={ui.line}>
-          {series.map(row=><Box key={row.date} className="intel-day" title={`${row.date}: ${row.total} alerts`} flex="1" h="100%" display="flex" alignItems="end" minW="0"><Flex direction="column" justify="end" w="100%" h={`${Math.max(2,Number(row.total)/maxDaily*100)}%`} overflow="hidden" roundedTop="2px">{["critical","high","medium","low"].map(key=>Number(row[key])>0&&<Box key={key} h={`${Number(row[key])/Number(row.total)*100}%`} minH="2px" bg={colors[key]} />)}</Flex></Box>)}
-        </Flex><Flex justify="space-between" mt="8px"><Text fontSize="9px" color={ui.muted}>{series[0]?.date}</Text><Text fontSize="9px" color={ui.muted}>{series.at(-1)?.date}</Text></Flex><Flex gap="12px" wrap="wrap" mt="12px">{["critical","high","medium","low"].map(key=><Flex key={key} align="center" gap="5px"><Box w="8px" h="8px" bg={colors[key]} rounded="1px"/><Text color={ui.muted} fontSize="10px" textTransform="capitalize">{key} · {integer(bySeverity.find(row=>row.name===key)?.count)}</Text></Flex>)}</Flex>
-      </Panel>
-      <Panel p={{base:"14px",md:"18px"}}><Heading fontSize="15px">Connected source inventory</Heading><Text color={ui.muted} fontSize="11px" mt="4px">Alert volume and share for this period</Text><Stack spacing="12px" mt="16px">{(data?.by_source||[]).map(item=><Box key={item.name} cursor="pointer" onClick={()=>setSource(item.name)}><Flex justify="space-between" gap="8px" mb="5px"><Text fontSize="11px" fontWeight="600" overflowWrap="anywhere">{item.name}</Text><Text fontSize="11px" color={ui.muted} flexShrink="0">{integer(item.count)} · {totalSeverity?Math.round(Number(item.count)/totalSeverity*100):0}%</Text></Flex><Box bg={ui.soft} h="6px" rounded="full" overflow="hidden"><Box bg={ui.violet} h="100%" w={`${totalSeverity?Math.max(1,Number(item.count)/totalSeverity*100):0}%`}/></Box></Box>)}{!loading&&!data?.by_source.length&&<Text color={ui.muted} fontSize="12px">No alerts received in this period.</Text>}</Stack>
-        <Box mt="20px" pt="14px" borderTop="1px solid" borderColor={ui.line}><Text fontSize="11px" fontWeight="600" mb="10px">Routing outcomes</Text>{(data?.by_disposition||[]).map(item=><Flex key={item.name} align="center" gap="8px" mb="8px"><Box w="8px" h="8px" rounded="full" bg={dispositionColor[item.name]||ui.steel}/><Text flex="1" fontSize="11px" textTransform="capitalize">{item.name.replaceAll("_"," ")}</Text><Text fontSize="11px" color={ui.muted}>{integer(item.count)}</Text></Flex>)}</Box>
-      </Panel>
-    </Grid>
-    <Grid templateColumns={{base:"minmax(0,1fr)",lg:"minmax(0,1.2fr) minmax(280px,.8fr)"}} gap="12px" alignItems="start">
-      <Panel overflow="hidden"><Box p="14px 16px" borderBottom="1px solid" borderColor={ui.line}><Heading fontSize="15px">Recent alerts</Heading><Text color={ui.muted} fontSize="11px" mt="4px">Latest 50 matching alerts · Click a rule or investigation to inspect</Text></Box>{data?.recent.map(alert=><Flex key={alert.id} className="intel-alert-row" p="12px 16px" gap="10px" align="center" borderBottom="1px solid" borderColor={ui.line} wrap="wrap"><Box flex="1" minW="180px"><Text fontSize="12px" fontWeight="600" overflowWrap="anywhere">{alert.title}</Text><Text color={ui.muted} fontSize="10px" mt="4px">{alert.source_provider || alert.source} · {new Date(alert.created_at).toLocaleString()}</Text></Box><Badge colorScheme={["critical","high"].includes(alert.severity)?"red":"yellow"}>{alert.severity}</Badge><Badge colorScheme={alert.investigation_id?"blue":"gray"}>{alert.disposition.replaceAll("_"," ")}</Badge><Button variant="link" fontSize="10px" onClick={()=>setView("detectionRuleDetail",alert.rule_id)}>{alert.rule_name}</Button>{alert.investigation_id&&<Button variant="outline" onClick={()=>setView("investigationDetail",alert.investigation_id)}>Open investigation</Button>}</Flex>)}{!loading&&!data?.recent.length&&<Text p="24px" color={ui.muted}>No matching alerts yet. Connect an API source or submit an alert through the registry workflow.</Text>}</Panel>
-      <Panel p="16px"><Heading fontSize="15px">Investigation outcomes</Heading><Text color={ui.muted} fontSize="11px" mt="4px">Current determinations for cases linked to matching alerts.</Text><Stack mt="14px" spacing="10px">{["malicious","suspicious","benign","unknown","mitigated"].map(name=>{const count=data?.outcomes.find(item=>item.name===name)?.count||0;return <Flex key={name} justify="space-between" align="center"><Flex align="center" gap="8px"><Box w="8px" h="8px" rounded="full" bg={name==="malicious"?ui.red:name==="suspicious"?ui.amber:name==="benign"?ui.green:ui.steel}/><Text fontSize="11px" textTransform="capitalize">{name}</Text></Flex><Text fontSize="12px" fontWeight="600">{integer(count)}</Text></Flex>})}</Stack><Text fontSize="10px" color={ui.muted} mt="12px">Outcome counts cover all matching linked cases in the selected period. Unknown means no analyst conclusion has been recorded.</Text><Button mt="14px" w="100%" variant="outline" onClick={()=>setView("investigations")}>View investigations</Button></Panel>
-    </Grid>
+    const controller = new AbortController();
+    setLoading(true); setError(''); setData(null);
+    const params = new URLSearchParams({ days: String(days), ...(source && { source }), ...(severity && { severity }), ...(query && { search: query }), ...(rule && { rule_id: rule }) });
+    api.request(`/detection-intelligence?${params}`, { signal: controller.signal })
+      .then(result => { if (!controller.signal.aborted) setData(result); })
+      .catch(e => { if (!controller.signal.aborted) setError(e.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [days, source, severity, query, rule, revision]);
+  const providers = useMemo(() => {
+    const map = new Map();
+    for (const row of data?.groups || []) {
+      if (!map.has(row.source)) map.set(row.source, { source: row.source, count: 0, rows: [] });
+      const group = map.get(row.source); group.count += Number(row.count); group.rows.push(row);
+    }
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [data]);
+  const series = useMemo(() => dailySeries(data), [data]);
+  const total = data?.totals.total_alerts || 0, maxDaily = Math.max(1, ...series.map(row => row.total));
+  const selected = Boolean(source || severity || query || rule);
+  const reset = () => { setSource(''); setSeverity(''); setSearch(''); setQuery(''); setRule(''); };
+  const chooseSource = value => { setSource(value); setRule(''); };
+  const legend = tab === 'coverage' ? ['Full', 'Majority', 'Partial', 'None'] : ['Escalated', 'Not escalated'];
+  return <Box className="detection-intelligence page-enter" aria-busy={loading}>
+    <Flex align="center" justify="space-between" gap="12px" wrap="wrap" mb="14px"><Heading fontSize="20px">Detection Intelligence</Heading><Text fontSize="11px" color="gray.500">Received alerts · UTC</Text></Flex>
+    <Flex className="di-toolbar" gap="8px" wrap="wrap" align="center">
+      <Input aria-label="Search alerts" placeholder="Search alerts, rules or sources" value={search} onChange={e => setSearch(e.target.value)} maxW={{base:'100%',md:'260px'}} size="sm" bg="white" />
+      <Select aria-label="Time range" value={days} onChange={e => setDays(Number(e.target.value))} w="auto" size="sm">{[7,30,90].map(n => <option key={n} value={n}>Last {n} days</option>)}</Select>
+      <Select aria-label="Severity filter" value={severity} onChange={e => setSeverity(e.target.value)} w="auto" size="sm"><option value="">All severities</option>{Object.keys(severityColors).map(s => <option key={s}>{s}</option>)}</Select>
+      {selected && <Button size="sm" variant="ghost" onClick={reset}>Clear filters</Button>}
+      <Button size="sm" variant="ghost" ml="auto" onClick={() => setRevision(v => v + 1)} isDisabled={loading}>Refresh</Button>
+      <Button size="sm" variant="outline" onClick={() => { setCases(v => !v); setTable(true); }}>{cases ? 'Show all alerts' : 'View in Investigations'}</Button>
+    </Flex>
+    {error && <Alert status="error" mt="12px"><AlertIcon />{error}<Button ml="auto" onClick={() => setRevision(v => v + 1)}>Retry</Button></Alert>}
+    {selected && <Flex gap="6px" mt="10px" wrap="wrap">{source && <Badge>Source: {source}</Badge>}{rule && <Badge>Rule: {rule}</Badge>}{query && <Badge>Search: {query}</Badge>}</Flex>}
+    <section className="di-workspace">
+      <Flex justify="space-between" align="center" gap="8px" wrap="wrap" className="di-tabs"><div role="tablist" aria-label="Intelligence metric"><button role="tab" aria-selected={tab === 'coverage'} onClick={() => setTab('coverage')}>Investigation Coverage</button><button role="tab" aria-selected={tab === 'escalation'} onClick={() => setTab('escalation')}>Escalation</button></div><Button size="xs" variant="ghost" onClick={() => setTable(v => !v)}>{table ? 'Collapse table' : 'Expand table'} ↗</Button></Flex>
+      <Flex justify="space-between" wrap="wrap" gap="8px" px="12px" py="10px"><Text fontSize="10px" color="gray.600">{tab === 'coverage' ? 'Coverage = share of alerts linked to an investigation; not completion or detection efficacy.' : 'Escalation = alerts routed to Escalate; not confirmed response execution.'}</Text><Flex gap="10px">{legend.map(key => <Flex key={key} gap="4px" align="center"><Box w="7px" h="7px" rounded="full" bg={palette[key]} /><Text fontSize="10px">{key}</Text></Flex>)}</Flex></Flex>
+      {loading ? <div className="di-placeholder" role="status">Loading detection intelligence…</div> : !data || !total ? <div className="di-placeholder">{error ? 'Metrics unavailable.' : 'No alerts match this period and filters.'}</div> : <div className="di-map-layout">
+        <aside className="di-inventory" aria-label="Source inventory"><button className="di-source di-all" onClick={() => chooseSource('')} aria-pressed={!source}><span><b>All Alerts</b><small>{source ? 'Selected source' : 'All sources'}</small></span><span><b>{number(total)}</b><small>100%</small></span></button>{data.by_source.map(item => <button key={item.name} className="di-source" onClick={() => chooseSource(item.name)} aria-pressed={source === item.name}><span className="di-source-name"><b>› {item.name}</b><small>{number(item.count)} alerts</small></span><span><b>{(item.count / total * 100).toFixed(1)}%</b><i><em style={{width:`${item.count / total * 100}%`}} /></i></span></button>)}</aside>
+        <div className="di-visual"><div className="di-treemap" aria-label="Alert source and rule treemap">{providers.map(provider => <div className="di-provider" key={provider.source} style={{flexGrow:provider.count}}><button className="di-provider-title" title={provider.source} onClick={() => chooseSource(provider.source)}><span>{provider.source}</span><b>{number(provider.count)}</b></button><div className="di-tiles">{treemap(provider.rows,0,0,100,300).map(tile => { const state = tab === 'coverage' ? coverage(tile) : tile.escalated > 0 ? 'Escalated' : 'Not escalated'; return <button key={tile.rule_id} className="di-tile" style={{left:`${tile.x}%`,top:`${tile.y / 3}%`,width:`${tile.width}%`,height:`${tile.height / 3}%`,background:palette[state],color:['None','Partial','Escalated'].includes(state)?'white':'#243f4c'}} title={`${tile.source} · ${tile.rule_name}: ${number(tile.count)} alerts, ${number(tile.linked)} linked, ${number(tile.escalated)} escalated`} onClick={() => { setSource(tile.source); setRule(tile.rule_id); setTable(true); }}><span>{tile.rule_name}</span><b>{number(tile.count)}</b><small>{tab === 'coverage' ? state : `${number(tile.escalated)} escalated`}</small></button>; })}</div></div>)}</div></div>
+      </div>}
+      {data?.group_count > 200 && <Text fontSize="11px" p="12px">Showing the 200 largest source/rule groups of {number(data.group_count)}. Summary totals cover all matches; narrow filters to see smaller groups.</Text>}
+      {table && data && <div className="di-table-scroll"><table className="di-table"><caption>{cases ? 'Linked investigations — up to 50 distinct cases, newest matching alert first' : 'Source and rule coverage — accessible treemap data'}</caption><thead><tr>{(cases ? ['Example matching alert','Matching alerts','Determination','Investigation'] : ['Source / rule','Alerts','Linked','Escalated','Coverage','Rule']).map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>{cases ? data.investigations.map(row => <tr key={row.id}><td>{row.alert_title}</td><td>{number(row.alerts)}</td><td>{row.determination || 'Unknown'}</td><td><Button size="xs" variant="link" onClick={() => setView('investigationDetail',row.id)}>Open investigation</Button></td></tr>) : data.groups.map(row => <tr key={`${row.source}:${row.rule_id}`}><td>{row.source}<br/><b>{row.rule_name}</b></td><td>{number(row.count)}</td><td>{number(row.linked)}</td><td>{number(row.escalated)}</td><td>{coverage(row)}</td><td><Button size="xs" variant="link" onClick={() => setView('detectionRuleDetail',row.rule_id)}>Open rule</Button></td></tr>)}</tbody></table>{cases && !data.investigations.length && <Text p="16px">No linked investigations match these filters.</Text>}</div>}
+    </section>
+    {data && <div className="di-bottom"><Breakdown title="Categories" rows={data.by_category} total={total} /><Breakdown title="Severities" rows={data.by_severity} total={total} onSelect={setSeverity}/><section className="di-summary di-trend"><h2>Daily average · selected period</h2><strong>{number(Math.round(total / days))}</strong><div className="di-trend-content"><div className="di-chart-legend">{Object.entries(severityColors).map(([key,color]) => <span key={key}><i style={{background:color}} />{key}</span>)}</div><div className="di-chart" style={{gap:series.length > 30 ? '1px' : undefined}} role="img" aria-label={`Daily alert volume by severity, ${series.length} UTC dates including partial boundary days`}>{series.map(row => <div className="di-day" key={row.date} title={`${row.date}: ${number(row.total)} alerts`}><div style={{height:`${row.total / maxDaily * 100}%`}}>{Object.keys(severityColors).map(key => row[key] > 0 && <span key={key} style={{background:severityColors[key],height:`${row[key] / row.total * 100}%`}} />)}</div></div>)}</div></div><Flex justify="space-between" fontSize="10px" color="gray.500"><span>{series[0]?.date}</span><span>{series.at(-1)?.date}</span></Flex><details><summary>Daily counts</summary><table className="di-table"><thead><tr><th>UTC date</th><th>Total</th></tr></thead><tbody>{series.map(row => <tr key={row.date}><td>{row.date}</td><td>{number(row.total)}</td></tr>)}</tbody></table></details></section></div>}
+    <Text fontSize="10px" color="gray.500" mt="10px">Categories come from rule metadata; missing categories are Unclassified. Imported demo alerts are included when they match the selected period. {data && `Updated ${new Date(data.as_of).toLocaleString()}.`}</Text>
   </Box>;
 }

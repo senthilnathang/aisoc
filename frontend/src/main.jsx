@@ -95,6 +95,7 @@ const Icon = {
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/detect/detection-intelligence" || pathname === "/detect/detection-intelligence/") pathname = "/detect/intelligence";
   if (pathname === "/build-operations" || pathname === "/build-operations/") pathname = "/build/stream-operations";
   const responseView = Object.entries(pathForView).find(([view, path]) => view.startsWith("response") && path === pathname);
   if (responseView) return { view: responseView[0], investigationId: null, reportId: null, ruleId: null };

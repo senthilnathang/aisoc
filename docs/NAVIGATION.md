@@ -49,3 +49,7 @@ Validation passed against both the development app and a local production previe
 See [developer instructions](DEVELOPMENT.md), [test guide](TESTING.md) and [React migration notes](REACT_19_MIGRATION.md).
 
 See [clickable breadcrumbs and tenant-scoped resource labels](BREADCRUMBS.md) for frontend/backend behavior and regression coverage.
+
+### Detection Intelligence screenshot implementation (2026-10-31)
+
+Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](DETECTION_INTELLIGENCE.md). Other Detect screenshots remain future work.

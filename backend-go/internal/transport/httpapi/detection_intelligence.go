@@ -10,10 +10,15 @@ import (
 func registerIntelligence(mux *http.ServeMux, pool *pgxpool.Pool) {
 	store := detection.Store{Pool: pool}
 	mux.HandleFunc("GET /api/v1/detection-intelligence", respond(func(r *http.Request) (any, int, error) {
-		schema := objectRule(responseField{"days", &responseRule{kind: "integer", min: 1, max: 90, bounded: true}}, responseField{"source", textRule(0, 200)}, responseField{"severity", &responseRule{choices: []string{"low", "medium", "high", "critical"}}})
-		schema.optional = map[string]bool{"days": true, "source": true, "severity": true}
+		schema := objectRule(responseField{"search", textRule(0, 200)}, responseField{"rule_id", textRule(0, 256)}, responseField{"days", &responseRule{kind: "integer", min: 1, max: 90, bounded: true}}, responseField{"source", textRule(0, 200)}, responseField{"severity", &responseRule{choices: []string{"low", "medium", "high", "critical"}}})
+		schema.optional = map[string]bool{"search": true, "rule_id": true, "days": true, "source": true, "severity": true}
 		raw := map[string]any{}
 		for key, values := range r.URL.Query() {
+			switch key {
+			case "days", "source", "severity", "search", "rule_id":
+			default:
+				return nil, 0, invalid()
+			}
 			if len(values) == 1 {
 				raw[key] = values[0]
 			} else {
@@ -32,9 +37,11 @@ func registerIntelligence(mux *http.ServeMux, pool *pgxpool.Pool) {
 			return nil, 0, validationFailure("querystring", details)
 		}
 		input := value.(map[string]any)
+		search, _ := input["search"].(string)
+		ruleID, _ := input["rule_id"].(string)
 		source, _ := input["source"].(string)
 		severity, _ := input["severity"].(string)
-		result, err := store.Intelligence(r.Context(), auth.From(r.Context()).Tenant, detection.IntelligenceOptions{Days: int(input["days"].(float64)), Source: source, Severity: severity})
+		result, err := store.Intelligence(r.Context(), auth.From(r.Context()).Tenant, detection.IntelligenceOptions{Days: int(input["days"].(float64)), Source: source, Severity: severity, Search: search, RuleID: ruleID})
 		return result, 200, err
 	}))
 }

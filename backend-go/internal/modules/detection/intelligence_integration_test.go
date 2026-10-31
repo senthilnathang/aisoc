@@ -112,4 +112,49 @@ func TestIntelligenceWindowUTCAndForeignProvider(t *testing.T) {
 	if all["totals"].(map[string]any)["total_alerts"] != float64(5) {
 		t.Fatal("total mismatch")
 	}
+	groups := direct["groups"].([]any)
+	if len(groups) != 1 || groups[0].(map[string]any)["linked"] != float64(2) {
+		t.Fatal("linked alerts not counted", groups)
+	}
+	if len(direct["investigations"].([]any)) != 1 {
+		t.Fatal("case drill-down duplicated shared case")
+	}
+	filtered, err := s.Intelligence(ctx, tenant, IntelligenceOptions{Days: 90, Search: "FRESH", RuleID: rule["id"].(string)})
+	if err != nil || filtered["totals"].(map[string]any)["total_alerts"] != float64(2) {
+		t.Fatal("search/rule filter", err, filtered)
+	}
+	for _, search := range []string{"%", "' OR 1=1 --", "Foreign private provider"} {
+		result, err := s.Intelligence(ctx, tenant, IntelligenceOptions{Days: 90, Search: search})
+		if err != nil || result["totals"].(map[string]any)["total_alerts"] != float64(0) {
+			t.Fatal("search must be literal and tenant-scoped", err)
+		}
+	}
+	if _, err = pool.Exec(ctx, `UPDATE alerts SET document=jsonb_set(document,'{routing}','"Escalate"') WHERE tenant_id=$1 AND id='fresh1'`, tenant); err != nil {
+		t.Fatal(err)
+	}
+	escalated := read(1, "Direct")
+	if escalated["totals"].(map[string]any)["escalated_alerts"] != float64(1) {
+		t.Fatal("escalation counts", escalated)
+	}
+	if escalated["by_category"].([]any)[0].(map[string]any)["name"] != "Unclassified" {
+		t.Fatal("missing category fabricated")
+	}
+	if _, err = pool.Exec(ctx, `UPDATE alerts SET created_at=now()+interval '1 day' WHERE tenant_id=$1 AND id='fresh1'`, tenant); err != nil {
+		t.Fatal(err)
+	}
+	if read(1, "Direct")["totals"].(map[string]any)["total_alerts"] != float64(1) {
+		t.Fatal("future alerts included")
+	}
+
+	if _, err = pool.Exec(ctx, `INSERT INTO alerts(tenant_id,id,source,external_id,rule_id,document,payload_hash,created_at) SELECT $1,'cap-'||n,'cap-source-'||n,'cap-'||n,$2,'{"title":"cap","severity":"low","routing":"Suppress","disposition":"suppressed"}'::jsonb,decode(repeat('00',32),'hex'),now() FROM generate_series(1,205) n`, tenant, rule["id"]); err != nil {
+		t.Fatal(err)
+	}
+	capped, err := s.Intelligence(ctx, tenant, IntelligenceOptions{Days: 1, Search: "cap"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(capped["groups"].([]any)) != 200 || capped["group_count"] != float64(205) || capped["totals"].(map[string]any)["total_alerts"] != float64(205) {
+		t.Fatal("bounded groups must retain full totals", capped)
+	}
+
 }
