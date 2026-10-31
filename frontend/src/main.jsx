@@ -46,6 +46,7 @@ import AuthGate from "./AuthGate";
 import ApiSources from "./ApiSources";
 import StreamOperations from "./StreamOperations";
 import CreateDetectionRule from "./CreateDetectionRule";
+import DetectionCoverage from "./DetectionCoverage";
 import DetectionRegistry, { RuleWorkspace } from "./DetectionRegistry";
 import DetectionIntelligence from "./DetectionIntelligence";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
@@ -95,6 +96,7 @@ const Icon = {
 };
 
 function routeFromPath(pathname) {
+  if (pathname === "/detect/detection-coverage" || pathname === "/detect/detection-coverage/") pathname = "/detect/coverage";
   if (pathname === "/detect/detection-rules" || pathname === "/detect/detection-rules/") pathname = "/detect/rules";
   if (pathname === "/detect/detection-intelligence" || pathname === "/detect/detection-intelligence/") pathname = "/detect/intelligence";
   if (pathname === "/build-operations" || pathname === "/build-operations/") pathname = "/build/stream-operations";
@@ -287,25 +289,9 @@ function QueueDashboard({ setView }) {
           subtitle="Query, search, and act on data wherever it lives"
         >
           <Label>Detect</Label>
-          <Metric value="78%" label="ATT&CK coverage" />
-          <Flex minH="180px" align="center" justify="space-between">
-            <Box w="42%">
-              <Text fontSize="8px" color={ui.muted} lineHeight="1.45">
-                3 detection tuning recommendations to improve ATT&CK coverage
-                are ready for review
-              </Text>
-            </Box>
-            <Radar />
-          </Flex>
-          <Text fontSize="8px" fontWeight="600">
-            Exfiltration: Optimize Coverage for T1567 ·{" "}
-            <Text as="span" color={ui.red}>
-              Critical
-            </Text>
-          </Text>
-          <Text color={ui.violet} fontSize="8px" mt="5px">
-            Fix the exfiltration coverage gap ›
-          </Text>
+          <Heading fontSize="24px" fontWeight="400" mt="8px">Coverage analysis</Heading>
+          <Text fontSize="12px" color={ui.muted} my="24px">Review tenant-scoped ATT&CK mappings, assessment evidence, gaps and expiry. Coverage is assessed against a pinned reference; rule tags alone do not prove detection effectiveness.</Text>
+          <Button variant="outline" onClick={() => setView("detectionCoverage")}>Open detection coverage</Button>
           <Divider my="14px" />
           <Label>Data lakes</Label>
           <Metric value="3" label="Watchlist hits on ingest" size="30px" />
@@ -503,26 +489,6 @@ function QueueColumn({ title, subtitle, children }) {
   );
 }
 
-function Radar() {
-  return (
-    <Box
-      className="radar-grid"
-      position="relative"
-      w="130px"
-      h="130px"
-      rounded="full"
-    >
-      <Box
-        position="absolute"
-        inset="27px"
-        bg="rgba(96,86,232,.20)"
-        border="1px solid"
-        borderColor={ui.violet}
-        clipPath="polygon(50% 0,82% 13%,100% 50%,78% 88%,38% 100%,6% 65%,13% 20%)"
-      />
-    </Box>
-  );
-}
 function SankeyMini() {
   return (
     <Box mt="12px" h="105px" position="relative" overflow="hidden">
@@ -2724,6 +2690,7 @@ function App() {
     investigationDetail: <InvestigationCase key={investigationId} id={investigationId} />,
     detect: <DetectionRegistry setView={setView} />,
     detectionIntelligence: <DetectionIntelligence setView={setView} />,
+    detectionCoverage: <DetectionCoverage setView={setView} />,
     detectionRuleDetail: <Box p={{ base: "12px", md: "20px" }}><RuleWorkspace key={ruleId} id={ruleId} standalone onClose={() => setView("detect")} onChanged={() => {}} onSelect={id => setView("detectionRuleDetail", id)} /></Box>,
     respond: <ResponseWorkspace key="respond" setView={setView} />,
     responseCases: <ResponseWorkspace key="responseCases" setView={setView} mode="responseCases" />,

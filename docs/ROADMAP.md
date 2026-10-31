@@ -140,8 +140,12 @@ Proposed Detect work is recorded in the [five-screen 7AI review](SEVENAI_DETECT_
 
 ### Detection Intelligence screenshot implementation (2026-10-31)
 
-Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](DETECTION_INTELLIGENCE.md). Coverage, Recommendations execution and Routing remain future work.
+Source/rule treemap, coverage and escalation views, search, linked-case drill-down, and responsive summary panels now use the tenant-scoped Go sqlc/pgx projection. Existing `/detect/intelligence` links remain valid; `/detect/detection-intelligence` is an alias. Coverage means linked alerts, not completed investigations. See [implementation, API, metric definitions and verification](DETECTION_INTELLIGENCE.md). Recommendations execution and Routing remain future work.
 
 ### Detection Rules workspace (2026-10-31)
 
 The Rules screenshot layout now uses Go/sqlc period-specific metrics, a backend-served local catalog, and URL-persisted inspector selection, filters and tabs. Existing CRUD, audit and all-time APIs are retained. FPR and assessed coverage remain unknown; Recommendations execution is still planned. See [UI, API contracts, test workflow and rollback](DETECTION_RULES.md).
+
+### Detection Coverage (2026-10-31)
+
+The Coverage workspace now provides a pinned ATT&CK radar/table, technique drill-down and tenant-scoped, versioned analyst assessments. Migration 033 is additive; sqlc writes and audit commit together. Verified coverage excludes stale/expired reviews and non-detection decisions. The old Overview coverage example now links to the real workspace. See [reference provenance, denominator, APIs, testing and rollback](DETECTION_COVERAGE.md).
