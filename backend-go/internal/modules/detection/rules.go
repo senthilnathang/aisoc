@@ -34,7 +34,33 @@ func get(ctx context.Context, db Queryer, tenant, id string, lock bool) (map[str
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = missing()
 	}
+	if err == nil {
+		record = readableRule(record, tenant, id)
+	}
 	return record, version, err
+}
+
+// Built-in sandbox rules may contain only routing fields. Identity belongs to
+// the relational key, not duplicated JSON; defaults below describe absent data
+// without enabling a rule or inventing a severity/policy.
+func readableRule(record map[string]any, tenant, id string) map[string]any {
+	if record == nil {
+		record = map[string]any{}
+	}
+	record["id"], record["tenant_id"] = id, tenant
+	if record["name"] == nil {
+		record["name"] = id
+	}
+	if record["description"] == nil {
+		record["description"] = ""
+	}
+	if record["severity"] == nil {
+		record["severity"] = "unknown"
+	}
+	if record["mitre_techniques"] == nil {
+		record["mitre_techniques"] = []any{}
+	}
+	return record
 }
 func snapshot(ctx context.Context, tx pgx.Tx, tenant, id string, version int, record map[string]any) error {
 	values := map[string]any{}
@@ -169,7 +195,7 @@ func (s Store) Update(ctx context.Context, tenant, id string, input map[string]a
 	return record, tx.Commit(ctx)
 }
 func (s Store) List(ctx context.Context, tenant, search, severity string, limit, offset int) ([]map[string]any, error) {
-	rows, err := s.Pool.Query(ctx, `SELECT document FROM detection_rules WHERE tenant_id=$1 AND ($2='' OR document->>'severity'=$2) AND ($3='' OR document->>'name' ILIKE $4 ESCAPE '' OR document->>'description' ILIKE $4 ESCAPE '') ORDER BY updated_at DESC,ordinal LIMIT $5 OFFSET $6`, tenant, severity, search, "%"+search+"%", limit, offset)
+	rows, err := s.Pool.Query(ctx, `SELECT id,document FROM detection_rules WHERE tenant_id=$1 AND ($2='' OR document->>'severity'=$2) AND ($3='' OR document->>'name' ILIKE $4 ESCAPE '' OR document->>'description' ILIKE $4 ESCAPE '') ORDER BY updated_at DESC,ordinal LIMIT $5 OFFSET $6`, tenant, severity, search, "%"+search+"%", limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -177,10 +203,11 @@ func (s Store) List(ctx context.Context, tenant, search, severity string, limit,
 	items := []map[string]any{}
 	for rows.Next() {
 		var record map[string]any
-		if err = rows.Scan(&record); err != nil {
+		var id string
+		if err = rows.Scan(&id, &record); err != nil {
 			return nil, err
 		}
-		items = append(items, record)
+		items = append(items, readableRule(record, tenant, id))
 	}
 	return items, rows.Err()
 }

@@ -76,3 +76,7 @@ React Actions, optimistic updates, lazy loading and virtualization are optional 
 - [React Compiler installation](https://react.dev/learn/react-compiler/installation)
 - [Chakra migration guide](https://chakra-ui.com/docs/get-started/migration)
 - [minimatch advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249)
+
+## Follow-up: detection registry data error
+
+The initial route/heading checks missed a pre-existing Go API panic caused by a sandbox rule whose JSON lacked `id` and `mitre_techniques`. The detection read projection now takes identity from the relational key, supplies empty mapping/display defaults, and leaves stored routing unchanged. Missing severity is displayed as unknown. A database regression and desktop/mobile data-loading test cover the failure; broad route checks now reject GET API errors.

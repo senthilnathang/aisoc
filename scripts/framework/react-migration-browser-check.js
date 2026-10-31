@@ -6,7 +6,8 @@ async page => {
   const errors = [], checks = [], timings = [];
   const error = e => errors.push(e.message);
   const consoleError = m => { if (m.type() === 'error' && !m.text().includes('Failed to load resource')) errors.push(m.text()); };
-  page.on('pageerror', error); page.on('console', consoleError);
+  const apiFailure = r => { if(r.request().method()==='GET' && r.url().includes('/api/') && r.status()>=400) errors.push(`GET ${new URL(r.url()).pathname}: ${r.status()}`); };
+  page.on('pageerror', error); page.on('console', consoleError); page.on('response',apiFailure);
   const blockWrites = route => route.request().method() === 'GET' ? route.continue() : route.fulfill({status:503,json:{error:{message:'Mock mutation rejected'}}});
   await page.route('**/api/**', blockWrites);
   const navigate = async path => { await page.goto(origin+path); await page.getByRole('status').filter({hasText:'Checking workspace'}).waitFor({state:'hidden'}); };
@@ -85,6 +86,6 @@ async page => {
     timings.sort((a,b)=>a-b);
     return {passed:true,checks,interaction:{samples:30,warmups:5,median_ms:timings[15],p95_ms:timings[28]},profiling,errors,mutations:'intercepted'};
   } finally {
-    await page.unrouteAll({behavior:'wait'}); page.off('pageerror',error);page.off('console',consoleError);
+    await page.unrouteAll({behavior:'wait'}); page.off('pageerror',error);page.off('console',consoleError);page.off('response',apiFailure);
   }
 }

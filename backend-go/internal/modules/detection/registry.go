@@ -38,19 +38,21 @@ func (s Store) Registry(ctx context.Context, tenant string, options RegistryOpti
 		direction = "ASC"
 	}
 	args = append(args, options.Limit, options.Offset)
-	rows, err := tx.Query(ctx, `SELECT document,version,COALESCE((SELECT jsonb_agg(jsonb_build_object('id',s.id,'name',s.name,'provider',s.provider) ORDER BY s.name COLLATE "C",s.ordinal) FROM api_sources s WHERE s.tenant_id=detection_rules.tenant_id AND s.rule_id=detection_rules.id),'[]'::jsonb) FROM detection_rules WHERE `+where+` ORDER BY `+order+` `+direction+`, id COLLATE "C" ASC LIMIT $6 OFFSET $7`, args...)
+	rows, err := tx.Query(ctx, `SELECT id,document,version,COALESCE((SELECT jsonb_agg(jsonb_build_object('id',s.id,'name',s.name,'provider',s.provider) ORDER BY s.name COLLATE "C",s.ordinal) FROM api_sources s WHERE s.tenant_id=detection_rules.tenant_id AND s.rule_id=detection_rules.id),'[]'::jsonb) FROM detection_rules WHERE `+where+` ORDER BY `+order+` `+direction+`, id COLLATE "C" ASC LIMIT $6 OFFSET $7`, args...)
 	if err != nil {
 		return nil, err
 	}
 	items := []map[string]any{}
 	for rows.Next() {
 		var record map[string]any
+		var id string
 		var version int
 		var bindings []map[string]any
-		if err = rows.Scan(&record, &version, &bindings); err != nil {
+		if err = rows.Scan(&id, &record, &version, &bindings); err != nil {
 			rows.Close()
 			return nil, err
 		}
+		record = readableRule(record, tenant, id)
 		emptyRuleMetrics(record)
 		record["bindings"] = bindings
 		record["version"] = version
