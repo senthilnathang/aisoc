@@ -88,3 +88,7 @@ Cases uses `/respond/cases`; workflow policy configuration uses `/respond/remedi
 ## Shared Threat Intel registry
 
 `/threat-intel` and `/hunt/threat-intelligence` use the shared ThreatIntelWorkspace registry. Report details remain `/threat-intel/{id}` with the existing tenant-scoped breadcrumb. IOC-created local hunts open `/hunt/threat-hunting/{id}` only when creation completes while the initiating screen remains mounted.
+
+## Skills workspace routes
+
+`/skills` contains custom and augmented tabs within the existing Library submenu. `/skills/new` accepts create/template/text-import drafts; `/skills/:id` uses the file/instructions/relevance editor. Templates, environment suggestions and outcomes keep their current submenu routes. Delayed save completion does not force navigation after leaving. See [Skills screens](SKILLS_WORKSPACE.md).

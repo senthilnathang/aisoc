@@ -337,3 +337,7 @@ Go owns bounded tenant-scoped literal search over stored cases/artifacts, reques
 ## Threat Intel registry and local hunt links
 
 Go uses a repeatable-read registry projection and the existing tenant TI mutation lock for report/IOC changes and atomic local hunt creation. Migration 039 adds analyst metadata and retained request/link snapshots. The draft hunt, link and hunt/report audits commit together; no provider execution occurs. Hunt deletion retains replay tombstones. See [architecture and contracts](THREAT_INTEL_WORKSPACE.md).
+
+## Skills workspace (2026-11-01)
+
+The React library reads Go sqlc projections in a repeatable-read transaction. Authenticated workspace edits lock the tenant skill, compare an expected version, and commit authored fields, optional publication and audit together. Enablement sets a desired boolean. Existing case/hunt matching and material snapshots remain the execution boundary; no new inference service is introduced. See [Skills architecture and sequence](SKILLS_WORKSPACE.md).

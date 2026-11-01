@@ -49,8 +49,8 @@ func TestAuthoringAtomicityAndMaterialConcurrency(t *testing.T) {
 	if _, err = pool.Exec(ctx, `CREATE TRIGGER `+name+` BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION `+name+`() `); err != nil {
 		t.Fatal(err)
 	}
-	for _, op := range []string{"patch", "publish"} {
-		if _, err = s.Mutate(ctx, tenant, id, op, "actor", map[string]any{"name": "Changed"}); err == nil {
+	for _, op := range []string{"patch", "publish", "save-publish", "delete"} {
+		if _, err = s.Mutate(ctx, tenant, id, op, "actor", map[string]any{"name": "Changed", "expected_version": float64(2)}); err == nil {
 			t.Fatal("skill mutation escaped audit failure")
 		}
 	}

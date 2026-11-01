@@ -442,3 +442,7 @@ Hunt workspace tests cover tenant isolation, stored case/artifact matches, liter
 ## Threat Intel verification
 
 The shared isolated PostgreSQL race suite includes threatintel tests for real registry counts, metadata guards, atomic linked hunt creation, concurrent retries, audit failure, report/IOC ownership and deleted-hunt replay. Browser fixtures cover report/IOC forms, relevance, delayed completion navigation, linked hunts and mobile/desktop views. The Hunt browser suite is updated for the shared TI registry. See [test scope](THREAT_INTEL_WORKSPACE.md).
+
+## Skills workspace regression checks
+
+The isolated PostgreSQL harness now includes `internal/modules/skills`, including revision concurrency, pagination/origin isolation, audit rollback and existing materials/applications. HTTP tests reject malformed controls. Run `scripts/framework/skills-workspace-browser-check.js` through Playwright against localhost:8080 for intercepted library/editor/import/preview/conflict/navigation/mobile flows; no demo writes occur. See [Skills verification](SKILLS_WORKSPACE.md).

@@ -78,3 +78,12 @@ sql:
         out: internal/modules/threatintel/threatsql
         sql_package: pgx/v5
         omit_unused_structs: true
+  - engine: postgresql
+    schema: migrations
+    queries: internal/modules/skills/queries
+    gen:
+      go:
+        package: skillsql
+        out: internal/modules/skills/skillsql
+        sql_package: pgx/v5
+        omit_unused_structs: true

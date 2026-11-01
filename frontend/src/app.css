@@ -281,3 +281,9 @@ select {
   .response-workspace.page-enter { animation: none; }
   .response-metric { transition: none; }
 }
+
+/* Keep the Skills metadata compact above the file/editor/relevance workspace. */
+@media (min-width: 768px) {
+  .skills-metadata .chakra-form-control { display: grid; grid-template-columns: 145px minmax(0, 1fr); align-items: center; gap: 10px; }
+  .skills-metadata .chakra-form__label { margin: 0; }
+}

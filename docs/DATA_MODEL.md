@@ -226,3 +226,7 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Threat Intel workspace (039)
 
 Report columns: `threat_actor`, `targeted_industry`, `targeted_region`, `relevant`. `threat_report_hunts` stores tenant/report/request identity, immutable IOC snapshot, hunt ID and actor. Report deletion cascades links; hunt deletion intentionally retains them as request tombstones. Actual IOC counts are derived from indicator rows. See [retention and consistency](THREAT_INTEL_WORKSPACE.md).
+
+## Skills workspace persistence
+
+No new tables/migration: library projections read existing `skills.document` origin/state/metadata and return filtered counts. Row locks guard revision-checked edits; save/publication/deletion and audit share a transaction. Existing material edits increment parent versions, and prior application snapshots remain unchanged. See [Skills lifecycle](SKILLS_WORKSPACE.md).

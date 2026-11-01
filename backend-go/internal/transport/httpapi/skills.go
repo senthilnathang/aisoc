@@ -69,6 +69,7 @@ func skillOptions(r *http.Request) (skills.Options, error) {
 }
 func registerSkills(mux *http.ServeMux, pool *pgxpool.Pool) {
 	store := skills.Store{Pool: pool}
+	registerSkillsWorkspace(mux, store)
 	mux.HandleFunc("GET /api/v1/skills/suggestions", respond(func(r *http.Request) (any, int, error) {
 		schema := objectRule(responseField{"status", &responseRule{choices: []string{"pending", "accepted", "dismissed"}}}, responseField{"refresh", &responseRule{choices: []string{"true", "false"}}})
 		schema.optional = map[string]bool{"status": true, "refresh": true}

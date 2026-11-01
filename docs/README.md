@@ -105,3 +105,7 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Threat Intel screens
 
 [Threat Intel workspace](THREAT_INTEL_WORKSPACE.md): verified screenshot scope, shared registry/detail screens, metadata, actual IOC counts, linked local hunts, migration 039 and tests.
+
+## Skills workspace
+
+[Skills reference, workflows, contracts and tests](SKILLS_WORKSPACE.md) documents the library/editor update. No schema migration is required; version remains 039.

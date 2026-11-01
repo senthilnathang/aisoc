@@ -68,6 +68,9 @@ func save(ctx context.Context, tx pgx.Tx, r map[string]any, create bool) error {
 	return err
 }
 func (s Store) Mutate(ctx context.Context, tenant, id, operation, actor string, input map[string]any) (map[string]any, error) {
+	if err := validateMutation(operation, input); err != nil {
+		return nil, err
+	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -92,7 +95,9 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation, actor string, 
 			r[key] = []any{}
 		}
 		for k, v := range input {
-			r[k] = v
+			if k != "expected_version" {
+				r[k] = v
+			}
 		}
 		r["name"] = name
 		action = "created"
@@ -105,21 +110,40 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation, actor string, 
 			}
 			return nil, err
 		}
+		if expected, ok := input["expected_version"]; ok && expected != r["version"] {
+			return nil, fault.New(409, "SKILL_CONFLICT", "This skill changed. Reload before saving.")
+		}
 		switch operation {
-		case "patch":
+		case "patch", "save-publish":
 			if !editable(r) {
 				return nil, fault.New(403, "READ_ONLY_SKILL", "This skill cannot be edited.")
 			}
 			for k, v := range input {
-				r[k] = v
+				if k != "expected_version" {
+					r[k] = v
+				}
 			}
 			action = "updated"
+			if operation == "save-publish" {
+				r["state"] = "published"
+				r["enabled"] = true
+				action = "published"
+			}
 			details["version"] = r["version"].(float64) + 1
 		case "publish":
 			r["state"] = "published"
 			r["enabled"] = true
 			action = "published"
 			details["version"] = r["version"].(float64) + 1
+		case "set-enabled":
+			if r["state"] != "published" {
+				return nil, fault.New(409, "SKILL_NOT_PUBLISHED", "Publish this skill before enabling it.")
+			}
+			r["enabled"] = input["enabled"]
+			action = "disabled"
+			if r["enabled"] == true {
+				action = "enabled"
+			}
 		case "toggle":
 			if r["state"] != "published" {
 				return nil, fault.New(409, "SKILL_NOT_PUBLISHED", "Publish this skill before enabling it.")
@@ -133,12 +157,18 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation, actor string, 
 			if !editable(r) {
 				return nil, missing("Skill")
 			}
+			if err = audit(ctx, tx, tenant, id, "deleted", actor, details); err != nil {
+				return nil, err
+			}
 			if _, err = tx.Exec(ctx, `DELETE FROM skills WHERE tenant_id=$1 AND id=$2`, tenant, id); err != nil {
 				return nil, err
 			}
 			return r, tx.Commit(ctx)
 		default:
 			return nil, fault.New(400, "INVALID_SKILL", "Invalid skill operation.")
+		}
+		if name, ok := r["name"].(string); !ok || strings.TrimSpace(name) == "" {
+			return nil, fault.New(400, "INVALID_SKILL", "Skill name is required.")
 		}
 		r["version"] = r["version"].(float64) + 1
 		r["updated_at"] = stamp()

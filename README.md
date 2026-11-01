@@ -267,3 +267,7 @@ The [Hunt workspace](docs/HUNT_WORKSPACE.md) provides a registry, TI report hunt
 ## Threat Intel workspace
 
 The [Threat Intel workspace](docs/THREAT_INTEL_WORKSPACE.md) adds the screenshot-based report table, analyst metadata/relevance, real IOC counts, report editing and active-IOC-to-local-hunt links. `/threat-intel` and `/hunt/threat-intelligence` share the same data/UI. Hunt creation is explicit, idempotent and audit-backed; it does not launch live queries.
+
+## Skills workspace
+
+Open `/skills` for the screenshot-aligned library and three-column editor: paginated custom/augmented guidance, text import, references, relevance rules, safe preview and version-checked save/publish/enablement. Guidance is recorded for analyst review, not executed as privileged actions. See [Skills workspace](docs/SKILLS_WORKSPACE.md).

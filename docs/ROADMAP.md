@@ -176,3 +176,7 @@ Implemented screenshot-based registry, TI report table, Plan/notes/Entities/Find
 ## Threat Intel workspace (2026-11-01)
 
 Implemented report table/detail, bounded analyst metadata, relevance/status filters, actual IOC counts and atomic idempotent draft hunts from report-owned active indicators. Removed sample reports and unsupported automatic scanning claims. Remaining: live feeds/STIX/TAXII, enrichment, bulk import, automatic relevance/verdict attribution and live execution. See [boundaries](THREAT_INTEL_WORKSPACE.md).
+
+## Skills workspace update (2026-11-01)
+
+Implemented reference-based library/editor layout, custom/augmented views, filtered totals/pagination, bounded text import, safe preview, version-checked save/publish and desired-state switches; existing material/application workflows preserved. Remaining: multi-file bundles, separately staged published revisions, legacy-material concurrency, lost-response create idempotency and live inference evaluation. See [Skills scope](SKILLS_WORKSPACE.md).

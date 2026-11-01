@@ -360,3 +360,7 @@ Use `HuntWorkspace.jsx` and `internal/modules/hunts/workspace.go`; new SQL is in
 ## Threat Intel development
 
 `ThreatIntelWorkspace.jsx` serves report registry/detail and the Hunt TI route. New backend code is `threatintel/workspace.go`, generated `threatsql`, and `httpapi/threat_workspace.go`. Apply migration 039, regenerate SQL with `make -C backend-go sqlc`, and run the disposable test harness plus `scripts/framework/threat-intel-browser-check.js`. See [version guards, retry semantics and limits](THREAT_INTEL_WORKSPACE.md).
+
+## Skills workspace development
+
+`frontend/src/SkillsRegistry.jsx` owns the paginated library and text import; `Skills.jsx` retains editor/materials/templates/suggestions/outcomes. Go workspace projections live in `internal/modules/skills/queries/workspace.sql`; regenerate with `make -C backend-go sqlc`. New editor writes use required `expected_version` and explicit desired enablement. Preserve form data on 409, and never silently refresh a revision after external/material edits. See [Skills developer details](SKILLS_WORKSPACE.md).

@@ -410,3 +410,7 @@ Added GET `/hunts/{id}/workspace`, POST `/hunts/{id}/search` with `{id,expected_
 ## Threat Intel workspace endpoints
 
 Added GET `/threat-intel/registry`, GET `/threat-intel-reports/{id}/workspace`, POST `/threat-intel-reports/{id}/local-hunt` under `/api/v1`. Report authoring supports actor/industry/region/relevance metadata and optional timestamp guards. Local-hunt requests create drafts with transactional audit; replay is preserved after deletion and returns 410 for a deleted target. See [contracts](THREAT_INTEL_WORKSPACE.md).
+
+## Skills workspace additions
+
+`GET /skills/library` adds origin-scoped filtered totals and bounded pagination. `PATCH /skills/:id/workspace` requires `expected_version` and optionally saves/publishes atomically. `PUT /skills/:id/enabled` requires the revision and desired boolean. Stale writes return 409; unknown fields and coerced control values are rejected. Legacy routes remain. See [full contracts](SKILLS_WORKSPACE.md).
