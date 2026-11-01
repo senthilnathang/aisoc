@@ -27,6 +27,7 @@ def port():
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--platform-acceptance',action='store_true',help='Add connected local Detect-to-Build HTTP acceptance paths; requires --with-streams')
     parser.add_argument('--with-streams',action='store_true',help='Include disposable Redis and PostgreSQL/stream bridge tests')
     parser.add_argument('--stream-load',action='store_true',help='Measure bounded synthetic traffic in isolated PostgreSQL/Redis after correctness checks')
     parser.add_argument('--stream-measure-only',action='store_true',help='Isolated measurement iteration; skips full correctness gates')
@@ -44,6 +45,10 @@ def main():
     parser.add_argument('--pg-wal-sync-method',default='fdatasync',choices=('fdatasync','open_datasync','fsync'),help='Durable WAL synchronization method for the disposable cluster')
     parser.add_argument('--pg-wal-init-zero',default='on',choices=('on','off'),help='Whether to pre-zero new WAL segments in the disposable cluster')
     options=parser.parse_args()
+    if options.platform_acceptance and (not options.with_streams or options.stream_measure_only):
+        parser.error('--platform-acceptance requires --with-streams and full correctness checks')
+    if not __debug__:
+        parser.error('Run without Python optimization; acceptance assertions must remain enabled')
     if options.stream_load and not options.with_streams:
         parser.error('--stream-load requires --with-streams')
     if options.stream_measure_only and not options.stream_load:
@@ -62,7 +67,13 @@ def main():
     if options.stream_load:
         for filename in ('stream-load.json','stream-load.json.cache.json','stream-load.json.resources.json'):
             (report/filename).write_text(json.dumps({'status':'not_completed'})+'\n')
+    acceptance = dict(passed=False,mode='local/mock',active_backend_modified=False,stages={})
+    if options.platform_acceptance:
+        (report/'platform-acceptance.json').write_text(json.dumps(acceptance)+'\n')
     env = os.environ.copy()
+    if options.platform_acceptance:
+        # Only runner-owned mock endpoints/configuration may reach child services.
+        env = {k:v for k,v in env.items() if not k.startswith("AISOC_")}
     env.pop('AISOC_STREAM_LOAD_REPORT',None)
     children = []
     pg_started = False
@@ -507,6 +518,14 @@ def main():
                 from check_case_response import check_case_response
                 case_response_report=check_case_response(stream_http, sql, managed_case['investigation_id'])
                 (report/'case-response-flow.json').write_text(json.dumps(case_response_report,indent=2)+'\n')
+                if options.platform_acceptance:
+                    spawn([ROOT/'backend-go/bin/investigation-worker'])
+                    from check_platform_acceptance import check_platform_acceptance
+                    def record_stage(name, result):
+                        acceptance['stages'][name] = result
+                        (report/'platform-acceptance.json').write_text(json.dumps(acceptance,indent=2)+'\n')
+                    record_stage('build_response', dict(case_id=managed_case['investigation_id'],build_import_replay=True,response=case_response_report))
+                    check_platform_acceptance(stream_http, sql, managed_case['investigation_id'], record_stage)
                 sql("INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) SELECT 'auth-a','mock-qradar','qradar-siem','capacity-'||n,'demo-session',1,'TEST' FROM generate_series(1,98) n")
                 response_op('propose',409,id='capacity-overflow')
                 stream_worker.terminate();stream_worker.wait(timeout=10)
@@ -529,6 +548,9 @@ def main():
                 checks += ['Redis ACLs, stream delivery/ACK/reclaim/gap reporting and PostgreSQL outbox/inbox duplicate-effect prevention',
                            'Durable consumer retries and DLQ, DLQ outage without ACK, bounded atomic publish/OOM backpressure, stalled TCP recovery, missing-stream replay, poison isolation and stale consumer fencing']
             (report/'report.json').write_text(json.dumps({'passed':True,'checks':checks,'active_backend_modified':False},indent=2)+'\n')
+            if options.platform_acceptance:
+                acceptance['passed']=True
+                (report/'platform-acceptance.json').write_text(json.dumps(acceptance,indent=2)+'\n')
             print('PASS isolated Go + PostgreSQL + Rust + Python framework',flush=True)
             print('Report: '+str(report/'report.json'),flush=True)
         finally:

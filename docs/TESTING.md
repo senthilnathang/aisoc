@@ -595,3 +595,7 @@ See [validation and demo receipt](INVESTIGATE_RESPOND_SANDBOX.md).
 ## Case detection feedback regression
 
 The disposable detection suite includes case ownership, pagination, concurrent CAS, audit rollback and label-change replay invalidation tests. Browser checks are scripts/framework/case-detection-feedback-browser-check.js and scripts/framework/rule-recommendations-browser-check.js. The real local demo replay preserved TP/unreviewed alerts and kept the applied rule disabled. See [test details](INVESTIGATE_DETECT_FEEDBACK.md).
+
+## Repeatable platform acceptance
+
+`python3 scripts/framework/acceptance.py` runs two fresh disposable framework environments. `--runs 1` is available for iteration. Missing stages and failed subprocesses cannot yield a passing aggregate. See [commands, assertions and reports](DETECT_BUILD_ACCEPTANCE.md).

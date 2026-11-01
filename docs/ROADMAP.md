@@ -242,3 +242,7 @@ See [local response scope and test results](INVESTIGATE_RESPOND_SANDBOX.md).
 ## Investigate → Detect local feedback — completed
 
 Explicit source-alert labels, analyst confirmation, case audit history, recommendation deep links, replay and guarded local application are implemented and locally tested. Production detection deployment and quality evaluation remain pending. See [validation and limits](INVESTIGATE_DETECT_FEEDBACK.md).
+
+## Repeatable local acceptance
+
+Added a two-run disposable Detect-to-Build gate with stage reports, replay and authenticated tenant-negative checks. Browser coverage and production provider/model/performance/operations validation remain separate gates. See [scope and validation](DETECT_BUILD_ACCEPTANCE.md).

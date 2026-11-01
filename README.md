@@ -321,3 +321,7 @@ a durable receipt and mock SOAR response note. Live identity providers remain di
 ## Investigation-to-detection feedback
 
 Investigations now expose explicit source-alert review with confirmation, rationale and version checks. Labels feed existing rule recommendations, frozen replay and confirmed application to disabled, unbound local rules. See [workflow, APIs and validation](docs/INVESTIGATE_DETECT_FEEDBACK.md).
+
+## Repeatable local platform acceptance
+
+Run `python3 scripts/framework/acceptance.py` for two disposable Detect-to-Build acceptance runs. Covers Build import, reviewed mock response, Skills/Memory reuse, Intel/Hunt promotion and detection feedback with replay and tenant checks. [Scope and reports](docs/DETECT_BUILD_ACCEPTANCE.md).

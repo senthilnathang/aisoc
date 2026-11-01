@@ -422,3 +422,7 @@ See [contracts, state handling and rollback](INVESTIGATE_RESPOND_SANDBOX.md).
 ## Case detection feedback
 
 The case panel reuses AlertLabelReview and the existing recommendation engine. Maintain rule-before-alert lock order and atomic label/case-audit/rule-audit writes. Regenerate sqlc after changing queries; exercise the disposable database and browser checks documented in [Investigate → Detect](INVESTIGATE_DETECT_FEEDBACK.md).
+
+## Platform acceptance workflow
+
+Use `python3 scripts/framework/acceptance.py` after cross-module changes. It extends the existing disposable framework, does not import showcase IDs, and rejects optimized Python assertions. Avoid concurrent framework invocations. See [prerequisites and report handling](DETECT_BUILD_ACCEPTANCE.md).

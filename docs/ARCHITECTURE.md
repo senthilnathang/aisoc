@@ -401,3 +401,7 @@ Python and generic remediation actions do not gain execution authority. See the
 ## Investigation-to-detection feedback boundary
 
 Go derives the rule from authenticated tenant/case/alert ownership, locks the rule before the alert, and saves the label plus case/rule audits atomically in PostgreSQL. Existing sqlc queries and recommendation receipts are reused; no queue, model or external action is added. See [flow and boundaries](INVESTIGATE_DETECT_FEEDBACK.md).
+
+## Cross-module acceptance boundary
+
+The optional local acceptance runner tests Build case → approved response → Skills/Memory reuse and artifact-linked Intel/Hunt promotion. Detection feedback reviews the Build case’s admitted source alert, while a separate three-alert fixture verifies recommendation replay without tuning the shared mock-login rule. No runtime service or schema was added. See [acceptance topology](DETECT_BUILD_ACCEPTANCE.md).

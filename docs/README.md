@@ -153,3 +153,7 @@ navigation and responsive browser verification.
   approval, mock revocation, receipts, testing and retained showcase.
 
 - [Investigate → Detect feedback](INVESTIGATE_DETECT_FEEDBACK.md): explicit source-alert labels, atomic audits, existing recommendation replay and guarded local application.
+
+## Detect-to-Build acceptance
+
+[Repeatable acceptance suite](DETECT_BUILD_ACCEPTANCE.md): connected local/mock HTTP workflows, two fresh runs, stage reports and explicit production limits.
