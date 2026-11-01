@@ -320,3 +320,7 @@ The repeatable gate now includes real UI mutations across Respond, Skills, Memor
 ## SSO operator identity — November 2026
 
 The local identity foundation uses OIDC/PKCE and explicit subject mappings while preserving proposer/approver/executor separation. It adds no live IdP or production response authorization. See [implementation and remaining gates](OIDC_SSO.md).
+
+## Local phishing workflow — 2026-11-02
+
+Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](PHISHING_FLOW.md).

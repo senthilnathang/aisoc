@@ -4,8 +4,8 @@ These are new sandbox contracts, not the existing source HTTP API and not litera
 QRadar vendor payloads. An adapter must map verified vendor data into these types.
 No Redis service or live provider connector is introduced by these files.
 
-- `telemetry-v1.schema.json`: projected authentication failure/success only.
-- `finding-v1.schema.json`: suspicious-login investigation candidate requiring review.
+- `telemetry-v1.schema.json`: projected authentication failure/success and four explicit phishing observation types.
+- `finding-v1.schema.json`: suspicious-login or credential-phishing investigation candidate requiring review.
 - `fixtures/authentication-failed.json`: synthetic source observation, not production evidence.
 
 Go enforcement is in `backend-go/internal/modules/telemetry`. `Decode` and
@@ -52,3 +52,5 @@ go vet ./internal/modules/telemetry
 
 See [the implementation tasks](../../docs/IMPLEMENTATION_TASKS.md) and
 [ADR 005](../../docs/adr/005-redis-streams-boundary.md).
+
+The additive phishing contract requires an opaque `projection.message_ref`; login hashes remain unchanged because absent message references are omitted. See [phishing semantics and limits](../../docs/PHISHING_FLOW.md).

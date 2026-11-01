@@ -15,3 +15,11 @@ test('processing labels never treat worker heartbeat as successful completion',(
  assert.equal(processingLabel({profile:{state:'sealed'},cases:[{state:'awaiting_review'}]}),'Analyst approval required');
  assert.equal(processingLabel({profile:{state:'sealed'},cases:[{state:'synced'}]}),'Complete · mock write-back recorded');
 });
+test('phishing bundle preserves message provenance and never accepts provider configuration',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const document=JSON.parse(readFileSync(new URL('../../examples/scenarios/phishing/document.json',import.meta.url),'utf8'));
+ const parsed=parseIntegrationImport(JSON.stringify(document));
+ assert.equal(parsed.events.length,4);assert(parsed.events.every(e=>e.projection.message_ref==='mock-message-1'));
+ assert.deepEqual(new Set(parsed.events.map(e=>e.event_type)),new Set(['email.delivered','email.authentication_failed','email.link_clicked','email.credential_submitted']));
+ assert.throws(()=>parseIntegrationImport(JSON.stringify({...document,provider_url:'http://localhost'})));
+});

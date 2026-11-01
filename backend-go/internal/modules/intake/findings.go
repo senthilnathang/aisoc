@@ -87,7 +87,7 @@ func (s Store) AdmitFinding(ctx context.Context, cfg FindingAdmission, f telemet
 		return receipt, err
 	}
 	watermark, _ := time.Parse(time.RFC3339Nano, f.ObservedUntil)
-	candidates, err := telemetry.SuspiciousLogins(cfg.Binding, events, watermark)
+	candidates, err := telemetry.Correlate(cfg.Binding, events, watermark)
 	if err != nil {
 		return receipt, err
 	}
@@ -135,6 +135,12 @@ func (s Store) AdmitFinding(ctx context.Context, cfg FindingAdmission, f telemet
 		return receipt, eventstate.ErrInvalid
 	}
 	input := AlertInput{Source: "stream-finding:" + cfg.Binding.ConnectorID, ExternalID: f.FindingID, RuleID: cfg.RuleID, Title: "Suspicious login requires review", Severity: "high", Summary: "Three failed logins followed by success. Deterministic review candidate; compromise is not established.", PrimaryEntity: events[0].Projection.PrincipalRef, Category: "identity", AlertType: "suspicious_login"}
+	if f.Kind == "credential_phishing" {
+		input.Title = "Credential phishing requires review"
+		input.Summary = "Linked message delivery, failed email authentication, link click and reported credential submission. Synthetic observations; compromise is not established."
+		input.Category = "email"
+		input.AlertType = "credential_phishing"
+	}
 	for _, ref := range canonical.EvidenceRefs {
 		input.Evidence = append(input.Evidence, Evidence{Type: "evidence_ref", Value: ref, Label: "Source telemetry reference"})
 	}

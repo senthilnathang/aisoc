@@ -23,9 +23,9 @@ Upload a JSON object with schema version `1`, optional name, and 1–10 cases:
 
 The empty events above describe the shape, not valid evidence. **Load two-case
 local example** generates a valid file for the signed-in operator's authorized
-source. Each case reuses the single-case 4–12-observation, one-login-finding
-validation, evidence reference uniqueness and L1 budget. IAM/MFA/EDR context is
-optional. Go requires the tenant in the evidence to match authenticated context;
+source. Each case reuses single-case validation: 4–12 login observations or exactly four
+linked phishing observations, one finding, unique evidence references and the L1
+budget. IAM/MFA/EDR context is optional for login only. Go requires the tenant in the evidence to match authenticated context;
 connector identity is derived by Go, never accepted as routing authority.
 
 The manifest is limited to 512 KiB, each case document to 64 KiB and case keys to
@@ -188,3 +188,7 @@ Reports: `output/platform-acceptance/report.json` and
 No live provider, real model quality or production-scale retention was validated.
 
 Completed intake manifests can now be snapshotted through [Build retention](RETENTION_RECOVERY.md). This preserves per-case checkpoints and replay keys; it does not delete batches or release quota slots. Active/failed/invalid batches remain protected.
+
+## Additional local scenario
+
+The shared document validator also accepts exactly four linked credential-phishing observations without IAM/EDR context. Single-profile and bulk JSON imports use the same sealed snapshot and replay controls. Use the phishing example from Build for the authenticated tenant. See [the phishing contract](PHISHING_FLOW.md).

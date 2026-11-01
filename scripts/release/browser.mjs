@@ -3,6 +3,7 @@ import {chromium} from '../../frontend/node_modules/playwright/index.mjs';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import assert from 'node:assert/strict';
+import {phishingWorkflow} from './phishing.mjs';
 import {criticalWorkflows} from './workflows.mjs';
 import {sections} from '../../frontend/src/navigation.js';
 const executablePath=process.env.AISOC_RELEASE_CHROMIUM;
@@ -36,7 +37,7 @@ try{
  await step('build_import',async()=>{
   await main.goto(origin+'/build/integrations');await exact(main,'＋ New local integration').click();
   await main.getByLabel('Profile name',{exact:true}).fill(fixture.name+' login');await main.getByLabel('Authorized mock source',{exact:true}).selectOption(fixture.scope);
-  await main.getByLabel('Import login events JSON',{exact:true}).setInputFiles(join(dirname(manifestPath),'login.json'));
+  await main.getByLabel('Import events JSON',{exact:true}).setInputFiles(join(dirname(manifestPath),'login.json'));
   await exact(main,'Validate & preview').click();await main.getByRole('heading',{name:'Normalized evidence preview',exact:true}).waitFor();
   await exact(main,'Save draft').click();await main.getByText('Draft saved · revision 1',{exact:true}).waitFor();
   assert(await exact(main,'Import saved JSON').isDisabled(),'Import must require confirmation');
@@ -78,6 +79,7 @@ try{
   return {notice_id:fixture.notice_id,archive_cleanup_restore:true};
  });
  await criticalWorkflows({main,reviewer,login,fixture,origin,step,get,waitFor,screenshots});
+ await phishingWorkflow({main,fixture,origin,step,get,waitFor,screenshots,fixtureDir:dirname(manifestPath)});
  await step('tenant_isolation',async()=>{
   const foreign=await login('b');await get(foreign,'/investigations/'+fixture.details.case_id,404);await get(foreign,'/skills/'+fixture.skill.id,404);
   const inbox=await get(foreign,'/approvals?search='+fixture.memory.id);assert.equal(inbox.total,0);
@@ -91,6 +93,7 @@ try{
    await main.setViewportSize({width,height:1000});
    for(const [index,path] of routes.entries()){
     await main.goto(origin+path);await main.waitForLoadState('networkidle',{timeout:15000});
+    await main.getByRole('heading').first().waitFor({state:'visible',timeout:15000});
     const body=await main.locator('body').innerText();assert(!/Internal server error|Something went wrong|Refresh to retry/i.test(body),path);
     assert((await main.getByRole('heading').count())>0,'Missing workspace heading: '+path);
     assert(!(await main.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)),'Horizontal overflow: '+path);

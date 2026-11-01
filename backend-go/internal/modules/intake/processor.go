@@ -167,6 +167,13 @@ func (s Store) processPhase(ctx context.Context, tx pgx.Tx, job runJob) error {
 		if count > 0 || payload.Severity == "high" || payload.Severity == "critical" {
 			determination = "suspicious"
 		}
+		// The phishing mock is a review candidate, not an analyst verdict. Preserve
+		// even a concurrent analyst decision under the existing case lock.
+		if payload.AlertType == "credential_phishing" {
+			if err := tx.QueryRow(ctx, `SELECT determination FROM investigations WHERE tenant_id=$1 AND id=$2`, job.Tenant, job.Case).Scan(&determination); err != nil {
+				return err
+			}
+		}
 		explanation := "Insufficient evidence for a determination."
 		if determination == "suspicious" {
 			explanation = "Analyst review required."

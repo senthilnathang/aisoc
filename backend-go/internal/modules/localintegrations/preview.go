@@ -26,7 +26,7 @@ type PreviewResult struct {
 }
 
 func Invalid() error {
-	return fault.New(400, "INVALID_LOCAL_INTEGRATION", "Provide 4–12 related login observations and valid tenant-bound local context.")
+	return fault.New(400, "INVALID_LOCAL_INTEGRATION", "Provide 4–12 related login observations or four linked phishing observations; use valid tenant-bound evidence.")
 }
 func Conflict() error {
 	return fault.New(409, "LOCAL_INTEGRATION_CONFLICT", "The draft changed or is sealed. Refresh; create a new profile to change imported evidence.")
@@ -37,6 +37,10 @@ func Preview(d Document, b telemetry.Binding, now time.Time) (PreviewResult, err
 	if err != nil || len(raw) > 65536 || d.SchemaVersion != "1" || (len(d.Events) < 4 || len(d.Events) > 12) {
 		return p, Invalid()
 	}
+	phishing := telemetry.IsPhishingEvent(d.Events[0].EventType)
+	if phishing && (len(d.Events) != 4 || d.Context != nil) {
+		return p, Invalid()
+	}
 	watermark := time.Time{}
 	keys := map[string]bool{}
 	for _, event := range d.Events {
@@ -44,6 +48,9 @@ func Preview(d Document, b telemetry.Binding, now time.Time) (PreviewResult, err
 			return p, Invalid()
 		}
 		first := d.Events[0].Projection
+		if telemetry.IsPhishingEvent(event.EventType) != phishing || event.Projection.MessageRef != first.MessageRef {
+			return p, Invalid()
+		}
 		ip, ipErr := netip.ParseAddr(event.Projection.SourceIP)
 		firstIP, firstErr := netip.ParseAddr(first.SourceIP)
 		if ipErr != nil || firstErr != nil || ip.Unmap() != firstIP.Unmap() || event.Projection.PrincipalRef != first.PrincipalRef || event.Projection.AssetRef != first.AssetRef {
@@ -63,7 +70,7 @@ func Preview(d Document, b telemetry.Binding, now time.Time) (PreviewResult, err
 		}
 		p.Events = append(p.Events, event)
 	}
-	p.Findings, err = telemetry.SuspiciousLogins(b, p.Events, watermark.Add(time.Minute))
+	p.Findings, err = telemetry.Correlate(b, p.Events, watermark.Add(time.Minute))
 	if err != nil || len(p.Findings) != 1 {
 		return p, Invalid()
 	}
@@ -87,8 +94,8 @@ func Preview(d Document, b telemetry.Binding, now time.Time) (PreviewResult, err
 	}
 	task.Evidence = append(task.Evidence, p.Context...)
 	if l1.ValidateTask(task, now) != nil {
-		return p, fault.New(400, "INVALID_LOCAL_EVIDENCE", "Evidence references must be unique across login and context observations and fit the investigation budget.")
+		return p, fault.New(400, "INVALID_LOCAL_EVIDENCE", "Evidence references must be unique across source and context observations and fit the investigation budget.")
 	}
-	p.Missing = logincontext.Missing(p.Context)
+	p.Missing = l1.MissingEvidence(task.Evidence)
 	return p, nil
 }

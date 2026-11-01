@@ -31,10 +31,10 @@ async page => {
   await page.getByRole('button',{name:'＋ New local integration',exact:true}).click();
   await page.getByLabel('Profile name',{exact:true}).fill('Browser draft');
   await page.getByRole('button',{name:'Load local example (replaces JSON)',exact:true}).click();
-  await page.getByRole('textbox',{name:'Login events JSON',exact:true}).fill('{');
+  await page.getByRole('textbox',{name:'Events JSON',exact:true}).fill('{');
   await page.getByRole('button',{name:'Validate & preview',exact:true}).click();
   await page.getByText('Login events must be valid JSON.',{exact:true}).waitFor();
-  await page.getByLabel('Import login events JSON',{exact:true}).setInputFiles({name:'events.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source.document.events))});
+  await page.getByLabel('Import events JSON',{exact:true}).setInputFiles({name:'events.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source.document.events))});
   await page.getByRole('button',{name:'Validate & preview',exact:true}).click();
   await page.getByRole('heading',{name:'Normalized evidence preview',exact:true}).waitFor();
   await page.getByRole('button',{name:'Save draft',exact:true}).click();
@@ -49,7 +49,7 @@ async page => {
   await page.getByText('Fixture uncertain import; refresh and retry',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Refresh pipeline status',exact:true}).click();
   await page.getByRole('button',{name:'Replay local import',exact:true}).waitFor();
-  if(await page.getByRole('textbox',{name:'Login events JSON',exact:true}).isEditable())throw Error('Sealed evidence editable');
+  if(await page.getByRole('textbox',{name:'Events JSON',exact:true}).isEditable())throw Error('Sealed evidence editable');
   importFails=false;
   // Status refresh preserves the existing explicit confirmation after an uncertain result.
   const check=page.getByRole('checkbox');if(!await check.isChecked())await page.getByText('I confirm local import and freezing this evidence snapshot',{exact:true}).click();

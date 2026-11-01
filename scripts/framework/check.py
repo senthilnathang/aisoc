@@ -371,6 +371,8 @@ def main():
                     grant={**scenario['scope'],'tenant_id':'auth-a','operator_id':'fixture-a','mock_login_context':bundle}
                     grants.append(grant)
                     context_scenarios.append((scenario,grant))
+                if options.platform_acceptance:
+                    grants.append(dict(id='phishing-response',operator_id='fixture-a',tenant_id='auth-a',connector_id='phishing-identity',source='qradar-siem',processor='mock-login-v1',allow_sandbox_response=True))
                 if options.browser_release_id:
                     grants.append(dict(id='release-archive',operator_id='fixture-a',tenant_id='auth-a',connector_id='release-archive',source='qradar-siem',processor='mock-login-v1',allow_mock_import=True,allow_retry=True))
                     grants.append(dict(id='release-response',operator_id='fixture-a',tenant_id='auth-a',connector_id='release-identity',source='qradar-siem',processor='mock-login-v1',allow_sandbox_response=True))
@@ -597,6 +599,8 @@ def main():
                     bulk_result=check_bulk_import(stream_http,sql)
                     (report/'bulk-import-flow.json').write_text(json.dumps(bulk_result,indent=2)+'\n')
                     check_platform_acceptance(stream_http, sql, managed_case['investigation_id'], record_stage)
+                    from check_phishing import check_phishing
+                    record_stage('phishing',check_phishing(stream_http,sql))
                     if options.browser_release_id:
                         from release_checks import check_release
                         check_release(options.browser_release_id,acceptance,stream_http,sql,env,temp,log,spawn,port,wait_port,PG,ROOT)

@@ -37,12 +37,12 @@ simulated approval. Replaying its import inserted zero events.
 
 ## Validation and isolation
 
-Profiles accept schema `1`, 4–12 related normalized login observations and
-an optional [IAM/MFA and EDR bundle](LOGIN_CONTEXT_ADAPTERS.md). Evidence must yield
-one suspicious-login candidate. Unknown request fields are rejected. Login JSON
-files are limited to 64 KiB and context files to 32 KiB in the UI; Go independently
+Profiles accept schema `1`: 4–12 related normalized login observations with
+an optional [IAM/MFA and EDR bundle](LOGIN_CONTEXT_ADAPTERS.md), or exactly four
+linked phishing observations without optional context. Evidence must yield one
+scenario-specific candidate. Unknown request fields are rejected. Event JSON files are limited to 64 KiB and context files to 32 KiB in the UI; Go independently
 bounds the complete normalized document to 64 KiB and validates the typed task.
-References must be unique across login and context evidence. Invalid identifiers,
+References must be unique across source and context evidence. Invalid identifiers,
 foreign tenants, malformed/future event times, unsupported outcomes, bad bindings
 and over-budget tasks fail before saving or sealing.
 
@@ -115,7 +115,7 @@ applies. Profiles and previews return `Cache-Control: no-store`.
 | Method/path | Contract |
 |---|---|
 | GET `/` | Authorized profiles and eligible startup scopes, maximum 20 profiles per tenant |
-| GET `/example?scope_id=…` | Bounded synthetic login document and configured optional context; no external call |
+| GET `/example?scope_id=…` | Bounded login example (default), or phishing with `scenario=phishing`; no external call |
 | POST `/preview` | `{scope_id,id,document}` → normalized events, candidate finding, context and gaps |
 | PUT `/{id}` | `{scope_id,name,expected_version,document}`; version 0 creates, positive version edits a draft |
 | GET `/{id}` | Authorized profile, worker/case status, intake counts, lineage and revision metadata |
@@ -147,10 +147,14 @@ understand the archive restriction. Prefer a forward fix; see the explicit
 profile and revision tables in PostgreSQL backup/restore. The preserved release
 profile is not migrated by this work.
 
-Limits: local historical fixtures only; 4–12 login observations and one finding per
-profile; manual status refresh; no profile deletion, scheduled live polling,
+Limits: local historical fixtures only; 4–12 login observations or four phishing
+observations and one finding per profile; manual status refresh; no profile deletion, scheduled live polling,
 provider configuration editor, production throughput claim or response activation.
 Generalize these only with separately tested contracts and operational requirements.
 See [testing evidence](TESTING.md) and [Build catalog](BUILD_WORKSPACE.md).
 
 Migration 047 adds archive/clone/version history and intake status; see [lifecycle controls and rollback](BUILD_INTEGRATION_LIFECYCLE.md).
+
+## Additional local scenario
+
+The shared document validator also accepts exactly four linked credential-phishing observations without IAM/EDR context. Single-profile and bulk JSON imports use the same sealed snapshot and replay controls. Use the phishing example from Build for the authenticated tenant. See [the phishing contract](PHISHING_FLOW.md).

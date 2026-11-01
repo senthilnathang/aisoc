@@ -290,3 +290,7 @@ Extended local/mock browser coverage to Respond independent approvals/replay, Sk
 ## Local OIDC foundation — November 2026
 
 Implemented configurable OIDC with a loopback mock IdP, trusted tenant/role mappings, process-local session revocation and approval-permission checks. Live IdP/MFA verification, SCIM, provider logout, distributed session/revocation storage and production rollout remain pending. See [scope](OIDC_SSO.md).
+
+## Local phishing workflow — 2026-11-02
+
+Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](PHISHING_FLOW.md).

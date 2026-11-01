@@ -68,3 +68,23 @@ func LoginPage(binding telemetry.Binding) ([]telemetry.Event, error) {
 	}
 	return events, nil
 }
+
+// PhishingPage supplies only synthetic observation metadata, never mail bodies or live URLs.
+func PhishingPage(binding telemetry.Binding) ([]telemetry.Event, error) {
+	events, err := LoginPage(binding)
+	if err != nil {
+		return nil, err
+	}
+	kinds := []string{"email.credential_submitted", "email.delivered", "email.link_clicked", "email.authentication_failed"}
+	for i := range events {
+		events[i].EventType = kinds[i]
+		events[i].SourceEventID = "mail-" + events[i].SourceEventID
+		events[i].EventID = events[i].SourceEventID
+		events[i].EvidenceRef = "mock-email:" + events[i].SourceEventID
+		events[i].Projection.MessageRef = "mock-message-1"
+		if err := events[i].Validate(binding); err != nil {
+			return nil, err
+		}
+	}
+	return events, nil
+}

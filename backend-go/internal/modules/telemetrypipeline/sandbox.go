@@ -55,7 +55,7 @@ func (r Runtime) AdvanceMock(ctx context.Context) error {
 	}
 	// Correlator's 100-event bound applies to an entity window, not the whole
 	// source. Preserve canonical IP grouping and never silently truncate a group.
-	type entity struct{ principal, asset, ip string }
+	type entity struct{ principal, asset, ip, message string }
 	groups := map[entity][]telemetry.Event{}
 	revisions := map[string]string{}
 	for _, e := range events {
@@ -64,7 +64,7 @@ func (r Runtime) AdvanceMock(ctx context.Context) error {
 		}
 		revisions[e.SourceEventID] = e.Identity()
 		ip, _ := netip.ParseAddr(e.Projection.SourceIP)
-		key := entity{e.Projection.PrincipalRef, e.Projection.AssetRef, ip.Unmap().String()}
+		key := entity{e.Projection.PrincipalRef, e.Projection.AssetRef, ip.Unmap().String(), e.Projection.MessageRef}
 		groups[key] = append(groups[key], e)
 	}
 	findings := []telemetry.Finding{}
@@ -72,7 +72,7 @@ func (r Runtime) AdvanceMock(ctx context.Context) error {
 		if len(group) > 100 {
 			return eventstate.ErrCapacity
 		}
-		found, err := telemetry.SuspiciousLogins(r.Binding, group, watermark.Add(time.Minute))
+		found, err := telemetry.Correlate(r.Binding, group, watermark.Add(time.Minute))
 		if err != nil {
 			return err
 		}
@@ -85,11 +85,24 @@ func (r Runtime) AdvanceMock(ctx context.Context) error {
 		return err
 	}
 	for _, f := range findings {
-		receipt, err := (intake.Store{Pool: r.Store.Pool}).AdmitFinding(ctx, intake.FindingAdmission{Binding: r.Binding, RuleID: "mock-stream-login", MaxActive: 25, MaxRetained: 1000}, f)
+		ruleID := "mock-stream-login"
+		if f.Kind == "credential_phishing" {
+			ruleID = "mock-stream-phishing"
+			if _, err = r.Store.Pool.Exec(ctx, `INSERT INTO detection_rules(tenant_id,id,document,updated_at) VALUES($1,'mock-stream-phishing','{"name":"Local credential phishing","enabled":true,"routing":"Escalate"}',now()) ON CONFLICT DO NOTHING`, r.Binding.TenantID); err != nil {
+				return err
+			}
+		}
+		receipt, err := (intake.Store{Pool: r.Store.Pool}).AdmitFinding(ctx, intake.FindingAdmission{Binding: r.Binding, RuleID: ruleID, MaxActive: 25, MaxRetained: 1000}, f)
 		if err != nil {
 			return err
 		}
-		id, err := l1.QueueMock(ctx, r.Store.Pool, r.Binding, f.FindingID, 25, r.MockLoginContext)
+		// Login enrichment does not belong to the four-observation phishing
+		// contract, including direct imports on a shared mock-source scope.
+		bundle := r.MockLoginContext
+		if f.Kind == "credential_phishing" {
+			bundle = nil
+		}
+		id, err := l1.QueueMock(ctx, r.Store.Pool, r.Binding, f.FindingID, 25, bundle)
 		if err != nil {
 			return err
 		}

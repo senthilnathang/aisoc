@@ -73,6 +73,15 @@ func registerLocalIntegrations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []
 		if err != nil {
 			return nil, 0, streamError(err)
 		}
+		scenario := r.URL.Query().Get("scenario")
+		if scenario == "phishing" {
+			events, err := qradarmock.PhishingPage(telemetry.Binding{TenantID: a.Tenant, ConnectorID: s.ConnectorID, Source: s.Source})
+			return localintegrations.Document{SchemaVersion: "1", Events: events}, 200, err
+		}
+		if scenario != "" && scenario != "login" {
+			return nil, 0, localintegrations.Invalid()
+		}
+
 		events, err := qradarmock.LoginPage(telemetry.Binding{TenantID: a.Tenant, ConnectorID: s.ConnectorID, Source: s.Source})
 		if err != nil {
 			return nil, 0, err

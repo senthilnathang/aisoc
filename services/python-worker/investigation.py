@@ -7,6 +7,7 @@ import grpc
 from aisoc.worker.v1 import investigation_pb2 as pb, investigation_pb2_grpc as rpc
 
 IDENTIFIER = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\Z')
+PHISHING = ('email.delivered','email.authentication_failed','email.link_clicked','email.credential_submitted')
 HASH = re.compile(r'[0-9a-f]{64}\Z')
 
 
@@ -27,12 +28,15 @@ def valid(task):
     if not all(IDENTIFIER.fullmatch(v) for v in
                (task.tenant_id, task.incident_id, task.task_id, task.attempt_id)):
         return False
+    phishing=any(e.event_type in PHISHING for e in task.evidence)
+    if phishing and (task.mode != 'mock-v1' or len(task.evidence)!=4 or {e.event_type for e in task.evidence}!=set(PHISHING) or any(e.HasField('context') for e in task.evidence)):
+        return False
     refs = set()
     for item in task.evidence:
         if (not IDENTIFIER.fullmatch(item.reference) or item.reference in refs
             or not HASH.fullmatch(item.content_hash)
             or (item.HasField('context') and (task.mode != 'mock-v1' or not valid_context(item)))
-            or (not item.HasField('context') and item.event_type not in ('authentication.failed', 'authentication.succeeded'))):
+            or (not item.HasField('context') and item.event_type not in ('authentication.failed', 'authentication.succeeded') + PHISHING)):
             return False
         try:
             when = datetime.fromisoformat(item.event_time.replace('Z', '+00:00'))
@@ -74,6 +78,8 @@ def valid_context(item):
 
 
 def context_gaps(evidence):
+    if any(e.event_type in PHISHING for e in evidence):
+        return ['email_headers','url_reputation','authorized_simulation_check','iam_session_context','independent_verification']
     outcomes={'iam.mfa':set(),'edr.endpoint':set()}
     context=[e for e in evidence if e.HasField('context')]
     for e in context:
@@ -89,6 +95,9 @@ def context_gaps(evidence):
 
 
 def mock_hypotheses(evidence):
+    if any(e.event_type in PHISHING for e in evidence):
+        return [pb.Hypothesis(kind='credential_phishing',supporting_refs=[e.reference for e in evidence]),
+                pb.Hypothesis(kind='authorized_simulation',supporting_refs=[e.reference for e in evidence if e.event_type=='email.delivered'],neutral_refs=[e.reference for e in evidence if e.event_type!='email.delivered'])]
     result=[]
     for kind in ('credential_compromise','legitimate_user_or_automation'):
         supporting=[]; counter=[]; neutral=[]

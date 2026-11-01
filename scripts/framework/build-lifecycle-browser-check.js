@@ -16,7 +16,7 @@ async page => {
   const document=JSON.parse(JSON.stringify(source.document));
   const extra={...document.events.find(e=>e.event_type==='authentication.failed'),event_id:'browser-extra-failure',source_event_id:'browser-extra-failure',evidence_ref:'mock:browser-extra-failure'};
   document.events.push(extra);
-  await page.getByLabel('Import login events JSON',{exact:true}).setInputFiles({name:'bundle.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
+  await page.getByLabel('Import events JSON',{exact:true}).setInputFiles({name:'bundle.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
   await page.getByRole('button',{name:'Validate & preview',exact:true}).click();
   await page.getByText('5 login events',{exact:true}).waitFor();
   await page.getByText('4 finding evidence references',{exact:true}).waitFor();

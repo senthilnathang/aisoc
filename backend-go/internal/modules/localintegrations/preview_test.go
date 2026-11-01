@@ -118,3 +118,30 @@ func TestExtendedWindowRejectsUnrelatedAndOverBudgetObservations(t *testing.T) {
 		})
 	}
 }
+
+func TestPhishingPreviewAndScenarioSeparation(t *testing.T) {
+	raw, err := os.ReadFile("../../../../examples/scenarios/phishing/document.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var d Document
+	if err = json.Unmarshal(raw, &d); err != nil {
+		t.Fatal(err)
+	}
+	b := telemetry.Binding{TenantID: "demo", ConnectorID: "build-phishing", Source: "qradar-siem"}
+	p, err := Preview(d, b, time.Now())
+	if err != nil || len(p.Findings) != 1 || p.Findings[0].Kind != "credential_phishing" || len(p.Missing) != 5 {
+		t.Fatal(p, err)
+	}
+	for _, mutate := range []func(*Document){func(d *Document) { d.Events[0].Projection.MessageRef = "other" }, func(d *Document) {
+		d.Events[0].EventType = "authentication.succeeded"
+		d.Events[0].Projection.MessageRef = ""
+	}, func(d *Document) { d.Events[0].TenantID = "foreign" }, func(d *Document) { d.Events[0].EvidenceRef = d.Events[1].EvidenceRef }, func(d *Document) { d.Events = d.Events[:3] }, func(d *Document) { d.Events[0].EventTime = time.Now().Add(time.Hour).UTC().Format(time.RFC3339) }} {
+		var copy Document
+		json.Unmarshal(raw, &copy)
+		mutate(&copy)
+		if _, err := Preview(copy, b, time.Now()); err == nil {
+			t.Fatal("unsafe phishing accepted")
+		}
+	}
+}

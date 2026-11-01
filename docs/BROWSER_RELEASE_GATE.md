@@ -17,11 +17,11 @@ Each invocation retains `runner.log`, `framework.log`, stage JSON and `output/re
 |---|---|
 | Frontend | Browser launch preflight, lint, production build and frontend regression tests |
 | API | Existing full disposable Detect-to-Build acceptance, Go race/vet, auth/tenant checks, Python/Rust, gRPC, Redis/replay and workflow tests |
-| Browser | Real JSON upload/import, case navigation, independent Memory ownership/approval, notification read/link, retention archive/cleanup/restore, authenticated foreign-tenant denial, four critical workflow stages and desktop/mobile route sweep |
+| Browser | Real JSON upload/import, case navigation, independent Memory ownership/approval, notification read/link, retention archive/cleanup/restore, authenticated foreign-tenant denial, four critical workflow stages, phishing import/review/receipt visibility and desktop/mobile route sweep |
 | Identity | Separate mock OIDC provider and API, trusted mapping, independent approval, tenant isolation, logout-all, downgrade/disablement and malformed mapping denial |
 | Backup | Two database clones, matching table fingerprints, restored archive payload resolution after original temporary files are removed, retained snapshot verification and corruption rejection |
 
-Reports must explicitly pass in `local/mock` mode and carry the same run ID. Browser completion requires every named workflow stage, all core area routes at both widths, at least 60 distinct route/width checks, and no unexpected page/API errors or external application requests. A missing/stale report, nonzero subprocess result or incomplete backup proof fails the gate. Existing reports cannot satisfy a new run.
+Reports must explicitly pass in `local/mock` mode and carry the same run ID. Browser completion requires every named workflow stage, all core area routes at both widths, at least 60 distinct route/width checks, and no unexpected page/API errors or external application requests. A missing/stale report, nonzero subprocess result or incomplete backup proof fails the gate. Existing reports cannot satisfy a new run. Reports without the phishing API assertions and eleventh browser workflow cannot satisfy the current contract.
 
 The wrapper serializes release runs. The underlying framework runner also uses a shared lock so standalone checks cannot overwrite a running framework's reports. Graceful timeout/interruption asks the harness to unwind owned services; abrupt host termination or SIGKILL can still require ordinary orphan-process cleanup. The combined result stays failed until all stages finish.
 
@@ -30,6 +30,7 @@ The wrapper serializes release runs. The underlying framework runner also uses a
 The disposable cluster is initialized anew. Existing API acceptance produces connected Detect, Investigate, Respond, Hunt and Threat Intel records. The browser extension then generates run-specific JSON files under `fixtures/`:
 
 - `login.json`: synthetic login observations plus IAM/MFA/EDR context for a new isolated Build profile.
+- `phishing.json`: four linked synthetic email observations for browser upload and explicit mock-note review. Phishing response and Skills/Memory derivation run through the API gate; the browser inspects the resulting receipt and transcript snapshots.
 - `inputs.json`: new pending Skill/Memory inputs and the aged synthetic read-notification specification.
 - `telemetry.json`: one normal authentication observation with no investigation finding, used for archived-payload recovery.
 - `workflows.json`: fresh reviewed source cases, pending outcome-derived Skill/Memory, a Memory hunt and a disabled local rule with three source alerts. These are setup fixtures; tested mutations use the browser.
@@ -110,3 +111,14 @@ The gate also requires `identity.json` from a separate disposable OIDC API, brow
 Verified run `cebf76ec2d154dec9548d7e177d167f7` passed all five release stages in 490.11 seconds (2026-11-01/02 local run). It passed 34 frontend tests plus lint/build, full Go race/vet and API/framework acceptance, ten browser workflows and 72 desktop/mobile route checks, and all eight identity checks plus self-approval denial with an approver role. Browser reports recorded no page errors or external requests. Recovery matched 76 table fingerprints, verified one copied archive and two retention snapshots, and rejected archive/snapshot corruption. Six release-report and two acceptance-report unit tests also passed.
 
 Generated evidence is in `output/release-gate/cebf76ec2d154dec9548d7e177d167f7/`; reports record the working tree as dirty. This validates local/mock behavior, not a live identity provider or production deployment. Earlier failed runs remain failed; the successful run includes the OIDC proxy fix and Skill lifecycle response wait.
+
+## Local phishing workflow — 2026-11-02
+
+Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](PHISHING_FLOW.md).
+
+
+## Verified phishing release — 2026-11-02
+
+Run `108f639e1ceb493f9bc044d81079f416` passed all five release stages in 279.95 seconds: frontend lint/build and 35 regression tests; backend/API acceptance including phishing; eleven browser stages with 72 desktop/mobile route checks; eight OIDC checks plus self-approval denial; and backup/restore matching 76 tables, one archived payload and two retention snapshots with corruption rejection. Go race/vet and Python worker checks ran in the disposable framework suite. Reports and screenshots are under `output/release-gate/108f639e1ceb493f9bc044d81079f416/`.
+
+The earlier `06da61047f714c6696870297ac50aeb1` run failed during its mobile route sweep after phishing passed. The route gate now explicitly waits for a visible heading before inspecting rendered content, instead of assuming network idle means rendering is complete. The complete rerun passed without weakening authorization or evidence checks. Results validate local/mock behavior only; no live mail provider, production response, actual-model quality or throughput is certified.

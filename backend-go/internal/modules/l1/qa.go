@@ -4,6 +4,7 @@ package l1
 import (
 	pb "aisoc/backend/internal/gen/worker/v1"
 	"aisoc/backend/internal/modules/logincontext"
+	"aisoc/backend/internal/modules/telemetry"
 	"errors"
 	"google.golang.org/protobuf/proto"
 	"regexp"
@@ -34,6 +35,24 @@ func ValidateTask(t *pb.InvestigationTask, now time.Time) error {
 	if !deadline.After(now) || deadline.After(now.Add(30*time.Second)) {
 		return ErrInvalid
 	}
+	phishing := false
+	for _, e := range t.Evidence {
+		if e != nil && telemetry.IsPhishingEvent(e.EventType) {
+			phishing = true
+		}
+	}
+	if phishing {
+		if t.Mode != Mode || len(t.Evidence) != 4 {
+			return ErrInvalid
+		}
+		kinds := map[string]bool{}
+		for _, e := range t.Evidence {
+			if e == nil || e.Context != nil || !telemetry.IsPhishingEvent(e.EventType) || kinds[e.EventType] {
+				return ErrInvalid
+			}
+			kinds[e.EventType] = true
+		}
+	}
 	refs := map[string]bool{}
 	for _, e := range t.Evidence {
 		if e == nil || len(e.ProtoReflect().GetUnknown()) != 0 || !identifier.MatchString(e.Reference) || refs[e.Reference] || !hash.MatchString(e.ContentHash) {
@@ -47,7 +66,7 @@ func ValidateTask(t *pb.InvestigationTask, now time.Time) error {
 			if t.Mode != Mode || logincontext.Validate(e, now) != nil {
 				return ErrInvalid
 			}
-		} else if e.EventType != "authentication.failed" && e.EventType != "authentication.succeeded" {
+		} else if !phishing && e.EventType != "authentication.failed" && e.EventType != "authentication.succeeded" {
 			return ErrInvalid
 		}
 		refs[e.Reference] = true
@@ -77,9 +96,10 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 	for _, e := range t.Evidence {
 		refs[e.Reference] = true
 	}
+	phishing := telemetry.IsPhishingEvent(t.Evidence[0].EventType)
 	kinds := map[string]bool{}
 	for _, h := range r.Hypotheses {
-		if h == nil || len(h.ProtoReflect().GetUnknown()) != 0 || kinds[h.Kind] || (h.Kind != "credential_compromise" && h.Kind != "legitimate_user_or_automation") || len(h.SupportingRefs) == 0 || len(h.SupportingRefs) > 16 || len(h.CounterevidenceRefs) > 16 || len(h.NeutralRefs) > 16 {
+		if h == nil || len(h.ProtoReflect().GetUnknown()) != 0 || kinds[h.Kind] || (!phishing && h.Kind != "credential_compromise" && h.Kind != "legitimate_user_or_automation") || (phishing && h != nil && h.Kind != "credential_phishing" && h.Kind != "authorized_simulation") || len(h.SupportingRefs) == 0 || len(h.SupportingRefs) > 16 || len(h.CounterevidenceRefs) > 16 || len(h.NeutralRefs) > 16 {
 			return ErrInvalid
 		}
 		kinds[h.Kind] = true
@@ -107,6 +127,20 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 				}
 			}
 		}
+		if phishing && t.Mode == Mode {
+			if len(h.CounterevidenceRefs) != 0 {
+				return ErrInvalid
+			}
+			support := map[string]bool{}
+			for _, ref := range h.SupportingRefs {
+				support[ref] = true
+			}
+			for _, e := range t.Evidence {
+				if support[e.Reference] != (h.Kind == "credential_phishing" || e.EventType == "email.delivered") {
+					return ErrInvalid
+				}
+			}
+		}
 		if len(seen) != len(refs) {
 			return ErrInvalid
 		}
@@ -122,7 +156,7 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 		return ErrInvalid
 	}
 	if t.Mode == Mode {
-		expected := logincontext.Missing(t.Evidence)
+		expected := MissingEvidence(t.Evidence)
 		if len(expected) != len(missing) {
 			return ErrInvalid
 		}
@@ -133,4 +167,14 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 		}
 	}
 	return nil
+}
+
+// MissingEvidence is shared by preview and QA; mock observations never close gaps by inference.
+func MissingEvidence(evidence []*pb.EvidenceItem) []string {
+	for _, e := range evidence {
+		if e != nil && telemetry.IsPhishingEvent(e.EventType) {
+			return []string{"email_headers", "url_reputation", "authorized_simulation_check", "iam_session_context", "independent_verification"}
+		}
+	}
+	return logincontext.Missing(evidence)
 }

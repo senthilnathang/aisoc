@@ -29,6 +29,7 @@ var ErrBinding = errors.New("telemetry source binding mismatch")
 type Binding struct{ TenantID, ConnectorID, Source string }
 
 type Projection struct {
+	MessageRef   string `json:"message_ref,omitempty"`
 	PrincipalRef string `json:"principal_ref"`
 	AssetRef     string `json:"asset_ref"`
 	SourceIP     string `json:"source_ip"`
@@ -78,7 +79,10 @@ func (e Event) Validate(binding Binding) error {
 			return ErrInvalid
 		}
 	}
-	if e.SchemaVersion != "1.0" || (e.EventType != "authentication.failed" && e.EventType != "authentication.succeeded") {
+	if e.SchemaVersion != "1.0" || (!IsPhishingEvent(e.EventType) && e.EventType != "authentication.failed" && e.EventType != "authentication.succeeded") {
+		return ErrInvalid
+	}
+	if (IsPhishingEvent(e.EventType) && !identifier.MatchString(e.Projection.MessageRef)) || (!IsPhishingEvent(e.EventType) && e.Projection.MessageRef != "") {
 		return ErrInvalid
 	}
 	if e.Severity != "low" && e.Severity != "medium" && e.Severity != "high" && e.Severity != "critical" {

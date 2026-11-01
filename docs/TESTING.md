@@ -682,3 +682,14 @@ The frontend routing regression protects HTML OIDC start/callback requests from 
 Verified run `cebf76ec2d154dec9548d7e177d167f7` passed all five release stages in 490.11 seconds (2026-11-01/02 local run). It passed 34 frontend tests plus lint/build, full Go race/vet and API/framework acceptance, ten browser workflows and 72 desktop/mobile route checks, and all eight identity checks plus self-approval denial with an approver role. Browser reports recorded no page errors or external requests. Recovery matched 76 table fingerprints, verified one copied archive and two retention snapshots, and rejected archive/snapshot corruption. Six release-report and two acceptance-report unit tests also passed.
 
 Generated evidence is in `output/release-gate/cebf76ec2d154dec9548d7e177d167f7/`; reports record the working tree as dirty. This validates local/mock behavior, not a live identity provider or production deployment. Earlier failed runs remain failed; the successful run includes the OIDC proxy fix and Skill lifecycle response wait.
+
+## Local phishing workflow — 2026-11-02
+
+Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](PHISHING_FLOW.md).
+
+
+## Verified phishing release — 2026-11-02
+
+Run `108f639e1ceb493f9bc044d81079f416` passed all five release stages in 279.95 seconds: frontend lint/build and 35 regression tests; backend/API acceptance including phishing; eleven browser stages with 72 desktop/mobile route checks; eight OIDC checks plus self-approval denial; and backup/restore matching 76 tables, one archived payload and two retention snapshots with corruption rejection. Go race/vet and Python worker checks ran in the disposable framework suite. Reports and screenshots are under `output/release-gate/108f639e1ceb493f9bc044d81079f416/`.
+
+The earlier `06da61047f714c6696870297ac50aeb1` run failed during its mobile route sweep after phishing passed. The route gate now explicitly waits for a visible heading before inspecting rendered content, instead of assuming network idle means rendering is complete. The complete rerun passed without weakening authorization or evidence checks. Results validate local/mock behavior only; no live mail provider, production response, actual-model quality or throughput is certified.

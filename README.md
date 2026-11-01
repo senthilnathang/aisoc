@@ -367,3 +367,7 @@ The local release gate also exercises independent Respond approval/execution/rep
 ## Local OIDC/SSO — November 2026
 
 Opt-in OIDC now supports trusted subject-to-tenant/role mappings, application session revocation and existing independent approval controls. A disposable mock IdP and browser/API release checks keep validation local. See [configuration, limits and tests](docs/OIDC_SSO.md).
+
+## Local phishing workflow — 2026-11-02
+
+Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](docs/PHISHING_FLOW.md).

@@ -447,3 +447,7 @@ The browser gate now spans ten named stages over the existing React → Go → P
 ## OIDC identity boundary — November 2026
 
 Go optionally owns OIDC code/PKCE login and opaque application sessions. A private subject mapping supplies tenant/operator/roles; untrusted provider role and tenant claims are ignored. Mapping fingerprints invalidate sessions on change; existing authorization and scope checks remain authoritative. The mock IdP is development-only; session state is process-local. See [architecture and limitations](OIDC_SSO.md).
+
+## Local phishing workflow — 2026-11-02
+
+Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](PHISHING_FLOW.md).

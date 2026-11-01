@@ -14,6 +14,8 @@ def check_release(run_id,acceptance,http,sql,env,temp,log,spawn,port,wait_port,p
     fixtures=out/'fixtures';fixtures.mkdir()
     name='Release '+run_id[:12]
     login=api('/build/integrations/example?scope_id=login-context-suspicious')
+    phishing=api('/build/integrations/example?scope_id=login-context-suspicious&scenario=phishing')
+    (fixtures/'phishing.json').write_text(json.dumps(phishing,indent=2)+'\n')
     (fixtures/'login.json').write_text(json.dumps(login,indent=2)+'\n')
     memory_input=dict(id='EI-release-'+run_id,artifact=name+' memory',kind='user',content='Synthetic release context; independent approval required.')
     skill_input=dict(name=name+' skill',content_markdown='Synthetic release instructions. Escalate missing evidence.')
@@ -37,7 +39,7 @@ def check_release(run_id,acceptance,http,sql,env,temp,log,spawn,port,wait_port,p
     from release_workflow_fixtures import create
     workflows=create(api,run_id,name)
     (fixtures/'workflows.json').write_text(json.dumps(workflows,indent=2)+'\n')
-    manifest=dict(workflows=workflows,run_id=run_id,mode='local/mock',name=name,memory=memory,skill=skill,notice_id=notice,scope='login-context-suspicious',details=dict(case_id=acceptance['stages']['build_response']['case_id'],rule_id=acceptance['stages']['detect_feedback']['rule_id'],hunt_id=acceptance['stages']['intel_hunt']['hunt_id'],report_id=acceptance['stages']['intel_hunt']['report_id']))
+    manifest=dict(phishing=acceptance['stages']['phishing'],workflows=workflows,run_id=run_id,mode='local/mock',name=name,memory=memory,skill=skill,notice_id=notice,scope='login-context-suspicious',details=dict(case_id=acceptance['stages']['build_response']['case_id'],rule_id=acceptance['stages']['detect_feedback']['rule_id'],hunt_id=acceptance['stages']['intel_hunt']['hunt_id'],report_id=acceptance['stages']['intel_hunt']['report_id']))
     (fixtures/'inputs.json').write_text(json.dumps(dict(memory=memory_input,skill=skill_input,notification=dict(id=notice,recipient='fixture-a',age_days=60)),indent=2)+'\n')
     web_port=int(env['AISOC_RELEASE_WEB_PORT']);env['AISOC_API_PROXY_TARGET']='http://'+env['AISOC_GO_ADDR']
     web=spawn(['node',root/'frontend/node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port',str(web_port),'--strictPort'],root/'frontend')

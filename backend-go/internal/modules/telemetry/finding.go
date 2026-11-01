@@ -52,7 +52,7 @@ func (f Finding) ValidateEvidence(binding Binding, events []Event) error {
 	if f.TenantID != binding.TenantID || f.ConnectorID != binding.ConnectorID || f.Source != binding.Source {
 		return ErrBinding
 	}
-	if f.SchemaVersion != "1.0" || f.Kind != "suspicious_login" || f.Disposition != "requires_review" || !identifier.MatchString(f.RuleID) || !identifier.MatchString(f.RuleVersion) {
+	if f.SchemaVersion != "1.0" || (f.Kind != "suspicious_login" && f.Kind != "credential_phishing") || f.Disposition != "requires_review" || !identifier.MatchString(f.RuleID) || !identifier.MatchString(f.RuleVersion) {
 		return ErrInvalid
 	}
 	if len(events) < 2 || len(events) > 64 || len(f.EventKeys) != len(events) || len(f.EvidenceRefs) == 0 || len(f.EvidenceRefs) > 64 {
@@ -71,6 +71,9 @@ func (f Finding) ValidateEvidence(binding Binding, events []Event) error {
 	for _, e := range events {
 		if err := e.Validate(binding); err != nil {
 			return err
+		}
+		if (f.Kind == "credential_phishing") != IsPhishingEvent(e.EventType) {
+			return ErrInvalid
 		}
 		if keys[e.Identity()] {
 			return ErrInvalid
