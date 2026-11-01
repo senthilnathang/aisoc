@@ -30,7 +30,7 @@ def main():
                  f'-h 127.0.0.1 -p {pgport} -k {temp}', '-w', 'start'], stdout=subprocess.DEVNULL)
             started = True
             run([PG/'createdb', 'aisoc_go_detection_test'])
-            run(['go', 'test', '-p', '1', '-race', '-count=1', '-v', './internal/modules/detection', './internal/modules/routing', './internal/modules/investigations', './internal/modules/intake', './internal/modules/response', './internal/modules/hunts', './internal/modules/threatintel', './internal/modules/skills', './internal/modules/navigation', './internal/transport/httpapi'], cwd=ROOT/'backend-go')
+            run(['go', 'test', '-p', '1', '-race', '-count=1', '-v', './internal/modules/detection', './internal/modules/routing', './internal/modules/investigations', './internal/modules/intake', './internal/modules/response', './internal/modules/hunts', './internal/modules/threatintel', './internal/modules/skills', './internal/modules/insights', './internal/modules/navigation', './internal/transport/httpapi'], cwd=ROOT/'backend-go')
         except subprocess.CalledProcessError:
             print((temp / "pg.log").read_text()[-12000:])
             raise

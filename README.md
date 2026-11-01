@@ -271,3 +271,7 @@ The [Threat Intel workspace](docs/THREAT_INTEL_WORKSPACE.md) adds the screenshot
 ## Skills workspace
 
 Open `/skills` for the screenshot-aligned library and three-column editor: paginated custom/augmented guidance, text import, references, relevance rules, safe preview and version-checked save/publish/enablement. Guidance is recorded for analyst review, not executed as privileged actions. See [Skills workspace](docs/SKILLS_WORKSPACE.md).
+
+## Memory / Enterprise Insights
+
+`/memory` now provides persisted organizational context, the active insight table, generated case-context cards, reviewed prevalence suggestions, audit and usage drilldowns. Go records active exact-entity matches as immutable investigation context; hints never change verdicts or execute actions. See [Enterprise Insights](docs/ENTERPRISE_INSIGHTS.md).

@@ -90,7 +90,7 @@ func strictSkillBody(r *http.Request, schema *responseRule) (map[string]any, err
 			if _, ok := v.(float64); !ok {
 				return nil, invalid()
 			}
-		case "publish", "enabled":
+		case "publish", "enabled", "from_prevalence":
 			if _, ok := v.(bool); !ok {
 				return nil, invalid()
 			}

@@ -354,15 +354,19 @@ func skillContext(input AlertInput, matches []any) skills.Context {
 	if category == "" {
 		category = "other"
 	}
-	c := skills.Context{Module: "investigations", Source: input.Source, Title: title, Category: category, SourceEntities: []string{input.PrimaryEntity}}
+	c := skills.Context{Module: "investigations", Source: input.Source, Title: title, Category: category, SourceEntities: []string{input.PrimaryEntity}, InsightEntities: []string{input.PrimaryEntity}}
 	for _, e := range input.Evidence {
 		c.SourceEntities = append(c.SourceEntities, e.Type, e.Label, e.Value)
+		c.InsightEntities = append(c.InsightEntities, e.Value)
 	}
 	for _, m := range matches {
 		if row, ok := m.(map[string]any); ok {
 			for _, key := range []string{"indicator_type", "value"} {
 				if v, ok := row[key].(string); ok {
 					c.RuntimeEntities = append(c.RuntimeEntities, v)
+					if key == "value" {
+						c.InsightEntities = append(c.InsightEntities, v)
+					}
 				}
 			}
 		}

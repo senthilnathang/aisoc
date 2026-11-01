@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"aisoc/backend/internal/modules/insights"
 	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
 	"context"
@@ -13,6 +14,7 @@ import (
 type Context struct {
 	Module, Source, Title, Category              string
 	SourceEntities, RuntimeEntities, InsightRefs []string
+	InsightEntities                              []string // Actual values only; excludes scope type/label metadata.
 }
 
 func stringsOf(v any) []string {
@@ -144,6 +146,13 @@ func aliases(ctx context.Context, db DB, tenant, source string) ([]string, error
 // Callers hold the target case/hunt lock before applying. Skill shared locks keep
 // versions and active material snapshots stable against concurrent authoring.
 func Apply(ctx context.Context, tx pgx.Tx, tenant, targetType, targetID string, c Context) ([]map[string]any, error) {
+	if targetType == "investigation" {
+		refs, err := insights.Apply(ctx, tx, tenant, targetID, c.InsightEntities)
+		if err != nil {
+			return nil, err
+		}
+		c.InsightRefs = append(c.InsightRefs, refs...)
+	}
 	rows, err := tx.Query(ctx, `SELECT document FROM skills WHERE tenant_id=$1 AND document->>'state'='published' AND document->'enabled'='true'::jsonb ORDER BY `+lowerName+` COLLATE "C",ordinal FOR SHARE`, tenant)
 	if err != nil {
 		return nil, err

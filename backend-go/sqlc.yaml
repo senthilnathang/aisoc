@@ -87,3 +87,12 @@ sql:
         out: internal/modules/skills/skillsql
         sql_package: pgx/v5
         omit_unused_structs: true
+  - engine: postgresql
+    schema: migrations
+    queries: internal/modules/insights/queries
+    gen:
+      go:
+        package: insightsql
+        out: internal/modules/insights/insightsql
+        sql_package: pgx/v5
+        omit_unused_structs: true

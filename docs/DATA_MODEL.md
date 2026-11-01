@@ -230,3 +230,7 @@ Report columns: `threat_actor`, `targeted_industry`, `targeted_region`, `relevan
 ## Skills workspace persistence
 
 No new tables/migration: library projections read existing `skills.document` origin/state/metadata and return filtered counts. Row locks guard revision-checked edits; save/publication/deletion and audit share a transaction. Existing material edits increment parent versions, and prior application snapshots remain unchanged. See [Skills lifecycle](SKILLS_WORKSPACE.md).
+
+## Enterprise Insights (040)
+
+`enterprise_insights` stores tenant-scoped context, normalized artifact, revision, validity and archive state. `enterprise_insight_applications` stores immutable snapshots unique per tenant/insight/investigation/version. Archive retains history; investigation deletion cascades its application rows while audit remains. Authoring and applications write audit atomically. See [schema and lifecycle](ENTERPRISE_INSIGHTS.md).

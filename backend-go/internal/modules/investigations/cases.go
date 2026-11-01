@@ -154,7 +154,7 @@ func (s Store) Create(ctx context.Context, tenant string, in Input) (Record, err
 	if closeErr != nil {
 		return Record{}, closeErr
 	}
-	if _, err = skills.Apply(ctx, tx, tenant, "investigation", id, skills.Context{Module: "investigations", Source: in.Source, Title: in.Title, Category: in.Category, SourceEntities: []string{in.PrimaryEntity}, InsightRefs: in.InsightRefs}); err != nil {
+	if _, err = skills.Apply(ctx, tx, tenant, "investigation", id, skills.Context{Module: "investigations", Source: in.Source, Title: in.Title, Category: in.Category, SourceEntities: []string{in.PrimaryEntity}, InsightEntities: []string{in.PrimaryEntity}, InsightRefs: in.InsightRefs}); err != nil {
 		return Record{}, err
 	}
 	if err = Audit(ctx, tx, tenant, id, "created", nil); err != nil {

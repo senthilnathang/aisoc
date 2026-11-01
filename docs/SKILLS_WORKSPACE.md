@@ -36,7 +36,7 @@ All endpoints are under `/api/v1`, using authenticated tenant/actor context.
 
 Legacy CRUD, publish/toggle, materials, suggestions, feedback and outcomes endpoints remain. Legacy clients without a version precondition retain their existing update behavior; the new workspace always supplies one. The domain mutation boundary rejects protected identity/origin fields, malformed arrays, blank scope values and invalid revisions. Deletion now records a durable audit event in the same transaction.
 
-`backend-go/internal/modules/skills/queries/workspace.sql` and generated `skillsql` implement parameterized library projections. Counts and rows share a read-only repeatable-read snapshot. Existing skill mutations continue using parameterized pgx and row locks. No migration or new service is required; schema version remains 039.
+`backend-go/internal/modules/skills/queries/workspace.sql` and generated `skillsql` implement parameterized library projections. Counts and rows share a read-only repeatable-read snapshot. Existing skill mutations continue using parameterized pgx and row locks. No migration or new service is required; the Skills baseline was schema 039; Enterprise Insights subsequently adds 040.
 
 ```mermaid
 sequenceDiagram

@@ -21,7 +21,7 @@ Updated 2026-10-31. The application opens at [localhost:8080](http://localhost:8
 | Skills | Starter templates | `/skills/templates` |
 | Skills | Environment suggestions | `/skills/suggestions` |
 | Skills | Outcomes | `/skills/outcomes` |
-| Memory | Investigation memory | `/memory` |
+| Memory | Enterprise Insights | `/memory` |
 | Build | API sources | `/build/api-sources` |
 | Build | Stream operations | `/build/stream-operations` |
 | Build | Connectors | `/build/connectors/cribl` |
@@ -92,3 +92,7 @@ Cases uses `/respond/cases`; workflow policy configuration uses `/respond/remedi
 ## Skills workspace routes
 
 `/skills` contains custom and augmented tabs within the existing Library submenu. `/skills/new` accepts create/template/text-import drafts; `/skills/:id` uses the file/instructions/relevance editor. Templates, environment suggestions and outcomes keep their current submenu routes. Delayed save completion does not force navigation after leaving. See [Skills screens](SKILLS_WORKSPACE.md).
+
+## Memory workspace
+
+Memory → Enterprise Insights remains `/memory`; Active Insights, AISOC Generated, AI Suggestions, Prevalence Suggestions and Audit Log are in-page tabs. Insight use and generated cards link to existing investigation routes. Create/edit/archive and usage use accessible dialogs. See [screen mapping](ENTERPRISE_INSIGHTS.md).

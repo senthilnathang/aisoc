@@ -341,3 +341,7 @@ Go uses a repeatable-read registry projection and the existing tenant TI mutatio
 ## Skills workspace (2026-11-01)
 
 The React library reads Go sqlc projections in a repeatable-read transaction. Authenticated workspace edits lock the tenant skill, compare an expected version, and commit authored fields, optional publication and audit together. Enablement sets a desired boolean. Existing case/hunt matching and material snapshots remain the execution boundary; no new inference service is introduced. See [Skills architecture and sequence](SKILLS_WORKSPACE.md).
+
+## Enterprise Insights context recording
+
+Go `internal/modules/insights` owns tenant-scoped organizational context and sqlc projections. Existing investigation Skills entrypoints pass a separate list of actual entity values into exact matching. Shared row locks protect versioned context snapshots against edits/archive; applications, visible steps and audit commit in the case transaction. Insights remain advisory and do not modify verdicts or invoke response tools. See [architecture and sequence](ENTERPRISE_INSIGHTS.md).

@@ -446,3 +446,7 @@ The shared isolated PostgreSQL race suite includes threatintel tests for real re
 ## Skills workspace regression checks
 
 The isolated PostgreSQL harness now includes `internal/modules/skills`, including revision concurrency, pagination/origin isolation, audit rollback and existing materials/applications. HTTP tests reject malformed controls. Run `scripts/framework/skills-workspace-browser-check.js` through Playwright against localhost:8080 for intercepted library/editor/import/preview/conflict/navigation/mobile flows; no demo writes occur. See [Skills verification](SKILLS_WORKSPACE.md).
+
+## Enterprise Insights tests
+
+The isolated PostgreSQL harness includes insights and the intake entity-value regression. It tests tenant isolation, snapshots, replay, archive coordination, audit rollback and prevalence. The intercepted `scripts/framework/enterprise-insights-browser-check.js` covers active/cards/prevalence/audit views, usage, edit conflicts, archive, late requests, empty states and mobile overflow without demo writes. See [verification scope](ENTERPRISE_INSIGHTS.md).

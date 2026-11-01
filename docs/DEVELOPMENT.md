@@ -364,3 +364,7 @@ Use `HuntWorkspace.jsx` and `internal/modules/hunts/workspace.go`; new SQL is in
 ## Skills workspace development
 
 `frontend/src/SkillsRegistry.jsx` owns the paginated library and text import; `Skills.jsx` retains editor/materials/templates/suggestions/outcomes. Go workspace projections live in `internal/modules/skills/queries/workspace.sql`; regenerate with `make -C backend-go sqlc`. New editor writes use required `expected_version` and explicit desired enablement. Preserve form data on 409, and never silently refresh a revision after external/material edits. See [Skills developer details](SKILLS_WORKSPACE.md).
+
+## Enterprise Insights development
+
+`frontend/src/EnterpriseInsights.jsx` replaces sample-backed Memory. Go queries live in `internal/modules/insights/queries/workspace.sql`; regenerate through sqlc. `skills.Context.InsightEntities` must contain actual entity values only, never evidence labels/types. Maintain revision checks, application uniqueness and atomic auditing. Start the local backend to apply 040 before loading the UI. See [developer contracts](ENTERPRISE_INSIGHTS.md).

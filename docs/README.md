@@ -1,7 +1,7 @@
 # Documentation index
 
 Current architecture and local migration status: 2026-11-01. The selected foundation
-uses API 3003/schema 039, with a 70,000-event local demo. The release on 3002 is
+uses API 3003/schema 040, with a 70,000-event local demo. The release on 3002 is
 preserved separately. Historical migration reports and ADR dates remain unchanged.
 
 | Document | Purpose |
@@ -108,4 +108,8 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 
 ## Skills workspace
 
-[Skills reference, workflows, contracts and tests](SKILLS_WORKSPACE.md) documents the library/editor update. No schema migration is required; version remains 039.
+[Skills reference, workflows, contracts and tests](SKILLS_WORKSPACE.md) documents the library/editor update. Skills introduced no migration; Enterprise Insights subsequently adds 040.
+
+## Enterprise Insights
+
+[Memory workspace reference, contracts, matching and tests](ENTERPRISE_INSIGHTS.md) covers the three public screenshot layouts and additive migration 040. Local foundation schema is040.

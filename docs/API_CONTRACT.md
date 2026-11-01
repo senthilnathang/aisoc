@@ -414,3 +414,7 @@ Added GET `/threat-intel/registry`, GET `/threat-intel-reports/{id}/workspace`, 
 ## Skills workspace additions
 
 `GET /skills/library` adds origin-scoped filtered totals and bounded pagination. `PATCH /skills/:id/workspace` requires `expected_version` and optionally saves/publishes atomically. `PUT /skills/:id/enabled` requires the revision and desired boolean. Stale writes return 409; unknown fields and coerced control values are rejected. Legacy routes remain. See [full contracts](SKILLS_WORKSPACE.md).
+
+## Enterprise Insights API
+
+`GET /enterprise-insights` provides bounded tab/search projections and summary. `POST /enterprise-insights` creates context with a retry-safe client request ID; `PUT /enterprise-insights/:id` and `POST /enterprise-insights/:id/archive` require `expected_version`. `GET /enterprise-insights/:id/uses` returns retained application snapshots. Tenant/actor come from authentication; verdict hints are advisory. See [full contracts](ENTERPRISE_INSIGHTS.md).
