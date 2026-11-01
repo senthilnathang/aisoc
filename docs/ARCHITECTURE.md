@@ -345,3 +345,7 @@ The React library reads Go sqlc projections in a repeatable-read transaction. Au
 ## Enterprise Insights context recording
 
 Go `internal/modules/insights` owns tenant-scoped organizational context and sqlc projections. Existing investigation Skills entrypoints pass a separate list of actual entity values into exact matching. Shared row locks protect versioned context snapshots against edits/archive; applications, visible steps and audit commit in the case transaction. Insights remain advisory and do not modify verdicts or invoke response tools. See [architecture and sequence](ENTERPRISE_INSIGHTS.md).
+
+## Build workspace (2026-11-01)
+
+Build adds a read-only Go/sqlc projection over existing Skills, response plans/policies, API sources/rules and connectors. Tenant predicates cover every query branch and join. One statement returns a consistent page and counts. The UI navigates to existing owners; no duplicate orchestrator, migration or provider calls. See [flow](BUILD_WORKSPACE.md).

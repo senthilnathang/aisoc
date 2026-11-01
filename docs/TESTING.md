@@ -450,3 +450,7 @@ The isolated PostgreSQL harness now includes `internal/modules/skills`, includin
 ## Enterprise Insights tests
 
 The isolated PostgreSQL harness includes insights and the intake entity-value regression. It tests tenant isolation, snapshots, replay, archive coordination, audit rollback and prevalence. The intercepted `scripts/framework/enterprise-insights-browser-check.js` covers active/cards/prevalence/audit views, usage, edit conflicts, archive, late requests, empty states and mobile overflow without demo writes. See [verification scope](ENTERPRISE_INSIGHTS.md).
+
+## Build workspace (2026-11-01)
+
+Run python3 scripts/framework/check_detection_intelligence.py for isolated PostgreSQL/race coverage including internal/modules/build. HTTP tests check invalid filters. Run frontend lint/build, node --test tests/frontend/*.test.mjs, and scripts/framework/build-workspace-browser-check.js through Playwright. Browser fixtures test metadata, navigation, errors, stale responses and responsive layout without writes. See [scope](BUILD_WORKSPACE.md).

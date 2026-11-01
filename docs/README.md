@@ -113,3 +113,7 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Enterprise Insights
 
 [Memory workspace reference, contracts, matching and tests](ENTERPRISE_INSIGHTS.md) covers the three public screenshot layouts and additive migration 040. Local foundation schema is040.
+
+## Build workspace (2026-11-01)
+
+[Build scope, API and validation](BUILD_WORKSPACE.md) documents the new entry point. No standalone vendor Build screenshot was verified; this overview composes existing AISOC workspaces. Schema remains 040.

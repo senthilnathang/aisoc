@@ -184,3 +184,7 @@ Implemented reference-based library/editor layout, custom/augmented views, filte
 ## Enterprise Insights update (2026-11-01)
 
 Implemented persistent Memory context, reference-based table/cards/prevalence screens, real usage/audit, guarded authoring and exact-value context snapshots in existing investigation transactions. Remaining: model suggestions/RAG evaluation, canonical entity resolution, hunt applications, bulk historical re-evaluation and scale/retention hardening. AI Suggestions remains explicitly unconfigured. See [scope and limits](ENTERPRISE_INSIGHTS.md).
+
+## Build workspace (2026-11-01)
+
+Implemented the read-only tenant asset catalog and Build entry point, reusing existing owners. Pending: existing-record connector editors, large-catalog benchmarks and separately specified advanced builder features. No external execution added. See [Build](BUILD_WORKSPACE.md).

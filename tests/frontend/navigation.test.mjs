@@ -18,3 +18,7 @@ test('each menu target has a unique navigable route',()=>{
  const views=sections.flatMap(s=>s.items.map(i=>i.view));assert.equal(new Set(views).size,views.length);
  for(const view of views)assert.ok(pathForView[view]?.startsWith('/'),view);
 });
+
+test('Build workspace is the entrypoint and preserves integration tools',()=>{
+ const build=sectionForView('build');assert.equal(build.label,'Build');assert.equal(build.items[0].path,'/build');assert.equal(pathForView.apiSources,'/build/api-sources');assert.equal(pathForView.streamOperations,'/build/stream-operations');
+});

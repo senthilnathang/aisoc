@@ -234,3 +234,7 @@ No new tables/migration: library projections read existing `skills.document` ori
 ## Enterprise Insights (040)
 
 `enterprise_insights` stores tenant-scoped context, normalized artifact, revision, validity and archive state. `enterprise_insight_applications` stores immutable snapshots unique per tenant/insight/investigation/version. Archive retains history; investigation deletion cascades its application rows while audit remains. Authoring and applications write audit atomically. See [schema and lifecycle](ENTERPRISE_INSIGHTS.md).
+
+## Build workspace (2026-11-01)
+
+Build projects existing skills, response plans/policies, API sources/rules and connectors without duplicate records or migration (schema 040). Counts and page share a query snapshot. Credentials, instructions and connector configuration are excluded. See [Build](BUILD_WORKSPACE.md).

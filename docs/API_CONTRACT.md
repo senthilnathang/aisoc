@@ -418,3 +418,7 @@ Added GET `/threat-intel/registry`, GET `/threat-intel-reports/{id}/workspace`, 
 ## Enterprise Insights API
 
 `GET /enterprise-insights` provides bounded tab/search projections and summary. `POST /enterprise-insights` creates context with a retry-safe client request ID; `PUT /enterprise-insights/:id` and `POST /enterprise-insights/:id/archive` require `expected_version`. `GET /enterprise-insights/:id/uses` returns retained application snapshots. Tenant/actor come from authentication; verdict hints are advisory. See [full contracts](ENTERPRISE_INSIGHTS.md).
+
+## Build workspace (2026-11-01)
+
+GET /api/v1/build/catalog returns items, filtered total, global tenant counts, limit and offset. Filters: kind (all/skill/workflow/runbook/api_source/connector), literal search ≤200 characters, limit 1–100 (default 25), offset 0–1,000,000 (default 0). Unknown/repeated/invalid filters return 400. No mutations or credentials. See [fields and state semantics](BUILD_WORKSPACE.md).

@@ -368,3 +368,7 @@ Use `HuntWorkspace.jsx` and `internal/modules/hunts/workspace.go`; new SQL is in
 ## Enterprise Insights development
 
 `frontend/src/EnterpriseInsights.jsx` replaces sample-backed Memory. Go queries live in `internal/modules/insights/queries/workspace.sql`; regenerate through sqlc. `skills.Context.InsightEntities` must contain actual entity values only, never evidence labels/types. Maintain revision checks, application uniqueness and atomic auditing. Start the local backend to apply 040 before loading the UI. See [developer contracts](ENTERPRISE_INSIGHTS.md).
+
+## Build workspace (2026-11-01)
+
+frontend/src/BuildWorkspace.jsx consumes GET /api/v1/build/catalog. backend-go/internal/modules/build/queries/catalog.sql defines the allowlist; regenerate with make -C backend-go sqlc. Exclude credentials, config and instruction bodies. Keep connector rows inspect-only and preserve stale-response protection. See [contracts](BUILD_WORKSPACE.md).

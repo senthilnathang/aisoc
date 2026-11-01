@@ -275,3 +275,7 @@ Open `/skills` for the screenshot-aligned library and three-column editor: pagin
 ## Memory / Enterprise Insights
 
 `/memory` now provides persisted organizational context, the active insight table, generated case-context cards, reviewed prevalence suggestions, audit and usage drilldowns. Go records active exact-entity matches as immutable investigation context; hints never change verdicts or execute actions. See [Enterprise Insights](docs/ENTERPRISE_INSIGHTS.md).
+
+## Build workspace (2026-11-01)
+
+Open `/build` for saved assets, metadata inspection and links to Skills, response design and integrations. See [Build scope and API](docs/BUILD_WORKSPACE.md).
