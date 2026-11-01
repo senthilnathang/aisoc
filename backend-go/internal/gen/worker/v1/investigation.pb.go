@@ -27,6 +27,7 @@ type EvidenceItem struct {
 	ContentHash   string                 `protobuf:"bytes,2,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
 	EventTime     string                 `protobuf:"bytes,3,opt,name=event_time,json=eventTime,proto3" json:"event_time,omitempty"`
 	EventType     string                 `protobuf:"bytes,4,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
+	Context       *EvidenceContext       `protobuf:"bytes,5,opt,name=context,proto3" json:"context,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -87,6 +88,13 @@ func (x *EvidenceItem) GetEventType() string {
 		return x.EventType
 	}
 	return ""
+}
+
+func (x *EvidenceItem) GetContext() *EvidenceContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
 }
 
 type InvestigationTask struct {
@@ -202,6 +210,7 @@ type Hypothesis struct {
 	Kind                string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
 	SupportingRefs      []string               `protobuf:"bytes,2,rep,name=supporting_refs,json=supportingRefs,proto3" json:"supporting_refs,omitempty"`
 	CounterevidenceRefs []string               `protobuf:"bytes,3,rep,name=counterevidence_refs,json=counterevidenceRefs,proto3" json:"counterevidence_refs,omitempty"`
+	NeutralRefs         []string               `protobuf:"bytes,4,rep,name=neutral_refs,json=neutralRefs,proto3" json:"neutral_refs,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -253,6 +262,13 @@ func (x *Hypothesis) GetSupportingRefs() []string {
 func (x *Hypothesis) GetCounterevidenceRefs() []string {
 	if x != nil {
 		return x.CounterevidenceRefs
+	}
+	return nil
+}
+
+func (x *Hypothesis) GetNeutralRefs() []string {
+	if x != nil {
+		return x.NeutralRefs
 	}
 	return nil
 }
@@ -373,18 +389,188 @@ func (x *InvestigationResult) GetModelVersion() string {
 	return ""
 }
 
+// Local JSON fixture provenance only. Never credentials, instructions or actions.
+type EvidenceContext struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	ConnectorId   string                 `protobuf:"bytes,2,opt,name=connector_id,json=connectorId,proto3" json:"connector_id,omitempty"`
+	PrincipalRef  string                 `protobuf:"bytes,3,opt,name=principal_ref,json=principalRef,proto3" json:"principal_ref,omitempty"`
+	AssetRef      string                 `protobuf:"bytes,4,opt,name=asset_ref,json=assetRef,proto3" json:"asset_ref,omitempty"`
+	RetrievedAt   string                 `protobuf:"bytes,5,opt,name=retrieved_at,json=retrievedAt,proto3" json:"retrieved_at,omitempty"`
+	Outcome       string                 `protobuf:"bytes,6,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	State         string                 `protobuf:"bytes,7,opt,name=state,proto3" json:"state,omitempty"`
+	Processes     []*ProcessObservation  `protobuf:"bytes,8,rep,name=processes,proto3" json:"processes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EvidenceContext) Reset() {
+	*x = EvidenceContext{}
+	mi := &file_aisoc_worker_v1_investigation_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvidenceContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvidenceContext) ProtoMessage() {}
+
+func (x *EvidenceContext) ProtoReflect() protoreflect.Message {
+	mi := &file_aisoc_worker_v1_investigation_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvidenceContext.ProtoReflect.Descriptor instead.
+func (*EvidenceContext) Descriptor() ([]byte, []int) {
+	return file_aisoc_worker_v1_investigation_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *EvidenceContext) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *EvidenceContext) GetConnectorId() string {
+	if x != nil {
+		return x.ConnectorId
+	}
+	return ""
+}
+
+func (x *EvidenceContext) GetPrincipalRef() string {
+	if x != nil {
+		return x.PrincipalRef
+	}
+	return ""
+}
+
+func (x *EvidenceContext) GetAssetRef() string {
+	if x != nil {
+		return x.AssetRef
+	}
+	return ""
+}
+
+func (x *EvidenceContext) GetRetrievedAt() string {
+	if x != nil {
+		return x.RetrievedAt
+	}
+	return ""
+}
+
+func (x *EvidenceContext) GetOutcome() string {
+	if x != nil {
+		return x.Outcome
+	}
+	return ""
+}
+
+func (x *EvidenceContext) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *EvidenceContext) GetProcesses() []*ProcessObservation {
+	if x != nil {
+		return x.Processes
+	}
+	return nil
+}
+
+type ProcessObservation struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pid           uint32                 `protobuf:"varint,1,opt,name=pid,proto3" json:"pid,omitempty"`
+	ParentPid     uint32                 `protobuf:"varint,2,opt,name=parent_pid,json=parentPid,proto3" json:"parent_pid,omitempty"`
+	Image         string                 `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
+	Sha256        string                 `protobuf:"bytes,4,opt,name=sha256,proto3" json:"sha256,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProcessObservation) Reset() {
+	*x = ProcessObservation{}
+	mi := &file_aisoc_worker_v1_investigation_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessObservation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessObservation) ProtoMessage() {}
+
+func (x *ProcessObservation) ProtoReflect() protoreflect.Message {
+	mi := &file_aisoc_worker_v1_investigation_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessObservation.ProtoReflect.Descriptor instead.
+func (*ProcessObservation) Descriptor() ([]byte, []int) {
+	return file_aisoc_worker_v1_investigation_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ProcessObservation) GetPid() uint32 {
+	if x != nil {
+		return x.Pid
+	}
+	return 0
+}
+
+func (x *ProcessObservation) GetParentPid() uint32 {
+	if x != nil {
+		return x.ParentPid
+	}
+	return 0
+}
+
+func (x *ProcessObservation) GetImage() string {
+	if x != nil {
+		return x.Image
+	}
+	return ""
+}
+
+func (x *ProcessObservation) GetSha256() string {
+	if x != nil {
+		return x.Sha256
+	}
+	return ""
+}
+
 var File_aisoc_worker_v1_investigation_proto protoreflect.FileDescriptor
 
 const file_aisoc_worker_v1_investigation_proto_rawDesc = "" +
 	"\n" +
-	"#aisoc/worker/v1/investigation.proto\x12\x0faisoc.worker.v1\"\x8d\x01\n" +
+	"#aisoc/worker/v1/investigation.proto\x12\x0faisoc.worker.v1\"\xc9\x01\n" +
 	"\fEvidenceItem\x12\x1c\n" +
 	"\treference\x18\x01 \x01(\tR\treference\x12!\n" +
 	"\fcontent_hash\x18\x02 \x01(\tR\vcontentHash\x12\x1d\n" +
 	"\n" +
 	"event_time\x18\x03 \x01(\tR\teventTime\x12\x1d\n" +
 	"\n" +
-	"event_type\x18\x04 \x01(\tR\teventType\"\xd3\x02\n" +
+	"event_type\x18\x04 \x01(\tR\teventType\x12:\n" +
+	"\acontext\x18\x05 \x01(\v2 .aisoc.worker.v1.EvidenceContextR\acontext\"\xd3\x02\n" +
 	"\x11InvestigationTask\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1f\n" +
 	"\vincident_id\x18\x02 \x01(\tR\n" +
@@ -396,12 +582,13 @@ const file_aisoc_worker_v1_investigation_proto_rawDesc = "" +
 	"\x10deadline_unix_ms\x18\x06 \x01(\x03R\x0edeadlineUnixMs\x129\n" +
 	"\bevidence\x18\a \x03(\v2\x1d.aisoc.worker.v1.EvidenceItemR\bevidence\x12(\n" +
 	"\x10max_output_bytes\x18\b \x01(\rR\x0emaxOutputBytes\x12\x12\n" +
-	"\x04mode\x18\t \x01(\tR\x04mode\"|\n" +
+	"\x04mode\x18\t \x01(\tR\x04mode\"\x9f\x01\n" +
 	"\n" +
 	"Hypothesis\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12'\n" +
 	"\x0fsupporting_refs\x18\x02 \x03(\tR\x0esupportingRefs\x121\n" +
-	"\x14counterevidence_refs\x18\x03 \x03(\tR\x13counterevidenceRefs\"\x8d\x03\n" +
+	"\x14counterevidence_refs\x18\x03 \x03(\tR\x13counterevidenceRefs\x12!\n" +
+	"\fneutral_refs\x18\x04 \x03(\tR\vneutralRefs\"\x8d\x03\n" +
 	"\x13InvestigationResult\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1f\n" +
 	"\vincident_id\x18\x02 \x01(\tR\n" +
@@ -417,7 +604,22 @@ const file_aisoc_worker_v1_investigation_proto_rawDesc = "" +
 	"\x10missing_evidence\x18\b \x03(\tR\x0fmissingEvidence\x122\n" +
 	"\x15requires_human_review\x18\t \x01(\bR\x13requiresHumanReview\x12#\n" +
 	"\rmodel_version\x18\n" +
-	" \x01(\tR\fmodelVersion2g\n" +
+	" \x01(\tR\fmodelVersion\"\xa4\x02\n" +
+	"\x0fEvidenceContext\x12\x16\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\x12!\n" +
+	"\fconnector_id\x18\x02 \x01(\tR\vconnectorId\x12#\n" +
+	"\rprincipal_ref\x18\x03 \x01(\tR\fprincipalRef\x12\x1b\n" +
+	"\tasset_ref\x18\x04 \x01(\tR\bassetRef\x12!\n" +
+	"\fretrieved_at\x18\x05 \x01(\tR\vretrievedAt\x12\x18\n" +
+	"\aoutcome\x18\x06 \x01(\tR\aoutcome\x12\x14\n" +
+	"\x05state\x18\a \x01(\tR\x05state\x12A\n" +
+	"\tprocesses\x18\b \x03(\v2#.aisoc.worker.v1.ProcessObservationR\tprocesses\"s\n" +
+	"\x12ProcessObservation\x12\x10\n" +
+	"\x03pid\x18\x01 \x01(\rR\x03pid\x12\x1d\n" +
+	"\n" +
+	"parent_pid\x18\x02 \x01(\rR\tparentPid\x12\x14\n" +
+	"\x05image\x18\x03 \x01(\tR\x05image\x12\x16\n" +
+	"\x06sha256\x18\x04 \x01(\tR\x06sha2562g\n" +
 	"\fInvestigator\x12W\n" +
 	"\vInvestigate\x12\".aisoc.worker.v1.InvestigationTask\x1a$.aisoc.worker.v1.InvestigationResultB/Z-aisoc/backend/internal/gen/worker/v1;workerv1b\x06proto3"
 
@@ -433,23 +635,27 @@ func file_aisoc_worker_v1_investigation_proto_rawDescGZIP() []byte {
 	return file_aisoc_worker_v1_investigation_proto_rawDescData
 }
 
-var file_aisoc_worker_v1_investigation_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_aisoc_worker_v1_investigation_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_aisoc_worker_v1_investigation_proto_goTypes = []any{
 	(*EvidenceItem)(nil),        // 0: aisoc.worker.v1.EvidenceItem
 	(*InvestigationTask)(nil),   // 1: aisoc.worker.v1.InvestigationTask
 	(*Hypothesis)(nil),          // 2: aisoc.worker.v1.Hypothesis
 	(*InvestigationResult)(nil), // 3: aisoc.worker.v1.InvestigationResult
+	(*EvidenceContext)(nil),     // 4: aisoc.worker.v1.EvidenceContext
+	(*ProcessObservation)(nil),  // 5: aisoc.worker.v1.ProcessObservation
 }
 var file_aisoc_worker_v1_investigation_proto_depIdxs = []int32{
-	0, // 0: aisoc.worker.v1.InvestigationTask.evidence:type_name -> aisoc.worker.v1.EvidenceItem
-	2, // 1: aisoc.worker.v1.InvestigationResult.hypotheses:type_name -> aisoc.worker.v1.Hypothesis
-	1, // 2: aisoc.worker.v1.Investigator.Investigate:input_type -> aisoc.worker.v1.InvestigationTask
-	3, // 3: aisoc.worker.v1.Investigator.Investigate:output_type -> aisoc.worker.v1.InvestigationResult
-	3, // [3:4] is the sub-list for method output_type
-	2, // [2:3] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	4, // 0: aisoc.worker.v1.EvidenceItem.context:type_name -> aisoc.worker.v1.EvidenceContext
+	0, // 1: aisoc.worker.v1.InvestigationTask.evidence:type_name -> aisoc.worker.v1.EvidenceItem
+	2, // 2: aisoc.worker.v1.InvestigationResult.hypotheses:type_name -> aisoc.worker.v1.Hypothesis
+	5, // 3: aisoc.worker.v1.EvidenceContext.processes:type_name -> aisoc.worker.v1.ProcessObservation
+	1, // 4: aisoc.worker.v1.Investigator.Investigate:input_type -> aisoc.worker.v1.InvestigationTask
+	3, // 5: aisoc.worker.v1.Investigator.Investigate:output_type -> aisoc.worker.v1.InvestigationResult
+	5, // [5:6] is the sub-list for method output_type
+	4, // [4:5] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_aisoc_worker_v1_investigation_proto_init() }
@@ -463,7 +669,7 @@ func file_aisoc_worker_v1_investigation_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_aisoc_worker_v1_investigation_proto_rawDesc), len(file_aisoc_worker_v1_investigation_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

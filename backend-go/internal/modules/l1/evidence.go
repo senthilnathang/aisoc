@@ -2,6 +2,7 @@ package l1
 
 import (
 	pb "aisoc/backend/internal/gen/worker/v1"
+	"aisoc/backend/internal/modules/logincontext"
 	"aisoc/backend/internal/modules/telemetry"
 	"aisoc/backend/internal/platform/eventstate"
 	"context"
@@ -14,7 +15,7 @@ import (
 // LoadTask is a read-only Go evidence adapter scoped by trusted control-plane
 // binding and admitted finding. It returns metadata, never raw logs or credentials.
 // Caller owns durable task/attempt IDs and deadline; this function is not a scheduler.
-func LoadTask(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, findingID, taskID, attemptID string, deadline time.Time) (*pb.InvestigationTask, error) {
+func LoadTask(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, findingID, taskID, attemptID string, deadline time.Time, bundles ...*logincontext.Bundle) (*pb.InvestigationTask, error) {
 	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -47,6 +48,20 @@ func LoadTask(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, find
 		}
 		events = append(events, e)
 		t.Evidence = append(t.Evidence, &pb.EvidenceItem{Reference: e.EvidenceRef, ContentHash: hash, EventTime: e.EventTime, EventType: e.EventType})
+	}
+	if len(bundles) > 1 {
+		return nil, ErrInvalid
+	}
+	if len(bundles) == 1 && bundles[0] != nil {
+		if len(events) == 0 {
+			return nil, ErrInvalid
+		}
+		at, _ := time.Parse(time.RFC3339Nano, f.ObservedUntil)
+		items, err := bundles[0].Resolve(b, events[0].Projection.PrincipalRef, events[0].Projection.AssetRef, at, time.Now())
+		if err != nil {
+			return nil, err
+		}
+		t.Evidence = append(t.Evidence, items...)
 	}
 	if f.ValidateEvidence(b, events) != nil || ValidateTask(t, time.Now()) != nil {
 		return nil, ErrInvalid

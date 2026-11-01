@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "name": "Historical login context: missing",
+  "mode": "local-json-mock-v1",
+  "api_base": "http://127.0.0.1:3003",
+  "scope": {
+    "id": "login-context-missing",
+    "operator_id": "local-development",
+    "tenant_id": "demo",
+    "connector_id": "login-context-missing",
+    "source": "qradar-siem",
+    "processor": "mock-login-v1",
+    "allow_retry": true,
+    "allow_mock_import": true,
+    "require_analyst_review": true,
+    "allow_sandbox_response": false,
+    "pending_warning": 100,
+    "age_warning_seconds": 15
+  },
+  "events_file": "events.json",
+  "context_file": "context.json",
+  "expected_missing": [
+    "endpoint_process_tree",
+    "independent_verification"
+  ]
+}

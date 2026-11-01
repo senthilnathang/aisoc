@@ -124,3 +124,10 @@ Review report covering all workspaces, fixes, live versus fixture verification a
 
 [Suspicious-login scenario](SUSPICIOUS_LOGIN_FLOW.md): configurable local JSON,
 Python gRPC mock, Go QA, explicit analyst mock-note approval and replay checks.
+
+## Local IAM/MFA and EDR context
+
+[Configurable JSON adapters](LOGIN_CONTEXT_ADAPTERS.md) extend the suspicious-login flow with
+tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
+explicit missing/stale/conflicting evidence. Five historical fixtures remain
+INCONCLUSIVE and require note approval; no live provider or model is activated.

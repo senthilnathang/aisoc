@@ -8,6 +8,12 @@ import suspicious_login as scenario
 
 
 class ScenarioTests(unittest.TestCase):
+    def test_context_scenarios(self):
+        for path in (scenario.ROOT / 'examples/scenarios/login-context').glob('*/scenario.json'):
+            config, events = scenario.load(path)
+            self.assertEqual(config['scope']['mock_login_context']['tenant_id'], config['scope']['tenant_id'])
+            self.assertEqual(len(events), 4)
+
     def test_bundled_scenario(self):
         config, events = scenario.load(scenario.DEFAULT)
         self.assertTrue(config['scope']['require_analyst_review'])

@@ -3,6 +3,7 @@
 package telemetrypipeline
 
 import (
+	"aisoc/backend/internal/modules/logincontext"
 	"context"
 	"errors"
 	"regexp"
@@ -19,6 +20,7 @@ type Effect func(context.Context, pgx.Tx, telemetry.Event) error
 var workerName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 
 type Runtime struct {
+	MockLoginContext               *logincontext.Bundle
 	RequireAnalystReview           bool
 	Store                          eventstate.Store
 	Publisher, Consumer            *streams.Client

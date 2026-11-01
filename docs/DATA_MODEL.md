@@ -250,3 +250,10 @@ Additive columns on `l1_escalations`: `review_required` (default false), nullabl
 receipt with a valid comment only for gated rows. Approval and its audit event are
 atomic; row locking serializes approval/sync and identical retry cannot append a
 second audit. No new table. See [scenario](SUSPICIOUS_LOGIN_FLOW.md).
+
+## Local context snapshots
+
+IAM/MFA and EDR normalized observations are stored in the existing immutable
+`jobs.input` protobuf, with reference/hash/time and typed context. No new migration
+or table. Existing jobs and audit/approval receipts retain their identity. Different
+context under the same job identity conflicts rather than overwriting history.

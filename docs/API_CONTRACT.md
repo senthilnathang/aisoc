@@ -441,3 +441,11 @@ The existing case `/l1` projection adds `review_required`, optional `reviewed_by
 `review_comment`, `reviewed_at`, and an operator-authorized `review_scope`.
 Unapproved gated drafts project `sync_state: awaiting_review`.
 See [scenario](SUSPICIOUS_LOGIN_FLOW.md).
+
+## Local login context projection
+
+Stream grants optionally carry `mock_login_context` (trusted local configuration).
+Case `/l1` evidence items may include typed `context`: source, connector ID, subject
+references, retrieval time, reported outcome, freshness state and bounded process
+metadata. Hypotheses may include `neutral_refs`. No provider-fetch endpoint is added.
+See [adapter contract](LOGIN_CONTEXT_ADAPTERS.md).

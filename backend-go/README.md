@@ -157,3 +157,12 @@ worker persists the gate on `l1_escalations` (migration 041); synchronization wa
 for a scope-authorized, audited note-only approval. Omitted flags preserve existing
 mock behavior. See [local JSON scenario](../docs/SUSPICIOUS_LOGIN_FLOW.md) for
 configuration, UI/HTTP approval, replay testing and rollback constraints.
+
+### Local IAM/MFA and EDR evidence
+
+Optional `mock_login_context` in a reviewed mock stream scope supplies bounded
+JSON adapter observations. Go matches the tenant/user/device to retained login
+evidence, computes historical freshness and persists the typed snapshot in the
+existing job. All grants for the source must agree on the bundle. See
+[configuration and fixtures](../docs/LOGIN_CONTEXT_ADAPTERS.md). No new migration
+or live endpoint is introduced; regenerate and deploy Go/Python protobufs together.

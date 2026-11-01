@@ -60,3 +60,29 @@ func TestQAVetoesUnsafeOrUnsupportedResults(t *testing.T) {
 		}
 	}
 }
+
+func TestContextCannotHideGapsOrAuthorizeClosure(t *testing.T) {
+	now := time.Now()
+	at := now.Add(-time.Minute).UTC().Format(time.RFC3339)
+	task := &pb.InvestigationTask{TenantId: "tenant", IncidentId: "case", TaskId: "task", AttemptId: "attempt", SchemaVersion: "1", DeadlineUnixMs: now.Add(10 * time.Second).UnixMilli(), Mode: Mode, MaxOutputBytes: 8192, Evidence: []*pb.EvidenceItem{{Reference: "login:1", ContentHash: strings.Repeat("a", 64), EventTime: at, EventType: "authentication.failed"}, {Reference: "iam:1", ContentHash: strings.Repeat("b", 64), EventTime: at, EventType: "iam.mfa", Context: &pb.EvidenceContext{Source: "mock-iam", ConnectorId: "iam", PrincipalRef: "user", AssetRef: "device", RetrievedAt: at, Outcome: "passed", State: "available"}}}}
+	result := &pb.InvestigationResult{TenantId: "tenant", IncidentId: "case", TaskId: "task", AttemptId: "attempt", SchemaVersion: "1", Verdict: "INCONCLUSIVE", RequiresHumanReview: true, ModelVersion: "deterministic-mock-v1", MissingEvidence: []string{"endpoint_process_tree", "independent_verification"}, Hypotheses: []*pb.Hypothesis{{Kind: "credential_compromise", SupportingRefs: []string{"login:1"}, CounterevidenceRefs: []string{"iam:1"}}, {Kind: "legitimate_user_or_automation", SupportingRefs: []string{"login:1", "iam:1"}}}}
+	if VerifyResult(task, result, now) != nil {
+		t.Fatal("valid context rejected")
+	}
+	for _, mutate := range []func(*pb.InvestigationResult){func(r *pb.InvestigationResult) { r.MissingEvidence = []string{"independent_verification"} }, func(r *pb.InvestigationResult) { r.Verdict = "BENIGN" }, func(r *pb.InvestigationResult) { r.RequiresHumanReview = false }} {
+		copy := proto.Clone(result).(*pb.InvestigationResult)
+		mutate(copy)
+		if VerifyResult(task, copy, now) == nil {
+			t.Fatal("unsafe output accepted")
+		}
+	}
+	task.Evidence[1].Context.State = "stale"
+	if VerifyResult(task, result, now) == nil {
+		t.Fatal("stale context covered gap")
+	}
+	task.Evidence[1].Context.State = "available"
+	task.Mode = ModelMode
+	if ValidateTask(task, now) == nil {
+		t.Fatal("context sent to unreviewed model contract")
+	}
+}

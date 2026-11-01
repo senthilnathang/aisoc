@@ -324,6 +324,16 @@ def main():
             if options.with_streams:
                 scopes=temp/'stream-scopes.json'
                 scopes.write_text(json.dumps([{'id':'mock-siem','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-qradar','source':'qradar-siem','processor':'mock-login-v1','allow_retry':True,'allow_mock_import':True,'allow_sandbox_response':True}, {'id':'mock-review','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-review','source':'qradar-siem','processor':'mock-login-v1','allow_mock_import':True,'require_analyst_review':True}]))
+                context_scenarios=[]
+                grants=json.loads(scopes.read_text())
+                for scenario_file in sorted((ROOT/'examples/scenarios/login-context').glob('*/scenario.json')):
+                    scenario=json.loads(scenario_file.read_text())
+                    bundle=json.loads((scenario_file.parent/'context.json').read_text())
+                    bundle['tenant_id']='auth-a'
+                    grant={**scenario['scope'],'tenant_id':'auth-a','operator_id':'fixture-a','mock_login_context':bundle}
+                    grants.append(grant)
+                    context_scenarios.append((scenario,grant))
+                scopes.write_text(json.dumps(grants))
                 env.update(AISOC_GO_STREAM_OPERATIONS_FILE=str(scopes),AISOC_STREAM_REDIS_ADDR=env['AISOC_TEST_REDIS_ADDR'],AISOC_STREAM_REDIS_PUBLISHER_PASSWORD=env['AISOC_TEST_REDIS_PUBLISHER_PASSWORD'],AISOC_STREAM_REDIS_CONSUMER_PASSWORD=env['AISOC_TEST_REDIS_CONSUMER_PASSWORD'])
                 api.terminate();api.wait(timeout=10)
                 api=spawn([ROOT/'backend-go/bin/api']);wait_port(apiport)
@@ -406,6 +416,36 @@ def main():
                 review_page['expected_checkpoint']=review_state['checkpoint']
                 assert stream_http('/mock-review/mock-import',review_page,expected=202)['accepted']['Inserted']==0
                 (report/'suspicious-login-flow.json').write_text(json.dumps({'passed':True,'mode':'JSON fixtures and simulated analyst approval','qa':'verified','evidence_count':4,'blocked_before_review':True,'single_approval_audit':True,'single_note':True,'cross_operator_denied':True,'replay_inserted':0,'real_model':False,'privileged_actions':False},indent=2)+'\n')
+                context_results=[]
+                for scenario,grant in context_scenarios:
+                    prefix='/'+grant['id']
+                    bundle=grant['mock_login_context']
+                    page=stream_http(prefix+'/mock-example')
+                    for event in page['events']:
+                        event['projection']['principal_ref']=bundle['principal_ref']
+                        event['projection']['asset_ref']=bundle['asset_ref']
+                    assert stream_http(prefix+'/mock-import',page,expected=202)['accepted']['Inserted']==4
+                    for _ in range(300):
+                        status=stream_http(prefix)
+                        if status['cases'] and status['cases'][0]['state']=='awaiting_review': break
+                        time.sleep(.1)
+                    else: raise RuntimeError('Context scenario did not reach review: '+grant['id'])
+                    case=status['cases'][0]
+                    review=stream_http('/'+case['investigation_id']+'/l1',root='/api/v1/investigations')
+                    assert review['result_status']=='verified' and not case['note_id']
+                    assert len(review['evidence'])==4+len(bundle['iam'])+len(bundle['edr'])
+                    assert sorted(review['result']['missing_evidence'])==sorted(scenario['expected_missing'])
+                    assert review['result']['verdict']=='INCONCLUSIVE'
+                    stream_http(prefix+'/approve-mock-note',{'job_id':case['job_id'],'comment':'Automated context scenario review: local fixture note only'})
+                    for _ in range(300):
+                        status=stream_http(prefix)
+                        if status['cases'][0]['state']=='synced': break
+                        time.sleep(.1)
+                    else: raise RuntimeError('Context note did not synchronize')
+                    page['expected_checkpoint']=status['checkpoint']
+                    assert stream_http(prefix+'/mock-import',page,expected=202)['accepted']['Inserted']==0
+                    context_results.append({'scenario':grant['id'],'qa':'verified','missing':review['result']['missing_evidence'],'evidence_count':len(review['evidence']),'note_id':status['cases'][0]['note_id'],'replay_inserted':0})
+                (report/'login-context-flow.json').write_text(json.dumps({'passed':True,'mode':'local JSON and simulated approval','scenarios':context_results},indent=2)+'\n')
                 action={'id':'demo-revoke','session_id':'demo-session','principal_ref':'demo-user','expected_version':1,'ticket':'TEST-REVIEW'}
                 def response_op(operation, expected=200, **extra):
                     return stream_http('/mock-siem/sandbox-session',{**action,'operation':operation,**extra},expected=expected)

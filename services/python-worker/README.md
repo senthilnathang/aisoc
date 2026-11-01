@@ -119,3 +119,11 @@ of compatibility with a particular vendor API. Python has no response credential
 The showcase durable jobs remain mock-mode. Transport tests include Go-to-Python-to-
 JSON-fixture round trips; a real model and analyst-labelled quality evaluation are
 still required. See [adapter contracts](../../docs/INTEGRATION_ADAPTERS.md).
+
+## Local IAM/MFA and EDR context
+
+The mock Investigator accepts bounded typed EvidenceContext snapshots supplied by
+Go. Stale/unknown/incomplete observations remain neutral citations; present context
+does not remove human review or permit closure. Go revalidates the missing/conflict
+gaps. Deploy regenerated Go/Python contracts together. See
+[adapter guide](../../docs/LOGIN_CONTEXT_ADAPTERS.md).

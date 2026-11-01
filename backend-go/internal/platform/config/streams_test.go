@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"aisoc/backend/internal/modules/logincontext"
+	"testing"
+)
 
 func TestStreamScopeGrants(t *testing.T) {
 	s := StreamScope{ID: "mock", OperatorID: "local-development", TenantID: "demo", ConnectorID: "mock-qradar", Source: "qradar-siem", Processor: "login-v1", AllowMockImport: true}
@@ -37,5 +40,26 @@ func TestConflictingMockReviewGrants(t *testing.T) {
 	a.StreamOperations = append(a.StreamOperations, s)
 	if err := validateStreamScopes(a); err == nil {
 		t.Fatal("conflicting worker gates accepted")
+	}
+}
+
+func TestContextGrantsCannotDisagreeAcrossProcessors(t *testing.T) {
+	bundle := &logincontext.Bundle{SchemaVersion: "1", TenantID: "demo", PrincipalRef: "user", AssetRef: "device", MaxAgeSeconds: 300}
+	s := StreamScope{ID: "context", OperatorID: "local-development", TenantID: "demo", ConnectorID: "login", Source: "qradar-siem", Processor: "first", AllowMockImport: true, RequireAnalystReview: true, MockLoginContext: bundle}
+	a := Auth{Mode: "local", StreamOperations: []StreamScope{s}}
+	if err := validateStreamScopes(a); err != nil {
+		t.Fatal(err)
+	}
+	s.ID = "second"
+	s.Processor = "second"
+	s.MockLoginContext = nil
+	a.StreamOperations = append(a.StreamOperations, s)
+	if validateStreamScopes(a) == nil {
+		t.Fatal("conflicting context accepted")
+	}
+	a.StreamOperations = a.StreamOperations[:1]
+	a.StreamOperations[0].RequireAnalystReview = false
+	if validateStreamScopes(a) == nil {
+		t.Fatal("context without approval accepted")
 	}
 }

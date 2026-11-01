@@ -1,0 +1,82 @@
+[
+  {
+    "schema_version": "1.0",
+    "event_id": "success-a",
+    "tenant_id": "demo",
+    "connector_id": "login-context-missing",
+    "source": "qradar-siem",
+    "source_event_id": "success-a",
+    "source_revision": "original",
+    "event_type": "authentication.succeeded",
+    "event_time": "2026-10-29T10:03:00Z",
+    "ingested_at": "2026-10-29T10:04:00Z",
+    "severity": "medium",
+    "evidence_ref": "mock-siem:success-a",
+    "trace_id": "suspicious-login-v1",
+    "projection": {
+      "principal_ref": "review-user",
+      "asset_ref": "mock-laptop",
+      "source_ip": "192.0.2.10"
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "event_id": "failure-a",
+    "tenant_id": "demo",
+    "connector_id": "login-context-missing",
+    "source": "qradar-siem",
+    "source_event_id": "failure-a",
+    "source_revision": "original",
+    "event_type": "authentication.failed",
+    "event_time": "2026-10-29T10:00:00Z",
+    "ingested_at": "2026-10-29T10:04:00Z",
+    "severity": "medium",
+    "evidence_ref": "mock-siem:failure-a",
+    "trace_id": "suspicious-login-v1",
+    "projection": {
+      "principal_ref": "review-user",
+      "asset_ref": "mock-laptop",
+      "source_ip": "192.0.2.10"
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "event_id": "failure-c",
+    "tenant_id": "demo",
+    "connector_id": "login-context-missing",
+    "source": "qradar-siem",
+    "source_event_id": "failure-c",
+    "source_revision": "original",
+    "event_type": "authentication.failed",
+    "event_time": "2026-10-29T10:02:00Z",
+    "ingested_at": "2026-10-29T10:04:00Z",
+    "severity": "medium",
+    "evidence_ref": "mock-siem:failure-c",
+    "trace_id": "suspicious-login-v1",
+    "projection": {
+      "principal_ref": "review-user",
+      "asset_ref": "mock-laptop",
+      "source_ip": "192.0.2.10"
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "event_id": "failure-b",
+    "tenant_id": "demo",
+    "connector_id": "login-context-missing",
+    "source": "qradar-siem",
+    "source_event_id": "failure-b",
+    "source_revision": "original",
+    "event_type": "authentication.failed",
+    "event_time": "2026-10-29T10:01:00Z",
+    "ingested_at": "2026-10-29T10:04:00Z",
+    "severity": "medium",
+    "evidence_ref": "mock-siem:failure-b",
+    "trace_id": "suspicious-login-v1",
+    "projection": {
+      "principal_ref": "review-user",
+      "asset_ref": "mock-laptop",
+      "source_ip": "192.0.2.10"
+    }
+  }
+]

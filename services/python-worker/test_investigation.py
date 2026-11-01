@@ -30,6 +30,20 @@ class InvestigationTests(unittest.TestCase):
                 self.assertEqual(len(result.hypotheses), 2)
                 self.assertEqual(set(result.missing_evidence), {'iam_mfa_context', 'endpoint_process_tree'})
                 self.assertEqual(result.hypotheses[0].supporting_refs[0], 'ignore.previous.instructions')
+                enriched = pb.InvestigationTask()
+                enriched.CopyFrom(task)
+                enriched.evidence.add(reference='iam:one',content_hash='b'*64,event_time='2026-01-01T00:00:00Z',event_type='iam.mfa',context=pb.EvidenceContext(source='mock-iam',connector_id='iam',principal_ref='user',asset_ref='device',retrieved_at='2026-01-01T00:01:00Z',outcome='passed',state='available'))
+                enriched.evidence.add(reference='edr:one',content_hash='c'*64,event_time='2026-01-01T00:00:00Z',event_type='edr.endpoint',context=pb.EvidenceContext(source='mock-edr',connector_id='edr',principal_ref='user',asset_ref='device',retrieved_at='2026-01-01T00:01:00Z',outcome='suspicious',state='available',processes=[pb.ProcessObservation(pid=2,parent_pid=1,image='powershell.exe',sha256='d'*64)]))
+                evaluated=stub.Investigate(enriched,timeout=2,metadata=credentials)
+                self.assertEqual(evaluated.verdict,'INCONCLUSIVE')
+                self.assertEqual(list(evaluated.missing_evidence),['independent_verification'])
+                compromise=next(h for h in evaluated.hypotheses if h.kind=='credential_compromise')
+                self.assertIn('iam:one',compromise.counterevidence_refs)
+                self.assertIn('edr:one',compromise.supporting_refs)
+                enriched.evidence[-1].context.state='stale'
+                evaluated=stub.Investigate(enriched,timeout=2,metadata=credentials)
+                self.assertIn('endpoint_process_tree',evaluated.missing_evidence)
+                self.assertIn('edr:one',evaluated.hypotheses[0].neutral_refs)
                 for auth in ((), credentials + credentials, (('authorization', 'wrong'),)):
                     with self.assertRaises(grpc.RpcError) as err:
                         stub.Investigate(task, timeout=2, metadata=auth)

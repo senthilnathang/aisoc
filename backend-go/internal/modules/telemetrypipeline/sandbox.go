@@ -89,7 +89,7 @@ func (r Runtime) AdvanceMock(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		id, err := l1.QueueMock(ctx, r.Store.Pool, r.Binding, f.FindingID, 25)
+		id, err := l1.QueueMock(ctx, r.Store.Pool, r.Binding, f.FindingID, 25, r.MockLoginContext)
 		if err != nil {
 			return err
 		}

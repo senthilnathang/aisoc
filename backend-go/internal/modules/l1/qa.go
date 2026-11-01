@@ -3,6 +3,7 @@ package l1
 
 import (
 	pb "aisoc/backend/internal/gen/worker/v1"
+	"aisoc/backend/internal/modules/logincontext"
 	"errors"
 	"google.golang.org/protobuf/proto"
 	"regexp"
@@ -42,7 +43,11 @@ func ValidateTask(t *pb.InvestigationTask, now time.Time) error {
 		if err != nil || when.Year() < 1970 || when.After(now) {
 			return ErrInvalid
 		}
-		if e.EventType != "authentication.failed" && e.EventType != "authentication.succeeded" {
+		if e.Context != nil {
+			if t.Mode != Mode || logincontext.Validate(e, now) != nil {
+				return ErrInvalid
+			}
+		} else if e.EventType != "authentication.failed" && e.EventType != "authentication.succeeded" {
 			return ErrInvalid
 		}
 		refs[e.Reference] = true
@@ -74,17 +79,32 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 	}
 	kinds := map[string]bool{}
 	for _, h := range r.Hypotheses {
-		if h == nil || len(h.ProtoReflect().GetUnknown()) != 0 || kinds[h.Kind] || (h.Kind != "credential_compromise" && h.Kind != "legitimate_user_or_automation") || len(h.SupportingRefs) == 0 || len(h.SupportingRefs) > 16 || len(h.CounterevidenceRefs) > 16 {
+		if h == nil || len(h.ProtoReflect().GetUnknown()) != 0 || kinds[h.Kind] || (h.Kind != "credential_compromise" && h.Kind != "legitimate_user_or_automation") || len(h.SupportingRefs) == 0 || len(h.SupportingRefs) > 16 || len(h.CounterevidenceRefs) > 16 || len(h.NeutralRefs) > 16 {
 			return ErrInvalid
 		}
 		kinds[h.Kind] = true
 		seen := map[string]bool{}
-		for _, group := range [][]string{h.SupportingRefs, h.CounterevidenceRefs} {
+		for _, group := range [][]string{h.SupportingRefs, h.CounterevidenceRefs, h.NeutralRefs} {
 			for _, ref := range group {
 				if !refs[ref] || seen[ref] {
 					return ErrInvalid
 				}
 				seen[ref] = true
+			}
+		}
+		if t.Mode == Mode {
+			neutral := map[string]bool{}
+			for _, ref := range h.NeutralRefs {
+				neutral[ref] = true
+			}
+			for _, e := range t.Evidence {
+				if e.Context != nil {
+					c := e.Context
+					unusable := c.State != "available" || c.Outcome == "unknown" || (e.EventType == "edr.endpoint" && len(c.Processes) == 0)
+					if unusable != neutral[e.Reference] {
+						return ErrInvalid
+					}
+				}
 			}
 		}
 		if len(seen) != len(refs) {
@@ -93,13 +113,24 @@ func VerifyResult(t *pb.InvestigationTask, r *pb.InvestigationResult, now time.T
 	}
 	missing := map[string]bool{}
 	for _, s := range r.MissingEvidence {
-		if missing[s] || (t.Mode == Mode && s != "iam_mfa_context" && s != "endpoint_process_tree") || !missingLabel.MatchString(s) {
+		if missing[s] || !missingLabel.MatchString(s) {
 			return ErrInvalid
 		}
 		missing[s] = true
 	}
-	if (t.Mode == Mode && len(missing) != 2) || len(missing) < 1 || len(missing) > 16 {
+	if len(missing) < 1 || len(missing) > 16 {
 		return ErrInvalid
+	}
+	if t.Mode == Mode {
+		expected := logincontext.Missing(t.Evidence)
+		if len(expected) != len(missing) {
+			return ErrInvalid
+		}
+		for _, key := range expected {
+			if !missing[key] {
+				return ErrInvalid
+			}
+		}
 	}
 	return nil
 }

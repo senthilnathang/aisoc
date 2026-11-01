@@ -383,3 +383,10 @@ See [the scenario guide](SUSPICIOUS_LOGIN_FLOW.md) for `run.sh suspicious-login`
 versioned JSON configuration, local scope setup, restart and approval. Migration 041
 is additive; sqlc generates the approval queries. Keep the foundation mock profile
 and explicit analyst gate when editing fixtures.
+
+## Local IAM/MFA and EDR context
+
+[Configurable JSON adapters](LOGIN_CONTEXT_ADAPTERS.md) extend the suspicious-login flow with
+tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
+explicit missing/stale/conflicting evidence. Five historical fixtures remain
+INCONCLUSIVE and require note approval; no live provider or model is activated.

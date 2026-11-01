@@ -9,6 +9,7 @@ message EvidenceItem {
  string content_hash = 2;
  string event_time = 3;
  string event_type = 4;
+ EvidenceContext context = 5;
 }
 message InvestigationTask {
  string tenant_id = 1;
@@ -25,6 +26,7 @@ message Hypothesis {
  string kind = 1;
  repeated string supporting_refs = 2;
  repeated string counterevidence_refs = 3;
+ repeated string neutral_refs = 4;
 }
 message InvestigationResult {
  string tenant_id = 1;
@@ -37,4 +39,22 @@ message InvestigationResult {
  repeated string missing_evidence = 8;
  bool requires_human_review = 9;
  string model_version = 10;
+}
+
+// Local JSON fixture provenance only. Never credentials, instructions or actions.
+message EvidenceContext {
+ string source = 1;
+ string connector_id = 2;
+ string principal_ref = 3;
+ string asset_ref = 4;
+ string retrieved_at = 5;
+ string outcome = 6;
+ string state = 7;
+ repeated ProcessObservation processes = 8;
+}
+message ProcessObservation {
+ uint32 pid = 1;
+ uint32 parent_pid = 2;
+ string image = 3;
+ string sha256 = 4;
 }

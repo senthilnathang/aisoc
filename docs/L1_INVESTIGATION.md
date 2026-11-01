@@ -10,7 +10,9 @@ health, readiness and authenticated capabilities; investigation execution uses g
 `l1.LoadTask` is a read-only Go evidence adapter. It requires an admitted finding
 under the trusted tenant/connector/source binding, reads its case ID and retained
 envelopes in a consistent PostgreSQL snapshot, and verifies hashes and references.
-Python receives only reference, content hash, event time and authentication type.
+Python receives reference, content hash, event time and authentication type.
+Optional [local context adapters](LOGIN_CONTEXT_ADAPTERS.md) also supply bounded
+typed IAM/MFA and EDR observations with provenance and process metadata.
 It receives no raw logs, source URLs, database/provider credentials or response tools.
 
 `l1.QueueMock` explicitly creates one `python.investigate_mock` specialist job per
@@ -30,10 +32,13 @@ stage a review record and note-only mock SOAR draft from a completed result.
 
 ## Explicit mock behavior
 
-Only `mock-v1` is accepted. Python emits two possible explanations—credential
+The deterministic path uses `mock-v1`; the separately configured model path remains
+subject to its own validation. Context adapters currently support only `mock-v1`. Python emits two possible explanations—credential
 compromise and legitimate user/automation—with citations to supplied observations.
 These are alternatives, not tested conclusions. It always returns `INCONCLUSIVE`,
-requires human review, and lists missing IAM/MFA context and endpoint process trees.
+requires human review, and lists missing IAM/MFA context and endpoint process trees
+when absent, unknown or stale. Present local context retains independent-verification
+and conflict gaps where applicable.
 Its model version is `deterministic-mock-v1`. There is no LLM, calibrated confidence,
 external enrichment, prompt execution, model spend or privileged action. An input
 reference resembling an instruction remains an opaque citation.

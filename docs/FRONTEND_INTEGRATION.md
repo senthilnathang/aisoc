@@ -115,3 +115,10 @@ comment. Async completion is guarded by the case component lifecycle, and pollin
 continues while awaiting review so approvals in other tabs appear. The button
 records approval only; the worker performs conflict-aware mock synchronization.
 See [scenario](SUSPICIOUS_LOGIN_FLOW.md).
+
+## Local IAM/MFA and EDR context
+
+[Configurable JSON adapters](LOGIN_CONTEXT_ADAPTERS.md) extend the suspicious-login flow with
+tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
+explicit missing/stale/conflicting evidence. Five historical fixtures remain
+INCONCLUSIVE and require note approval; no live provider or model is activated.

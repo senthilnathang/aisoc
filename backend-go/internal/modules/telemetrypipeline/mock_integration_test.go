@@ -4,6 +4,7 @@ import (
 	"aisoc/backend/internal/modules/enrichment"
 	"aisoc/backend/internal/modules/intake"
 	"aisoc/backend/internal/modules/l1"
+	"aisoc/backend/internal/modules/logincontext"
 	"aisoc/backend/internal/modules/qradarmock"
 	"aisoc/backend/internal/modules/telemetry"
 	"aisoc/backend/internal/platform/eventstate"
@@ -122,6 +123,14 @@ func TestMockQRadarLoginFlow(t *testing.T) {
 	duplicateID, err := l1.QueueMock(ctx, r.Store.Pool, r.Binding, findings[0].FindingID, 1)
 	if err != nil || id != duplicateID {
 		t.Fatal("duplicate mock task", duplicateID, err)
+	}
+	bundle := &logincontext.Bundle{SchemaVersion: "1", TenantID: r.Binding.TenantID, PrincipalRef: "mock-user", AssetRef: "mock-device", MaxAgeSeconds: 300, IAM: []logincontext.Observation{{ConnectorID: "iam", Reference: "iam:1", ObservedAt: "2026-10-29T10:02:00Z", RetrievedAt: "2026-10-29T10:04:00Z", Outcome: "passed"}}}
+	if _, err = l1.QueueMock(ctx, r.Store.Pool, r.Binding, findings[0].FindingID, 1, bundle); !errors.Is(err, eventstate.ErrConflict) {
+		t.Fatal("changed snapshot accepted", err)
+	}
+	bundle.PrincipalRef = "foreign"
+	if _, err = l1.QueueMock(ctx, r.Store.Pool, r.Binding, findings[0].FindingID, 1, bundle); !errors.Is(err, logincontext.ErrInvalid) {
+		t.Fatal("foreign context accepted", err)
 	}
 	t.Logf("synthetic QRadar: 4 new events, 0 on replay, 1 requires_review finding, %d evidence references, 0 response actions", len(findings[0].EvidenceRefs))
 	cache, err := enrichment.NewCache(os.Getenv("AISOC_TEST_REDIS_ADDR"), "aisoc-cache", os.Getenv("AISOC_TEST_REDIS_CACHE_PASSWORD"))

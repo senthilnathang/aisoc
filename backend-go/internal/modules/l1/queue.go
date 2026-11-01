@@ -1,6 +1,7 @@
 package l1
 
 import (
+	"aisoc/backend/internal/modules/logincontext"
 	"aisoc/backend/internal/modules/telemetry"
 	"aisoc/backend/internal/platform/eventstate"
 	"aisoc/backend/internal/platform/jobs"
@@ -20,12 +21,12 @@ const Plugin = "python.investigate_mock"
 
 // QueueMock explicitly requests one mock investigation per admitted finding/version.
 // It reuses the durable specialist queue; no automatic fan-out from raw events.
-func QueueMock(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, findingID string, maxActive int) (string, error) {
+func QueueMock(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, findingID string, maxActive int, bundles ...*logincontext.Bundle) (string, error) {
 	if maxActive < 1 || maxActive > 100 {
 		return "", ErrInvalid
 	}
 	id := mockJobID(b, findingID)
-	task, err := LoadTask(ctx, pool, b, findingID, id, "pending", time.Now().Add(10*time.Second))
+	task, err := LoadTask(ctx, pool, b, findingID, id, "pending", time.Now().Add(10*time.Second), bundles...)
 	if err != nil {
 		return "", err
 	}

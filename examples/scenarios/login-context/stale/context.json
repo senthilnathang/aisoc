@@ -1,0 +1,33 @@
+{
+  "schema_version": "1",
+  "tenant_id": "demo",
+  "principal_ref": "review-user",
+  "asset_ref": "mock-laptop",
+  "max_age_seconds": 300,
+  "iam": [
+    {
+      "connector_id": "json-iam",
+      "reference": "mock-iam:login-1",
+      "observed_at": "2026-10-29T09:00:00Z",
+      "retrieved_at": "2026-10-29T10:04:00Z",
+      "outcome": "passed"
+    }
+  ],
+  "edr": [
+    {
+      "connector_id": "json-edr",
+      "reference": "mock-edr:device-1",
+      "observed_at": "2026-10-29T09:00:00Z",
+      "retrieved_at": "2026-10-29T10:04:00Z",
+      "outcome": "clean",
+      "processes": [
+        {
+          "pid": 20,
+          "parent_pid": 1,
+          "image": "browser.exe",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    }
+  ]
+}

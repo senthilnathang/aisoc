@@ -18,7 +18,7 @@ def load(path):
     if len(raw) > 65536:
         raise ValueError('Scenario configuration exceeds 64 KiB')
     config = json.loads(raw)
-    if set(config) != {'schema_version', 'name', 'mode', 'api_base', 'scope', 'events_file'} or config['schema_version'] != '1' or config['mode'] != 'local-json-mock-v1':
+    if set(config) - {'context_file', 'expected_missing'} != {'schema_version', 'name', 'mode', 'api_base', 'scope', 'events_file'} or config['schema_version'] != '1' or config['mode'] != 'local-json-mock-v1':
         raise ValueError('Unsupported scenario contract')
     endpoint = urlparse(config['api_base'])
     if endpoint.scheme != 'http' or endpoint.hostname not in ('127.0.0.1', 'localhost', '::1') or endpoint.port == 3002 or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment or endpoint.path not in ('', '/'):
@@ -36,6 +36,14 @@ def load(path):
         for key in ('tenant_id', 'connector_id', 'source'):
             if event.get(key) != scope[key]:
                 raise ValueError('Event identity differs from configured trusted source')
+    if 'context_file' in config:
+        context_path = (path.parent / config['context_file']).resolve()
+        if not context_path.is_relative_to(path.parent.resolve()) or context_path.stat().st_size > 32768:
+            raise ValueError('Context must be a bounded local scenario file')
+        bundle = json.loads(context_path.read_text())
+        if bundle.get('tenant_id') != scope['tenant_id']:
+            raise ValueError('Context tenant differs from trusted source')
+        scope['mock_login_context'] = bundle
     return config, events
 
 
@@ -107,8 +115,10 @@ def run(config, events, approve=False, comment='', timeout=60):
     case = state['cases'][0]
     case_path = '/api/v1/investigations/' + quote(case['investigation_id'], safe='')
     review = c.request(case_path + '/l1')
-    if review['result_status'] != 'verified' or review['result']['verdict'] != 'INCONCLUSIVE' or not review['result']['requires_human_review'] or len(review['evidence']) != 4 or not review['review_required']:
+    if review['result_status'] != 'verified' or review['result']['verdict'] != 'INCONCLUSIVE' or not review['result']['requires_human_review'] or len(review['evidence']) != len(events) + sum(len(scope.get('mock_login_context', {}).get(k, [])) for k in ('iam', 'edr')) or not review['review_required']:
         raise ValueError('Evidence/QA/review contract failed')
+    if 'expected_missing' in config and sorted(review['result']['missing_evidence']) != sorted(config['expected_missing']):
+        raise ValueError('Context gap evaluation differs from expected scenario')
     if not review.get('reviewed_by') and (case['note_id'] or case['state'] != 'awaiting_review'):
         raise ValueError('Mock note was written before analyst approval')
     if approve and not review.get('reviewed_by'):
@@ -122,7 +132,7 @@ def run(config, events, approve=False, comment='', timeout=60):
         raise ValueError('Replay inserted duplicate events')
     if c.request(case_path)['status'] != 'open':
         raise ValueError('Scenario unexpectedly changed case status')
-    return {'passed': True, 'mode': 'local-json-mock-v1', 'scope': scope['id'], 'inserted': accepted['Inserted'], 'replay_inserted': replay['Inserted'], 'case_id': case['investigation_id'], 'job_id': review['job_id'], 'evidence_count': len(review['evidence']), 'verdict': review['result']['verdict'], 'qa': review['result_status'], 'sync_state': case['state'], 'reviewed_by': review.get('reviewed_by'), 'review_comment': review.get('review_comment'), 'note_id': case['note_id'], 'case_status': 'open', 'live_provider_calls': 0, 'model_quality_evaluated': False, 'privileged_actions_enabled': state['privileged_actions_enabled']}
+    return {'passed': True, 'mode': 'local-json-mock-v1', 'scope': scope['id'], 'inserted': accepted['Inserted'], 'replay_inserted': replay['Inserted'], 'case_id': case['investigation_id'], 'job_id': review['job_id'], 'evidence_count': len(review['evidence']), 'verdict': review['result']['verdict'], 'missing_evidence': review['result']['missing_evidence'], 'context': [{'reference': e['reference'], **e['context']} for e in review['evidence'] if e.get('context')], 'qa': review['result_status'], 'sync_state': case['state'], 'reviewed_by': review.get('reviewed_by'), 'review_comment': review.get('review_comment'), 'note_id': case['note_id'], 'case_status': 'open', 'live_provider_calls': 0, 'model_quality_evaluated': False, 'privileged_actions_enabled': state['privileged_actions_enabled']}
 
 
 def main():

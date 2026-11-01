@@ -102,7 +102,7 @@ func (s Store) Stage(ctx context.Context, tenant, jobID string, target Target) (
 	for _, e := range task.Evidence {
 		refs = append(refs, e.Reference)
 	}
-	body := fmt.Sprintf("MOCK L1 review: INCONCLUSIVE. Human L2 review required. Missing evidence: iam_mfa_context, endpoint_process_tree. Evidence references: %s. Job: %s. No response actions executed.", strings.Join(refs, ", "), jobID)
+	body := fmt.Sprintf("MOCK L1 review: INCONCLUSIVE. Human L2 review required. Missing evidence / review requirements: %s. Evidence references: %s. Job: %s. No response actions executed.", strings.Join(result.MissingEvidence, ", "), strings.Join(refs, ", "), jobID)
 	if _, err = tx.Exec(ctx, `INSERT INTO l1_escalations(tenant_id,job_id,investigation_id,connector_id,external_id,initial_version,expected_version,output_hash,note_body,review_required) VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8,$9)`, tenant, jobID, task.IncidentId, target.ConnectorID, target.ExternalID, target.Version, sum[:], body, target.RequireReview); err != nil {
 		return Receipt{}, err
 	}

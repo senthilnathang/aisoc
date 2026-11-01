@@ -360,3 +360,10 @@ correlation → durable Python gRPC job → Go QA. Optional source-level analyst
 is persisted on the escalation; note synchronization checks it under lock. A scoped
 HTTP operation records immutable approval and audit atomically. Mock source-version
 checks still apply; no containment or case closure is authorized.
+
+## Local IAM/MFA and EDR context
+
+[Configurable JSON adapters](LOGIN_CONTEXT_ADAPTERS.md) extend the suspicious-login flow with
+tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
+explicit missing/stale/conflicting evidence. Five historical fixtures remain
+INCONCLUSIVE and require note approval; no live provider or model is activated.

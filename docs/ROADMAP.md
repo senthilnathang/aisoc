@@ -200,3 +200,10 @@ opt-in analyst gate to the existing Go/Redis/Python pipeline. This completes the
 local walkthrough with verified evidence, explicit note approval and deduplicated
 replay. Live QRadar/API-version verification, real model quality evaluation and
 production response authorization remain separate pending work.
+
+## Local IAM/MFA and EDR context
+
+[Configurable JSON adapters](LOGIN_CONTEXT_ADAPTERS.md) extend the suspicious-login flow with
+tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
+explicit missing/stale/conflicting evidence. Five historical fixtures remain
+INCONCLUSIVE and require note approval; no live provider or model is activated.

@@ -290,3 +290,10 @@ Use `./run.sh suspicious-login --configure`, restart the foundation backend, the
 `./run.sh suspicious-login`. Four local JSON observations reach a verified Python
 mock result and wait for explicit mock-note approval in the case review UI.
 See [configuration, commands and boundaries](docs/SUSPICIOUS_LOGIN_FLOW.md).
+
+## Local IAM/MFA and EDR context
+
+[Configurable JSON adapters](docs/LOGIN_CONTEXT_ADAPTERS.md) extend the suspicious-login flow with
+tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
+explicit missing/stale/conflicting evidence. Five historical fixtures remain
+INCONCLUSIVE and require note approval; no live provider or model is activated.

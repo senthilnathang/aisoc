@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "name": "Historical login context: conflicting",
+  "mode": "local-json-mock-v1",
+  "api_base": "http://127.0.0.1:3003",
+  "scope": {
+    "id": "login-context-conflicting",
+    "operator_id": "local-development",
+    "tenant_id": "demo",
+    "connector_id": "login-context-conflicting",
+    "source": "qradar-siem",
+    "processor": "mock-login-v1",
+    "allow_retry": true,
+    "allow_mock_import": true,
+    "require_analyst_review": true,
+    "allow_sandbox_response": false,
+    "pending_warning": 100,
+    "age_warning_seconds": 15
+  },
+  "events_file": "events.json",
+  "context_file": "context.json",
+  "expected_missing": [
+    "conflicting_context",
+    "independent_verification"
+  ]
+}

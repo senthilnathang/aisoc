@@ -486,3 +486,48 @@ receipts are under `output/playwright/suspicious-login-review-*.png`.
 
 These results establish local mock contract behavior, not live QRadar support,
 real-model quality or production performance. See [scenario guide](SUSPICIOUS_LOGIN_FLOW.md).
+
+## Local IAM/MFA and EDR adapters — 2026-11-01
+
+The retained foundation ran all five versioned fixtures through Go ingestion,
+Redis delivery, durable Python gRPC mock investigation, Go QA and mock SOAR sync.
+Before explicit simulated approval, every scenario stopped at `awaiting_review`
+without a note. Afterwards each had one note and an open case. Reimport inserted
+zero events. The evidence counts are 6 (corroborating), 6 (suspicious), 5 (missing),
+7 (conflicting) and 6 (stale). Results remain INCONCLUSIVE; expected gap labels
+are checked by the runner. Local receipts: `output/login-context/*-{before,after}.json`.
+
+`logincontext` Go tests cover all fixture gaps, wrong tenant/user, malformed/future
+or stale times, retrieval before observation, excessive age, duplicate references,
+arbitrary outcomes and invalid process metadata. Go QA tests reject concealed gaps,
+benign closure and context sent to the unexpanded model contract. Config tests
+reject conflicting context across processors and a missing review gate. The
+PostgreSQL/Redis integration test rejects changed snapshots and foreign subjects.
+Python's actual authenticated gRPC test checks contextual support/counterevidence,
+neutral treatment of stale observations, gaps and existing auth/budget rejection.
+
+The full framework includes all five context scenarios with real Go/Python
+processes, PostgreSQL and Redis, mock note approval and replay. Its dedicated
+receipt is `output/backend-framework/login-context-flow.json`. Run:
+
+```bash
+python3 scripts/framework/check.py --with-streams
+python3 -m unittest discover -s scripts/framework -p test_suspicious_login.py
+node --test tests/frontend/*.test.mjs
+```
+
+`scripts/framework/login-context-browser-check.js` passed all five retained cases
+at 1440px and 375px: evidence, provenance, missing/conflicting/neutral state labels,
+no horizontal overflow and no browser exceptions. It makes no domain writes.
+Screenshots are under `output/playwright/login-context-{suspicious,stale}-*.png`.
+These are fixture/contract tests, not provider API compatibility, model quality,
+endpoint completeness or performance measurements.
+
+Final adapter verification: the complete isolated framework suite passed with
+Go race/vet, PostgreSQL migrations, Redis recovery, Python/Rust tests, typed gRPC,
+HTTP authorization and all five context scenarios. All nine frontend Node test
+files, ESLint, production build, sqlc diff and Markdown link checks passed. The
+existing bundle-size warning remains. The approval browser regression also passed
+on a context-enriched case (confirmation, rejected-write recovery and receipt).
+Independent review's stale-evidence classification finding was fixed with typed
+neutral citations and Go QA enforcement before the successful final run.

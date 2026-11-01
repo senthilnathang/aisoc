@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#aisoc/worker/v1/investigation.proto\x12\x0f\x61isoc.worker.v1\"_\n\x0c\x45videnceItem\x12\x11\n\treference\x18\x01 \x01(\t\x12\x14\n\x0c\x63ontent_hash\x18\x02 \x01(\t\x12\x12\n\nevent_time\x18\x03 \x01(\t\x12\x12\n\nevent_type\x18\x04 \x01(\t\"\xeb\x01\n\x11InvestigationTask\x12\x11\n\ttenant_id\x18\x01 \x01(\t\x12\x13\n\x0bincident_id\x18\x02 \x01(\t\x12\x0f\n\x07task_id\x18\x03 \x01(\t\x12\x12\n\nattempt_id\x18\x04 \x01(\t\x12\x16\n\x0eschema_version\x18\x05 \x01(\t\x12\x18\n\x10\x64\x65\x61\x64line_unix_ms\x18\x06 \x01(\x03\x12/\n\x08\x65vidence\x18\x07 \x03(\x0b\x32\x1d.aisoc.worker.v1.EvidenceItem\x12\x18\n\x10max_output_bytes\x18\x08 \x01(\r\x12\x0c\n\x04mode\x18\t \x01(\t\"Q\n\nHypothesis\x12\x0c\n\x04kind\x18\x01 \x01(\t\x12\x17\n\x0fsupporting_refs\x18\x02 \x03(\t\x12\x1c\n\x14\x63ounterevidence_refs\x18\x03 \x03(\t\"\x8c\x02\n\x13InvestigationResult\x12\x11\n\ttenant_id\x18\x01 \x01(\t\x12\x13\n\x0bincident_id\x18\x02 \x01(\t\x12\x0f\n\x07task_id\x18\x03 \x01(\t\x12\x12\n\nattempt_id\x18\x04 \x01(\t\x12\x16\n\x0eschema_version\x18\x05 \x01(\t\x12\x0f\n\x07verdict\x18\x06 \x01(\t\x12/\n\nhypotheses\x18\x07 \x03(\x0b\x32\x1b.aisoc.worker.v1.Hypothesis\x12\x18\n\x10missing_evidence\x18\x08 \x03(\t\x12\x1d\n\x15requires_human_review\x18\t \x01(\x08\x12\x15\n\rmodel_version\x18\n \x01(\t2g\n\x0cInvestigator\x12W\n\x0bInvestigate\x12\".aisoc.worker.v1.InvestigationTask\x1a$.aisoc.worker.v1.InvestigationResultB/Z-aisoc/backend/internal/gen/worker/v1;workerv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#aisoc/worker/v1/investigation.proto\x12\x0f\x61isoc.worker.v1\"\x92\x01\n\x0c\x45videnceItem\x12\x11\n\treference\x18\x01 \x01(\t\x12\x14\n\x0c\x63ontent_hash\x18\x02 \x01(\t\x12\x12\n\nevent_time\x18\x03 \x01(\t\x12\x12\n\nevent_type\x18\x04 \x01(\t\x12\x31\n\x07\x63ontext\x18\x05 \x01(\x0b\x32 .aisoc.worker.v1.EvidenceContext\"\xeb\x01\n\x11InvestigationTask\x12\x11\n\ttenant_id\x18\x01 \x01(\t\x12\x13\n\x0bincident_id\x18\x02 \x01(\t\x12\x0f\n\x07task_id\x18\x03 \x01(\t\x12\x12\n\nattempt_id\x18\x04 \x01(\t\x12\x16\n\x0eschema_version\x18\x05 \x01(\t\x12\x18\n\x10\x64\x65\x61\x64line_unix_ms\x18\x06 \x01(\x03\x12/\n\x08\x65vidence\x18\x07 \x03(\x0b\x32\x1d.aisoc.worker.v1.EvidenceItem\x12\x18\n\x10max_output_bytes\x18\x08 \x01(\r\x12\x0c\n\x04mode\x18\t \x01(\t\"g\n\nHypothesis\x12\x0c\n\x04kind\x18\x01 \x01(\t\x12\x17\n\x0fsupporting_refs\x18\x02 \x03(\t\x12\x1c\n\x14\x63ounterevidence_refs\x18\x03 \x03(\t\x12\x14\n\x0cneutral_refs\x18\x04 \x03(\t\"\x8c\x02\n\x13InvestigationResult\x12\x11\n\ttenant_id\x18\x01 \x01(\t\x12\x13\n\x0bincident_id\x18\x02 \x01(\t\x12\x0f\n\x07task_id\x18\x03 \x01(\t\x12\x12\n\nattempt_id\x18\x04 \x01(\t\x12\x16\n\x0eschema_version\x18\x05 \x01(\t\x12\x0f\n\x07verdict\x18\x06 \x01(\t\x12/\n\nhypotheses\x18\x07 \x03(\x0b\x32\x1b.aisoc.worker.v1.Hypothesis\x12\x18\n\x10missing_evidence\x18\x08 \x03(\t\x12\x1d\n\x15requires_human_review\x18\t \x01(\x08\x12\x15\n\rmodel_version\x18\n \x01(\t\"\xcf\x01\n\x0f\x45videnceContext\x12\x0e\n\x06source\x18\x01 \x01(\t\x12\x14\n\x0c\x63onnector_id\x18\x02 \x01(\t\x12\x15\n\rprincipal_ref\x18\x03 \x01(\t\x12\x11\n\tasset_ref\x18\x04 \x01(\t\x12\x14\n\x0cretrieved_at\x18\x05 \x01(\t\x12\x0f\n\x07outcome\x18\x06 \x01(\t\x12\r\n\x05state\x18\x07 \x01(\t\x12\x36\n\tprocesses\x18\x08 \x03(\x0b\x32#.aisoc.worker.v1.ProcessObservation\"T\n\x12ProcessObservation\x12\x0b\n\x03pid\x18\x01 \x01(\r\x12\x12\n\nparent_pid\x18\x02 \x01(\r\x12\r\n\x05image\x18\x03 \x01(\t\x12\x0e\n\x06sha256\x18\x04 \x01(\t2g\n\x0cInvestigator\x12W\n\x0bInvestigate\x12\".aisoc.worker.v1.InvestigationTask\x1a$.aisoc.worker.v1.InvestigationResultB/Z-aisoc/backend/internal/gen/worker/v1;workerv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,14 +32,18 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'aisoc.worker.v1.investigati
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z-aisoc/backend/internal/gen/worker/v1;workerv1'
-  _globals['_EVIDENCEITEM']._serialized_start=56
-  _globals['_EVIDENCEITEM']._serialized_end=151
-  _globals['_INVESTIGATIONTASK']._serialized_start=154
-  _globals['_INVESTIGATIONTASK']._serialized_end=389
-  _globals['_HYPOTHESIS']._serialized_start=391
-  _globals['_HYPOTHESIS']._serialized_end=472
-  _globals['_INVESTIGATIONRESULT']._serialized_start=475
-  _globals['_INVESTIGATIONRESULT']._serialized_end=743
-  _globals['_INVESTIGATOR']._serialized_start=745
-  _globals['_INVESTIGATOR']._serialized_end=848
+  _globals['_EVIDENCEITEM']._serialized_start=57
+  _globals['_EVIDENCEITEM']._serialized_end=203
+  _globals['_INVESTIGATIONTASK']._serialized_start=206
+  _globals['_INVESTIGATIONTASK']._serialized_end=441
+  _globals['_HYPOTHESIS']._serialized_start=443
+  _globals['_HYPOTHESIS']._serialized_end=546
+  _globals['_INVESTIGATIONRESULT']._serialized_start=549
+  _globals['_INVESTIGATIONRESULT']._serialized_end=817
+  _globals['_EVIDENCECONTEXT']._serialized_start=820
+  _globals['_EVIDENCECONTEXT']._serialized_end=1027
+  _globals['_PROCESSOBSERVATION']._serialized_start=1029
+  _globals['_PROCESSOBSERVATION']._serialized_end=1113
+  _globals['_INVESTIGATOR']._serialized_start=1115
+  _globals['_INVESTIGATOR']._serialized_end=1218
 # @@protoc_insertion_point(module_scope)

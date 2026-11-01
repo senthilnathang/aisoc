@@ -111,3 +111,10 @@ real projection and intercepted approval/error states without live provider call
 Generated reports live under ignored `output/`; see [Testing](TESTING.md) for results.
 This demonstrates contract correctness with synthetic evidence, not model accuracy,
 production durability or live provider validation.
+
+## Local IAM/MFA and EDR context
+
+[Configurable JSON adapters](LOGIN_CONTEXT_ADAPTERS.md) extend the suspicious-login flow with
+tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
+explicit missing/stale/conflicting evidence. Five historical fixtures remain
+INCONCLUSIVE and require note approval; no live provider or model is activated.
