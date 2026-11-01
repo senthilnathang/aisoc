@@ -82,3 +82,9 @@ func validateStreamScopes(a Auth) error {
 	}
 	return nil
 }
+
+// AllowsBuildProfile grants only bounded local fixture management under an
+// existing reviewed source. It never inherits sandbox/provider action permission.
+func (s StreamScope) AllowsBuildProfile() bool {
+	return s.AllowMockImport && s.RequireAnalystReview && !s.AllowSandboxResponse && s.Source == "qradar-siem"
+}

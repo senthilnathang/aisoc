@@ -142,3 +142,11 @@ These local cases contain the JSON evidence and explicitly simulated review rece
 - [Stale context](http://localhost:8080/investigations/INV-53ee039d-d1de-451a-9b83-b63f0b69ecc7)
 
 Fresh installations generate their own case IDs; use the runner report there.
+
+## Build local integration management (042)
+
+[The local integration studio](BUILD_INTEGRATIONS.md) at `/build/integrations` adds versioned
+draft editors, JSON file import, Go validation and evidence preview. Explicit import
+seals a tenant-scoped snapshot and feeds the existing workers without restart.
+Case note approval remains mandatory; provider endpoints and response execution
+remain disabled. Existing provider-specific connector records remain inspect-only.

@@ -19,3 +19,5 @@ test('hunt details remain in Hunt with tenant-scoped labels',()=>{
  assert.deepEqual(m.items.map(x=>x.label),['Hunt','Threat hunting','Hunt']);
  assert.deepEqual(m.lookup,{resource:'hunts',id:'HUNT-test'});
 });
+
+test('local integration breadcrumb stays under Build',()=>{assert.deepEqual(breadcrumbModel('localIntegrations',{}).items.map(x=>x.label),['Build','Local integrations'])});

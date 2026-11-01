@@ -449,3 +449,11 @@ Case `/l1` evidence items may include typed `context`: source, connector ID, sub
 references, retrieval time, reported outcome, freshness state and bounded process
 metadata. Hypotheses may include `neutral_refs`. No provider-fetch endpoint is added.
 See [adapter contract](LOGIN_CONTEXT_ADAPTERS.md).
+
+## Build local integration management (042)
+
+[The local integration studio](BUILD_INTEGRATIONS.md) at `/build/integrations` adds versioned
+draft editors, JSON file import, Go validation and evidence preview. Explicit import
+seals a tenant-scoped snapshot and feeds the existing workers without restart.
+Case note approval remains mandatory; provider endpoints and response execution
+remain disabled. Existing provider-specific connector records remain inspect-only.

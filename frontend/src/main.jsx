@@ -52,6 +52,7 @@ import DetectionRouting from "./DetectionRouting";
 import DetectionRegistry, { RuleWorkspace } from "./DetectionRegistry";
 import DetectionIntelligence from "./DetectionIntelligence";
 import BuildWorkspace from "./BuildWorkspace";
+import LocalIntegrations from "./LocalIntegrations";
 import EnterpriseInsights from "./EnterpriseInsights";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import ResponsePlans from "./ResponsePlans";
@@ -1529,6 +1530,7 @@ function App() {
     threatIntel: <ThreatIntelWorkspace setView={setView} />,
     threatIntelDetail: <ThreatIntelWorkspace key={reportId} id={reportId} setView={setView} />,
     build: <BuildWorkspace setView={setView} />,
+    localIntegrations: <LocalIntegrations setView={setView} />,
     memory: <EnterpriseInsights setView={setView} />,
     connector: <ConnectorSetupLive setView={setView} />,
     apiSources: <ApiSources setView={setView} />,

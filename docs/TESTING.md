@@ -531,3 +531,37 @@ existing bundle-size warning remains. The approval browser regression also passe
 on a context-enriched case (confirmation, rejected-write recovery and receipt).
 Independent review's stale-evidence classification finding was fixed with typed
 neutral citations and Go QA enforcement before the successful final run.
+
+## Build local integration management — 2026-11-01
+
+The complete isolated framework passed after review fixes: Go race/vet,
+PostgreSQL migrations, Redis recovery, Python/Rust and gRPC tests, existing HTTP
+parity and the new Build profile flow. Dedicated receipt:
+`output/backend-framework/build-integrations-flow.json`.
+
+Coverage includes server-normalized evidence preview, rejecting unknown request
+fields, tenant/operator isolation, stable create retries, revision conflicts,
+explicit import confirmation, sealed-edit denial, managed worker discovery,
+case approval authorization and zero-insertion replay. Store tests cover first-use
+tenant creation, concurrent edits with one winner, exactly one seal audit and
+rollback when audit persistence fails. Preview tests reject duplicate citations
+within login evidence and between login/context before an immutable profile can
+reach the worker. Foreign profile reads return 404, not an internal error.
+
+The retained local walkthrough in `scripts/framework/local-integrations-demo.js`
+created **Build local IAM/EDR showcase**, validated and saved it, imported four
+observations, opened the generated six-evidence case, explicitly simulated note
+approval and verified one mock note. Replay inserted zero events. It reuses that
+named profile on later runs. This script intentionally writes only local mock data.
+
+`scripts/framework/local-integrations-browser-check.js` intercepts writes and
+passed file import, invalid JSON feedback, conflict preservation, stable create
+identity, confirmation, uncertain-import recovery and sealed read-only controls.
+Desktop (1440px) and mobile (375px) checks found no horizontal overflow. Screenshots
+are under `output/playwright/local-integrations-*.png`; sealed JSON remains readable
+and copyable. Normal navigation/breadcrumb tests include `/build/integrations`.
+Frontend Node tests, ESLint, build, sqlc drift and maintained Markdown link checks
+are part of the release checks. The existing frontend bundle-size warning remains.
+
+No live connectivity, model-quality, throughput or production response capability
+is established by these checks. See [contracts and rollback](BUILD_INTEGRATIONS.md).

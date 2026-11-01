@@ -72,6 +72,13 @@ func registerStreamOperations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []c
 				return s, telemetry.Binding{TenantID: s.TenantID, ConnectorID: s.ConnectorID, Source: s.Source}, nil
 			}
 		}
+		if strings.HasPrefix(r.PathValue("scope"), "build-") {
+			s, err := profileScope(r, pool, scopes, r.PathValue("scope"))
+			if err != nil {
+				return config.StreamScope{}, telemetry.Binding{}, err
+			}
+			return s, telemetry.Binding{TenantID: s.TenantID, ConnectorID: s.ConnectorID, Source: s.Source}, nil
+		}
 		return config.StreamScope{}, telemetry.Binding{}, eventstate.ErrRecoveryDenied
 	}
 	mux.HandleFunc("POST /api/v1/stream-operations/{scope}/approve-mock-note", streamRespond(func(r *http.Request) (any, int, error) {

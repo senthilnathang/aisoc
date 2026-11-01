@@ -54,7 +54,7 @@ func run() error {
 	}
 	defer consumer.Close()
 	var wg sync.WaitGroup
-	errs := make(chan error, len(c.Auth.StreamOperations))
+	errs := make(chan error, len(c.Auth.StreamOperations)+1)
 	seen := map[string]bool{}
 	for _, s := range c.Auth.StreamOperations {
 		if !s.AllowMockImport {
@@ -73,6 +73,24 @@ func run() error {
 		go func() {
 			defer wg.Done()
 			err := r.RunMock(ctx)
+			errs <- err
+			if err != nil {
+				cancel()
+			}
+		}()
+	}
+	grants := []map[string]string{}
+	for _, s := range c.Auth.StreamOperations {
+		if s.AllowsBuildProfile() {
+			grants = append(grants, map[string]string{"tenant_id": s.TenantID, "scope_id": s.ID})
+		}
+	}
+	if len(grants) > 0 {
+		r := telemetrypipeline.Runtime{Store: eventstate.Store{Pool: pool, MaxEvents: 1000, MaxPayloadBytes: 16 << 20}, Publisher: pub, Consumer: consumer, MaxEntries: 2000, MaxRecoveryRecords: 100000, MaxAttempts: 3, ReadBatchSize: telemetry.MaxBatchEvents}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := r.RunManaged(ctx, telemetrypipeline.ManagedGrants(grants))
 			errs <- err
 			if err != nil {
 				cancel()

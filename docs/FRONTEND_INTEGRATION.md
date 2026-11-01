@@ -122,3 +122,11 @@ See [scenario](SUSPICIOUS_LOGIN_FLOW.md).
 tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
 explicit missing/stale/conflicting evidence. Five historical fixtures remain
 INCONCLUSIVE and require note approval; no live provider or model is activated.
+
+## Build local integration management (042)
+
+[The local integration studio](BUILD_INTEGRATIONS.md) at `/build/integrations` adds versioned
+draft editors, JSON file import, Go validation and evidence preview. Explicit import
+seals a tenant-scoped snapshot and feeds the existing workers without restart.
+Case note approval remains mandatory; provider endpoints and response execution
+remain disabled. Existing provider-specific connector records remain inspect-only.

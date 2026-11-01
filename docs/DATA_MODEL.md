@@ -257,3 +257,13 @@ IAM/MFA and EDR normalized observations are stored in the existing immutable
 `jobs.input` protobuf, with reference/hash/time and typed context. No new migration
 or table. Existing jobs and audit/approval receipts retain their identity. Different
 context under the same job identity conflicts rather than overwriting history.
+
+## Local integration profiles (042)
+
+`local_integration_profiles` stores tenant/ID, parent scope, name, version,
+draft/sealed state, bounded JSON document, actor and timestamps. Its tenant-scoped
+primary key and indexed scope mapping support authenticated editors and worker
+discovery. Mutations and audit commit together. Sealing preserves the snapshot
+before recoverable event acceptance; existing outbox/inbox, finding, job and
+SOAR idempotency records retain processing ownership. See
+[profile lifecycle](BUILD_INTEGRATIONS.md).

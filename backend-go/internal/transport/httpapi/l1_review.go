@@ -6,6 +6,7 @@ import (
 	"aisoc/backend/internal/platform/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"net/http"
+	"strings"
 )
 
 func registerL1Review(mux *http.ServeMux, pool *pgxpool.Pool, scopes []config.StreamScope) {
@@ -16,6 +17,11 @@ func registerL1Review(mux *http.ServeMux, pool *pgxpool.Pool, scopes []config.St
 			if scope.RequireAnalystReview && scope.OperatorID == actor.ID && scope.TenantID == actor.Tenant && scope.ConnectorID == view.ConnectorID && scope.Source == view.Source {
 				view.ReviewScope = scope.ID
 				break
+			}
+		}
+		if err == nil && view.ReviewRequired && strings.HasPrefix(view.ConnectorID, "build-") {
+			if s, e := profileScope(r, pool, scopes, view.ConnectorID); e == nil {
+				view.ReviewScope = s.ID
 			}
 		}
 		return view, 200, err

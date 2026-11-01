@@ -28,7 +28,7 @@ async page => {
   await page.getByLabel('Search Build assets').fill('');await page.getByRole('button',{name:asset.name,exact:true}).waitFor();
   for(const width of [1440,390]){await page.setViewportSize({width,height:1000});ensure(!await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),'horizontal overflow '+width);await page.screenshot({path:'/opt/aisoc/output/playwright/build-'+width+'.png',fullPage:true});}checks.push('desktop/mobile layout');
   fail=true;await page.getByRole('button',{name:'Refresh catalog',exact:true}).click();await page.getByText('The asset catalog could not be loaded.',{exact:true}).waitFor();ensure(await page.getByText('No assets match this view',{exact:true}).count()===0,'error shown as empty');fail=false;await page.getByRole('button',{name:'Retry',exact:true}).click();await page.getByRole('button',{name:asset.name,exact:true}).waitFor();checks.push('error and retry');
-  await page.getByRole('button',{name:'Manage API sources',exact:true}).click();ensure(new URL(page.url()).pathname==='/build/api-sources','wrong source manager');checks.push('existing manager navigation');
+  await page.getByRole('button',{name:'Manage local integrations',exact:true}).click();ensure(new URL(page.url()).pathname==='/build/integrations','wrong local integration manager');checks.push('existing manager navigation');
   return {passed:true,checks,requests:requests.length};
  } finally {release?.();await page.unroute('**/api/v1/**',handler);await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/build');}
 }

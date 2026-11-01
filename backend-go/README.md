@@ -166,3 +166,11 @@ evidence, computes historical freshness and persists the typed snapshot in the
 existing job. All grants for the source must agree on the bundle. See
 [configuration and fixtures](../docs/LOGIN_CONTEXT_ADAPTERS.md). No new migration
 or live endpoint is introduced; regenerate and deploy Go/Python protobufs together.
+
+### Build-managed local profiles
+
+Migration 042 adds versioned local JSON profiles beneath existing reviewed mock
+grants. Go APIs validate and seal their evidence; the existing stream worker
+discovers them using bounded scheduling and its current durable processing methods.
+No browser edits startup grants or credentials. See
+[contracts and rollback](../docs/BUILD_INTEGRATIONS.md).

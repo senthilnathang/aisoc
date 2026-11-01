@@ -58,3 +58,11 @@ PostgreSQL integration tests, full Go race suite, sqlc drift, focused vet, front
 ## Platform review (2026-11-01)
 
 API-source manager now pages sources and searches/pages detection-rule choices. The Cribl creation wizard stores configuration and explicitly states live validation is unsupported; saving returns to Build and clears the secret from the form. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+## Build local integration management (042)
+
+[The local integration studio](BUILD_INTEGRATIONS.md) at `/build/integrations` adds versioned
+draft editors, JSON file import, Go validation and evidence preview. Explicit import
+seals a tenant-scoped snapshot and feeds the existing workers without restart.
+Case note approval remains mandatory; provider endpoints and response execution
+remain disabled. Existing provider-specific connector records remain inspect-only.

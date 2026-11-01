@@ -114,3 +114,12 @@ sql:
         out: internal/modules/soarsync/soarsql
         sql_package: pgx/v5
         omit_unused_structs: true
+  - engine: postgresql
+    schema: migrations
+    queries: internal/modules/localintegrations/queries
+    gen:
+      go:
+        package: localsql
+        out: internal/modules/localintegrations/localsql
+        sql_package: pgx/v5
+        omit_unused_structs: true

@@ -1,7 +1,7 @@
 # Documentation index
 
 Current architecture and local migration status: 2026-11-01. The selected foundation
-uses API 3003/schema 041, with a 70,000-event local demo. The release on 3002 is
+uses API 3003/schema 042, with a 70,000-event local demo. The release on 3002 is
 preserved separately. Historical migration reports and ADR dates remain unchanged.
 
 | Document | Purpose |
@@ -131,3 +131,11 @@ Python gRPC mock, Go QA, explicit analyst mock-note approval and replay checks.
 tenant/subject-bound provenance, typed gRPC snapshots, contextual hypotheses and
 explicit missing/stale/conflicting evidence. Five historical fixtures remain
 INCONCLUSIVE and require note approval; no live provider or model is activated.
+
+## Build local integration management (042)
+
+[The local integration studio](BUILD_INTEGRATIONS.md) at `/build/integrations` adds versioned
+draft editors, JSON file import, Go validation and evidence preview. Explicit import
+seals a tenant-scoped snapshot and feeds the existing workers without restart.
+Case note approval remains mandatory; provider endpoints and response execution
+remain disabled. Existing provider-specific connector records remain inspect-only.

@@ -337,9 +337,9 @@ def main():
                 env.update(AISOC_GO_STREAM_OPERATIONS_FILE=str(scopes),AISOC_STREAM_REDIS_ADDR=env['AISOC_TEST_REDIS_ADDR'],AISOC_STREAM_REDIS_PUBLISHER_PASSWORD=env['AISOC_TEST_REDIS_PUBLISHER_PASSWORD'],AISOC_STREAM_REDIS_CONSUMER_PASSWORD=env['AISOC_TEST_REDIS_CONSUMER_PASSWORD'])
                 api.terminate();api.wait(timeout=10)
                 api=spawn([ROOT/'backend-go/bin/api']);wait_port(apiport)
-                def stream_http(path, body=None, actor='a', expected=200, root='/api/v1/stream-operations'):
+                def stream_http(path, body=None, actor='a', expected=200, root='/api/v1/stream-operations', method=None):
                     headers={'Authorization':'Bearer parity_fixture_'+actor*40,'Content-Type':'application/json'}
-                    request=urllib.request.Request('http://'+env['AISOC_GO_ADDR']+root+path,headers=headers,data=None if body is None else json.dumps(body).encode())
+                    request=urllib.request.Request('http://'+env['AISOC_GO_ADDR']+root+path,headers=headers,data=None if body is None else json.dumps(body).encode(),method=method)
                     try:
                         with urllib.request.urlopen(request,timeout=10) as response: code,value=response.status,json.load(response)
                     except urllib.error.HTTPError as error: code,value=error.code,json.load(error)
@@ -446,6 +446,40 @@ def main():
                     assert stream_http(prefix+'/mock-import',page,expected=202)['accepted']['Inserted']==0
                     context_results.append({'scenario':grant['id'],'qa':'verified','missing':review['result']['missing_evidence'],'evidence_count':len(review['evidence']),'note_id':status['cases'][0]['note_id'],'replay_inserted':0})
                 (report/'login-context-flow.json').write_text(json.dumps({'passed':True,'mode':'local JSON and simulated approval','scenarios':context_results},indent=2)+'\n')
+                # Build profiles derive child bindings from the authenticated grant.
+                build_root='/api/v1/build/integrations'
+                profile_id='build-00000000-0000-4000-8000-000000000042'
+                document=stream_http('/example?scope_id=login-context-suspicious',root=build_root)
+                draft={'scope_id':'login-context-suspicious','name':'Managed local fixture','expected_version':0,'document':document}
+                preview=stream_http('/preview',{'scope_id':draft['scope_id'],'id':profile_id,'document':document},root=build_root)
+                assert len(preview['events'])==4 and len(preview['context'])==2 and preview['events'][0]['connector_id']==profile_id
+                stream_http('/preview',{'scope_id':draft['scope_id'],'id':profile_id,'document':document,'url':'https://not-called.invalid'},root=build_root,expected=400)
+                stream_http('/'+profile_id,draft,root=build_root,method='PUT',actor='b',expected=403)
+                saved=stream_http('/'+profile_id,draft,root=build_root,method='PUT')
+                assert saved['version']==1 and saved['state']=='draft'
+                assert stream_http('/'+profile_id,draft,root=build_root,method='PUT')['version']==1
+                stream_http('/'+profile_id,root=build_root,actor='b',expected=404)
+                stream_http('/'+profile_id,{**draft,'expected_version':99},root=build_root,method='PUT',expected=409)
+                stream_http('/'+profile_id+'/import',{'expected_version':1,'confirm':False},root=build_root,expected=400)
+                assert stream_http('/'+profile_id+'/import',{'expected_version':1,'confirm':True},root=build_root,expected=202)['accepted']['Inserted']==4
+                stream_http('/'+profile_id,{**draft,'name':'Cannot change sealed evidence','expected_version':1},root=build_root,method='PUT',expected=409)
+                for _ in range(400):
+                    managed=stream_http('/'+profile_id,root=build_root)
+                    if managed['cases'] and managed['cases'][0]['state']=='awaiting_review': break
+                    time.sleep(.1)
+                else: raise RuntimeError('Managed profile did not reach review')
+                managed_case=managed['cases'][0]
+                managed_review=stream_http('/'+managed_case['investigation_id']+'/l1',root='/api/v1/investigations')
+                assert managed_review['review_scope']==profile_id and managed_review['result_status']=='verified'
+                stream_http('/'+profile_id+'/approve-mock-note',{'job_id':managed_case['job_id'],'comment':'Automated Build profile review; mock note only.'})
+                for _ in range(400):
+                    managed=stream_http('/'+profile_id,root=build_root)
+                    if managed['cases'][0]['state']=='synced': break
+                    time.sleep(.1)
+                else: raise RuntimeError('Managed profile note did not sync')
+                assert stream_http('/'+profile_id+'/import',{'expected_version':1,'confirm':True},root=build_root,expected=202)['accepted']['Inserted']==0
+                assert sql("SELECT count(*) FROM audit_events WHERE tenant_id='auth-a' AND resource='local_integrations'")=='2'
+                (report/'build-integrations-flow.json').write_text(json.dumps({'passed':True,'preview':True,'create_replay':True,'tenant_isolation':True,'revision_conflict':True,'sealed_edit_denied':True,'managed_worker':'verified','approval':'explicit simulated','sync':'one mock note','replay_inserted':0},indent=2)+'\n')
                 action={'id':'demo-revoke','session_id':'demo-session','principal_ref':'demo-user','expected_version':1,'ticket':'TEST-REVIEW'}
                 def response_op(operation, expected=200, **extra):
                     return stream_http('/mock-siem/sandbox-session',{**action,'operation':operation,**extra},expected=expected)
