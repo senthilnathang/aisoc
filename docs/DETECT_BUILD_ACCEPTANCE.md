@@ -75,3 +75,7 @@ The skills_memory stage now includes memory_hunt: approved source context, sourc
 ## Combined release gate
 
 [The browser release gate](BROWSER_RELEASE_GATE.md) now combines fresh JSON browser workflows, this API acceptance suite and archive-backed recovery in one disposable run. Standalone commands remain supported.
+
+## Critical browser extensions — November 2026
+
+The combined browser gate requires four additional workflow stages and explicit evidence flags. Its database assertions require exactly one response note/execution audit and one local rule-apply audit despite replay. Missing stages, duplicate effects or unexpected browser/API errors fail the report. See [full browser scope](BROWSER_RELEASE_GATE.md).

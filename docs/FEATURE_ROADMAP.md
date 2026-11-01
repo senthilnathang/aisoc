@@ -312,3 +312,7 @@ The local/mock Build retention workspace now provides policy editing, protected-
 ## Local release evidence — November 2026
 
 Detect-to-Build browser routes and selected connected UI workflows now have a fresh-fixture gate alongside API/worker and backup-recovery verification. The gate does not depend on retained demo records and does not imply production readiness. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).
+
+## Connected browser workflow coverage — November 2026
+
+The repeatable gate now includes real UI mutations across Respond, Skills, Memory/Hunt promotion and case-to-rule feedback, in addition to its route sweep and API/backup stages. This extends local/mock operator coverage; it does not activate providers or production containment. See [release evidence](BROWSER_RELEASE_GATE.md).

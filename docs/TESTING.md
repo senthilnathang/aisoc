@@ -666,3 +666,9 @@ Database and authenticated API tests cover protected states, version/digest conf
 The new release wrapper adds real JSON upload/import, independent guidance approval, notification and retention workflows, plus a desktop/mobile navigation sweep and two-clone backup recovery to the full API acceptance suite. Failure or missing evidence in any stage fails the combined result. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).
 
 Verified twice on 2026-11-01: runs `08cef8c303864d5e9df88b8e4ece8181` and `55d792f7e8374f16a3b33d498b37cd38` passed all four stages. Each completed 72 desktop/mobile route checks, all six browser workflows, frontend lint/build and 33 regression tests, full API/framework acceptance, and recovery of 76 table fingerprints, one payload archive and two retention snapshots. Archive/snapshot corruption was rejected. See the gate guide for timings, artifacts and coverage limits.
+
+## Critical workflow browser acceptance — November 2026
+
+The gate now requires ten browser stages, including Respond independent approval/execution/replay, Skill staged publication/source reapproval/archive, approved Memory → stale exclusion → historical hunt promotion, and explicit investigation labels → replay → guarded local rule application. Real UI writes run against fresh disposable fixtures; execution retry uses the same browser-session HTTP request. SQL requires one response note, one execution audit and one rule application. Older six-stage reports fail validation.
+
+Verified run `710cb82ef8d04b6c8701677f65332263` passed in 258.79 seconds: ten stages, 72 desktop/mobile route checks, 12 extra workflow screenshots/overflow checks, 33 frontend regression tests and full API/framework/backup acceptance. Five release-report and two acceptance-report unit tests passed. See [detailed evidence and limits](BROWSER_RELEASE_GATE.md).

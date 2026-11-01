@@ -439,3 +439,7 @@ Go/sqlc uses migration052 for tenant policies, immutable row snapshots and a cro
 ## Local release gate — November 2026
 
 The release runner reuses the disposable API/Redis/PostgreSQL/worker lifecycle, serves the built frontend on a temporary loopback port, and tests browser and backup recovery against the same run dataset. Application architecture and schema are unchanged. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).
+
+## Critical workflow release evidence — November 2026
+
+The browser gate now spans ten named stages over the existing React → Go → PostgreSQL workflows. Response tests use a dedicated mock scope and three independent operator sessions; persisted effect counts guard replay. Outcome-derived Skill/Memory fixtures verify source freshness and immutable hunt snapshots. No service, schema or production privilege boundary changes are introduced. See [release gate](BROWSER_RELEASE_GATE.md).

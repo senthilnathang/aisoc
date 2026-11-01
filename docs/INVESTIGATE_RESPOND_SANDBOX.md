@@ -152,3 +152,7 @@ execution gate in cleanup. Screenshots are under
 
 No live provider, production deployment, high-throughput claim or independent
 multi-person approval guarantee is implied by these local tests.
+
+## Repeatable browser coverage
+
+This workflow is now included in the fresh-fixture local/mock browser release gate, alongside API acceptance and backup recovery. See [critical workflow actions, assertions and verified results](BROWSER_RELEASE_GATE.md#critical-workflow-stages). No live provider execution is enabled.

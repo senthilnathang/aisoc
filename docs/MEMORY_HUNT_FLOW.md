@@ -136,3 +136,7 @@ Screenshots: `output/playwright/memory-hunt-current.png`,
 `memory-hunt-promoted.png`, `memory-hunt-mobile.png`. Reproduce the browser flow
 with `scripts/framework/memory-hunt-browser-check.js`; it retains labeled local
 fixtures and does not execute a response or invoke external services.
+
+## Repeatable browser coverage
+
+This workflow is now included in the fresh-fixture local/mock browser release gate, alongside API acceptance and backup recovery. See [critical workflow actions, assertions and verified results](BROWSER_RELEASE_GATE.md#critical-workflow-stages). No live provider execution is enabled.

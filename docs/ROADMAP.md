@@ -282,3 +282,7 @@ Implemented explicit age policies and archive snapshots across Detect to Build, 
 ## Repeatable browser release gate — November 2026
 
 Added a single local/mock gate generating fresh JSON fixtures and combining frontend, browser, full API and backup recovery evidence. Production identity, live providers, actual-model quality, sustained capacity, off-host recovery and authorized live actions remain separate release gates. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).
+
+## Critical workflow browser gate — November 2026
+
+Extended local/mock browser coverage to Respond independent approvals/replay, Skills staged edits/source reapproval/archive, Memory → Hunt → Investigate and Investigate → Detect feedback. Live connectors, actual-model quality, external identity and production operations remain separate gates. See [coverage and verification](BROWSER_RELEASE_GATE.md).

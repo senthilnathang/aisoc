@@ -3,6 +3,7 @@ import {chromium} from '../../frontend/node_modules/playwright/index.mjs';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import assert from 'node:assert/strict';
+import {criticalWorkflows} from './workflows.mjs';
 import {sections} from '../../frontend/src/navigation.js';
 const executablePath=process.env.AISOC_RELEASE_CHROMIUM;
 if(!executablePath)throw Error('Set AISOC_RELEASE_CHROMIUM to an installed browser');
@@ -76,6 +77,7 @@ try{
   await exact(main,'Inspect archive '+fixture.notice_id).click();await main.getByRole('heading',{name:'Verified archive: '+fixture.notice_id,exact:true}).waitFor();await main.getByText('I reviewed the selected record and its retention scope',{exact:true}).click();await exact(main,'Restore read notification').click();await main.getByText('Notification restored. Approval and ownership state were not changed.',{exact:true}).waitFor();
   return {notice_id:fixture.notice_id,archive_cleanup_restore:true};
  });
+ await criticalWorkflows({main,reviewer,login,fixture,origin,step,get,waitFor,screenshots});
  await step('tenant_isolation',async()=>{
   const foreign=await login('b');await get(foreign,'/investigations/'+fixture.details.case_id,404);await get(foreign,'/skills/'+fixture.skill.id,404);
   const inbox=await get(foreign,'/approvals?search='+fixture.memory.id);assert.equal(inbox.total,0);

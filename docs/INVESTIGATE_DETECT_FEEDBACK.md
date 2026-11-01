@@ -59,3 +59,7 @@ A real local API/browser demonstration retained three synthetic JSON alerts (one
 Revert the case panel/routes and shared-helper refactor to remove this entry point without dropping stored labels or audit history. Use existing rule version history for an explicitly reviewed local query restoration. Do not delete audit records or enable a rule as part of rollback.
 
 Production provider deployment, calibrated detection-quality evaluation and investigation-model validation remain separate work. No automatic tuning, auto-labelling from verdicts, provider write-back or production containment is enabled by this slice.
+
+## Repeatable browser coverage
+
+This workflow is now included in the fresh-fixture local/mock browser release gate, alongside API acceptance and backup recovery. See [critical workflow actions, assertions and verified results](BROWSER_RELEASE_GATE.md#critical-workflow-stages). No live provider execution is enabled.

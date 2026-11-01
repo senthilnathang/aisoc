@@ -460,3 +460,7 @@ Extend the candidate view and sqlc queries with explicit tenant scope. Keep poli
 ## Browser release gate — November 2026
 
 Install frontend development dependencies with `npm --prefix frontend ci`; provide an installed Chromium binary. Use the release wrapper rather than replaying retained demo browser scripts. Keep synthetic fixtures run-scoped and require matching report IDs and explicit success for every stage. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).
+
+## Extending critical browser workflows — November 2026
+
+Use `scripts/release/workflows.mjs` for the four connected interaction stages and `scripts/framework/release_workflow_fixtures.py` for disposable setup. Keep actual mutations in rendered controls, use read-only API assertions, and declare evidence in `WORKFLOW_EVIDENCE` in `release_gate.py`. Exact execution-request replay is session-bound HTTP; it must return the same receipt. The harness checks one response note, one execution audit and one rule-apply audit delta. See [command and boundaries](BROWSER_RELEASE_GATE.md).

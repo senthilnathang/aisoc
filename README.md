@@ -359,3 +359,7 @@ Build now includes configurable archive policies, protected-record previews, ver
 ## Repeatable browser release gate — November 2026
 
 Run `python3 scripts/framework/release_gate.py --chromium-executable /path/to/chrome` for fresh JSON fixtures, real browser workflows, API acceptance and isolated backup recovery. One run-bound report covers all stages; the active demo is not used. See [usage, coverage and limits](docs/BROWSER_RELEASE_GATE.md).
+
+## Critical workflow browser coverage — November 2026
+
+The local release gate also exercises independent Respond approval/execution/replay, staged Skill reapproval/archive, Memory-backed hunt promotion and explicit investigation-to-detection feedback. It uses disposable JSON fixtures and real UI writes; integrations remain local/mock. See [coverage and evidence](docs/BROWSER_RELEASE_GATE.md).

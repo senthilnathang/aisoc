@@ -14,6 +14,12 @@ import uuid
 
 ROOT=Path(__file__).resolve().parents[2]
 STAGES={'frontend','api','browser','backup'}
+WORKFLOW_EVIDENCE={
+    'respond_replay':('independent_approval','kill_switch','explicit_execution','same_receipt_replay','external_calls_zero'),
+    'skills_lifecycle':('published_unchanged_while_staged','source_change_blocked','independent_reapproval','staged_publication','archived'),
+    'memory_hunt':('approved_provenance','stale_excluded','immutable_history','promotion','unknown_determination'),
+    'detect_feedback':('explicit_labels','determination_unchanged','replay_passed','guarded_apply','rule_remains_disabled'),
+}
 
 def validate_stage(name,report,run_id):
     if not isinstance(report,dict):raise ValueError('Invalid '+name+' report')
@@ -25,9 +31,13 @@ def validate_stage(name,report,run_id):
         from acceptance import validate_report
         validate_report(report)
     if name=='browser':
-        required={'build_import','approval_handoff','notifications','retention_recovery','tenant_isolation','route_sweep'}
+        required={'build_import','approval_handoff','notifications','retention_recovery','tenant_isolation','route_sweep'} | set(WORKFLOW_EVIDENCE)
         if not isinstance(report.get('stages'),dict) or set(report.get('stages',{}))!=required or any(not isinstance(v,dict) or v.get('passed') is not True for v in report['stages'].values()):
             raise ValueError('Missing browser coverage')
+        effects=report.get('durable_effect_deltas')
+        if not isinstance(effects,dict) or any(type(effects.get(k)) is not int or effects[k]!=1 for k in ('response_notes','response_audits','rule_applies')):raise ValueError('Missing or duplicate durable workflow effects')
+        for stage,keys in WORKFLOW_EVIDENCE.items():
+            if any(report['stages'][stage].get(key) is not True for key in keys):raise ValueError('Missing workflow evidence: '+stage)
         if report.get('external_requests') or report.get('page_errors') or report.get('http_errors'):
             raise ValueError('Unexpected browser errors or external requests')
         entries=report['stages']['route_sweep'].get('checks',[])

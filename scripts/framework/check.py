@@ -373,6 +373,7 @@ def main():
                     context_scenarios.append((scenario,grant))
                 if options.browser_release_id:
                     grants.append(dict(id='release-archive',operator_id='fixture-a',tenant_id='auth-a',connector_id='release-archive',source='qradar-siem',processor='mock-login-v1',allow_mock_import=True,allow_retry=True))
+                    grants.append(dict(id='release-response',operator_id='fixture-a',tenant_id='auth-a',connector_id='release-identity',source='qradar-siem',processor='mock-login-v1',allow_sandbox_response=True))
                 for key in ('c','d'):
                     grants.extend([{**g,'id':g['id']+'-'+key,'operator_id':'fixture-'+key,'allow_mock_import':False,'allow_retry':False} for g in list(grants) if g['operator_id']=='fixture-a' and g.get('allow_sandbox_response')])
                 scopes.write_text(json.dumps(grants))

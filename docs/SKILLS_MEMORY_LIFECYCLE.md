@@ -64,3 +64,7 @@ Two full disposable acceptance runs passed in **150.71 s** and **155.31 s**, inc
 The retained browser walkthrough passed on the refreshed local service for source case `INV-730a12cc`, Skill `SK-a6f29da4-7a47-45be-85bd-93c1618cbba6` and Memory `EI-dafac59e-c99e-4bf0-a134-ce2160ecba5c`. Both guidance records end archived by design. The library displays archive state and disables its enable switch; lifecycle audit entries appear in existing Skill history.
 
 `scripts/framework/learning-lifecycle-regression-browser.js` passed injected 503/409 draft-preservation checks, no automatic write retries, renewed confirmation after source refresh, authenticated actor/tenant derivation and mobile layout. The updated existing Skills browser regression passed pagination, safe preview, staged save, conflict preservation, publish retry and unmounted-save checks. Browser evidence is under ignored `output/playwright/lifecycle-*.png`; reports are under ignored `output/platform-acceptance/`.
+
+## Repeatable browser coverage
+
+This workflow is now included in the fresh-fixture local/mock browser release gate, alongside API acceptance and backup recovery. See [critical workflow actions, assertions and verified results](BROWSER_RELEASE_GATE.md#critical-workflow-stages). No live provider execution is enabled.
