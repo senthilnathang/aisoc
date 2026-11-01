@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Button, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerHeader, DrawerOverlay, Flex, Link, Stack, Text } from '@chakra-ui/react';
 import { activeItem, sections, sectionForView } from './navigation';
 import { ui } from './theme';
@@ -6,7 +6,21 @@ import { ui } from './theme';
 export default function Navigation({ view, setView }) {
   const [open,setOpen]=useState(false);
   const menuButton=useRef(null);
+  const subnav=useRef(null);
   const section=sectionForView(view), selected=activeItem(view);
+  useEffect(() => {
+    const bar = subnav.current;
+    const active = bar?.querySelector('[aria-current="page"]');
+    if (!bar || !active) return;
+    // Scroll only the submenu, never jump the document or move keyboard focus.
+    const reveal = () => {
+      bar.scrollLeft = Math.max(0, active.offsetLeft - bar.offsetLeft - 16);
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [selected]);
   const navigate=(event,item)=>{
     if(event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)return;
     event.preventDefault();setOpen(false);setView(item.view);
@@ -21,7 +35,7 @@ export default function Navigation({ view, setView }) {
       <Text display={{base:'none',xl:'block'}} fontSize="10px" color="#a4acbc" whiteSpace="nowrap">SECURITY OPERATIONS</Text>
       <Button ref={menuButton} display={{base:'inline-flex',lg:'none'}} onClick={()=>setOpen(true)} aria-label="Open navigation" aria-expanded={open} aria-controls="workspace-navigation" variant="unstyled" px="12px" h="34px" border="1px solid #434957" borderRadius="4px" fontSize="12px">☰ Menu</Button>
     </Flex>
-    <Flex as="nav" aria-label={`${section.label} navigation`} className="section-subnav" px={{base:'12px',lg:'24px'}} gap="4px" overflowX="auto" bg="white" borderBottom="1px solid" borderColor={ui.line}>
+    <Flex as="nav" aria-label={`${section.label} navigation`} ref={subnav} className="section-subnav" px={{base:'12px',lg:'24px'}} gap="4px" overflowX="auto" bg="white" borderBottom="1px solid" borderColor={ui.line}>
       {section.items.map(item=><Link key={item.view} href={item.path} onClick={e=>navigate(e,item)} aria-current={selected===item.view?'page':undefined} flexShrink="0" display="flex" alignItems="center" minH="42px" px="12px" borderBottom="2px solid" borderColor={selected===item.view?ui.violet:'transparent'} color={selected===item.view?ui.ink:ui.muted} fontSize="12px" fontWeight={selected===item.view?'700':'500'} _hover={{textDecoration:'none',bg:ui.soft}}>{item.label}</Link>)}
     </Flex>
     <Drawer isOpen={open} placement="left" onClose={()=>setOpen(false)} finalFocusRef={menuButton} size="xs">

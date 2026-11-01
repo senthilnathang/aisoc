@@ -12,7 +12,7 @@ const Card = ({ children, ...props }) => <Box bg="white" border="1px solid" bord
 const Json = ({ value }) => <Box as="pre" bg="#151820" color="#e6edf3" p="16px" rounded="5px" overflowX="auto" fontSize="11px" whiteSpace="pre-wrap" overflowWrap="anywhere">{JSON.stringify(value, null, 2)}</Box>;
 const Empty = ({ children }) => <Text color={ui.muted} py="24px">{children}</Text>;
 
-export default function InvestigationCase({ id }) {
+export default function InvestigationCase({ id, setView }) {
   const [record, setRecord] = useState(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useCaseTab();
@@ -86,7 +86,7 @@ export default function InvestigationCase({ id }) {
         {record.alerts?.[0] && <Flex gap="12px" mt="16px" align="center" wrap="wrap"><Text color={ui.muted} fontSize="11px" minW="0" maxW="100%" overflowWrap="anywhere">Source alert: {record.alerts[0].external_id} · Routing: {record.alerts[0].routing}</Text><Button as="a" href={`/detect/rules/${encodeURIComponent(record.alerts[0].rule_id)}`} variant="outline">View detection rule</Button></Flex>}
       </Card>}
       {tab === "Summary" && <SummaryExperience record={record} nodes={record.workspace.nodes} onArtifact={inspectNode} busy={busy} running={running} onTab={setTab} onDetermination={v=>mutate(()=>api.setDetermination(caseId,v),"Determination saved")}/>}
-      {(tab === "Summary" || tab === "Review") && <Box mt="24px"><InvestigationReview key={caseId} caseId={caseId}/></Box>}
+      {(tab === "Summary" || tab === "Review") && <Box mt="24px"><InvestigationReview key={caseId} caseId={caseId} setView={setView}/></Box>}
       {tab === "Report" && <ReportExperience record={record} onArtifact={inspectNode}/>}
       {tab === "Artifacts" && <Stack spacing="18px"><ArtifactExperience workspace={record.workspace} selected={selectedNode} onSelect={setSelectedNode}/>
         <Card as="form" onSubmit={e => { e.preventDefault(); mutate(() => api.action("investigations", caseId, "artifacts", artifact), "Artifact attached", () => setArtifact({ type: "entity", value: "", label: "" })); }}><Heading fontSize="14px" mb="16px">Attach evidence</Heading><Grid templateColumns={{ base: "1fr", md: "140px 1fr 1fr" }} gap="12px"><FormControl><FormLabel>Type</FormLabel><Select value={artifact.type} onChange={e => setArtifact({ ...artifact, type: e.target.value })}>{["entity", "ip", "domain", "file", "email", "url"].map(type => <option key={type}>{type}</option>)}</Select></FormControl><FormControl isRequired><FormLabel>Value</FormLabel><Input maxLength={2000} value={artifact.value} onChange={e => setArtifact({ ...artifact, value: e.target.value })} /></FormControl><FormControl><FormLabel>Label</FormLabel><Input maxLength={200} value={artifact.label} onChange={e => setArtifact({ ...artifact, label: e.target.value })} /></FormControl></Grid><Button type="submit" mt="16px" isDisabled={busy || !artifact.value.trim()}>Attach artifact</Button></Card>

@@ -375,3 +375,21 @@ draft editors, JSON file import, Go validation and evidence preview. Explicit im
 seals a tenant-scoped snapshot and feeds the existing workers without restart.
 Case note approval remains mandatory; provider endpoints and response execution
 remain disabled. Existing provider-specific connector records remain inspect-only.
+
+## Shared presentation layer
+
+React 19 and Chakra UI remain the presentation stack. `WorkspaceHeader`, the shared
+theme, and the navigation shell provide consistent layout and accessibility across
+Detect to Build. Go remains authoritative for data, tenant authorization and action
+policy; this UI pass introduces no agent framework or backend boundary changes.
+See [UI/UX system](UI_UX_SYSTEM.md).
+
+## Investigate-to-Respond local handoff
+
+The case UI snapshots validated mock L1 evidence and proposes an explicit simulated
+session target. Go resolves a separate server-side response grant, records a
+five-minute analyst approval, checks kill switch and source/session revisions, then
+uses the existing sandbox executor. PostgreSQL commits revocation, receipt, mock
+SOAR note and case audit atomically. Respond surfaces these case-linked records;
+Python and generic remediation actions do not gain execution authority. See the
+[sequence and security boundaries](INVESTIGATE_RESPOND_SANDBOX.md).

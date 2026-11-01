@@ -1,6 +1,7 @@
 package response
 
 import (
+	"aisoc/backend/internal/modules/response/responsesql"
 	"aisoc/backend/internal/modules/telemetry"
 	"aisoc/backend/internal/platform/auth"
 	"aisoc/backend/internal/platform/eventstate"
@@ -29,6 +30,22 @@ type SandboxSessionRequest struct {
 // SandboxSession never invokes a provider. Scope grants come from trusted config;
 // approval, revocation, policy and audit commit in the same PostgreSQL transaction.
 func (s Store) SandboxSession(ctx context.Context, actor auth.Principal, b telemetry.Binding, grants []SandboxGrant, in SandboxSessionRequest) (map[string]any, error) {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+	result, err := s.sandboxSessionTx(ctx, tx, actor, b, grants, in, "")
+	if err != nil {
+		return nil, err
+	}
+	return result, tx.Commit(ctx)
+}
+
+// The case workflow supplies its transaction so revocation, receipt and mock note
+// either all commit, or none do. Legacy stream operations cannot bypass that path.
+func (s Store) sandboxSessionTx(ctx context.Context, tx pgx.Tx, actor auth.Principal, b telemetry.Binding, grants []SandboxGrant, in SandboxSessionRequest, caseID string) (map[string]any, error) {
+	var err error
 	allowed := false
 	for _, g := range grants {
 		if g.Actor == actor && g.Binding == b && actor.Tenant == b.TenantID && actor.ID != "" {
@@ -42,17 +59,31 @@ func (s Store) SandboxSession(ctx context.Context, actor auth.Principal, b telem
 	if !id.MatchString(in.Ticket) {
 		return nil, eventstate.ErrInvalid
 	}
-	tx, err := s.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
 	if _, err = tx.Exec(ctx, `INSERT INTO sandbox_response_policy(tenant_id,connector_id,source) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`, b.TenantID, b.ConnectorID, b.Source); err != nil {
 		return nil, err
 	}
 	var stopped bool
 	if err = tx.QueryRow(ctx, `SELECT stopped FROM sandbox_response_policy WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 FOR UPDATE`, b.TenantID, b.ConnectorID, b.Source).Scan(&stopped); err != nil {
 		return nil, err
+	}
+	q := responsesql.New(tx)
+	if in.ID != "" {
+		link, e := q.CaseSandboxLink(ctx, responsesql.CaseSandboxLinkParams{TenantID: b.TenantID, ConnectorID: b.ConnectorID, Source: b.Source, ActionID: in.ID})
+		if e == nil && link.InvestigationID != caseID {
+			return nil, eventstate.ErrRecoveryDenied
+		}
+		if e != nil && !errors.Is(e, pgx.ErrNoRows) {
+			return nil, e
+		}
+		if errors.Is(e, pgx.ErrNoRows) && caseID != "" {
+			exists, e := q.CaseSandboxActionExists(ctx, responsesql.CaseSandboxActionExistsParams{TenantID: b.TenantID, ConnectorID: b.ConnectorID, Source: b.Source, ID: in.ID})
+			if e != nil {
+				return nil, e
+			}
+			if exists {
+				return nil, eventstate.ErrConflict
+			}
+		}
 	}
 	result := map[string]any{"mode": "sandbox", "external_calls": 0}
 	switch in.Operation {
@@ -126,7 +157,7 @@ func (s Store) SandboxSession(ctx context.Context, actor auth.Principal, b telem
 		if state == "executed" {
 			result["state"] = "executed"
 			result["replayed"] = true
-			return result, tx.Commit(ctx)
+			return result, nil
 		}
 		var version int64
 		var revoked bool
@@ -138,7 +169,7 @@ func (s Store) SandboxSession(ctx context.Context, actor auth.Principal, b telem
 		}
 		switch in.Operation {
 		case "approve":
-			if state != "proposed" {
+			if state != "proposed" && !(state == "approved" && !fresh) {
 				return nil, eventstate.ErrConflict
 			}
 			_, err = tx.Exec(ctx, `UPDATE sandbox_session_actions SET state='approved',approved_by=$5,approval_expires_at=now()+interval '5 minutes' WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND id=$4`, b.TenantID, b.ConnectorID, b.Source, in.ID, actor.ID)
@@ -173,5 +204,5 @@ func (s Store) SandboxSession(ctx context.Context, actor auth.Principal, b telem
 	if _, err = tx.Exec(ctx, `INSERT INTO audit_events(tenant_id,id,resource,resource_id,action,details,created_at,updated_at) VALUES($1,$2,'sandbox_session',$3,$4,$5,now(),now())`, b.TenantID, jobs.ID(), b.ConnectorID+":"+in.ID, "sandbox_"+in.Operation, details); err != nil {
 		return nil, err
 	}
-	return result, tx.Commit(ctx)
+	return result, nil
 }

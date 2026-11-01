@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Table, TableContainer, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import { api } from "./api";
@@ -72,7 +73,7 @@ export default function InvestigationQueue({ setView }) {
   }, [version]);
   const records = (tab === "cases" ? queue?.items || [] : alerts).filter(item => `${item.title} ${item.source} ${item.id} ${item.external_id || ""}`.toLowerCase().includes(search.toLowerCase()));
   return <Box p={{ base: "12px", md: "20px" }} w="100%" minW="0" className="page-enter investigation-queue">
-    <Flex gap="16px" align="center" wrap="wrap" mb="14px"><Box flex="1" minW="200px"><Text color={ui.muted} fontSize="10px" letterSpacing=".1em">SECURITY OPERATIONS / ALERT INTAKE</Text><Heading fontSize="26px" mt="6px">Investigations</Heading><Text color={ui.muted} mt="8px">Follow every received alert from intake to an evidence-backed review.</Text></Box><Button isDisabled={!queue || !!error} onClick={() => setIntake(true)}>Submit alert</Button></Flex>
+    <WorkspaceHeader gap="16px" align="center" wrap="wrap" mb="14px"><Box flex="1" minW="200px"><Text color={ui.muted} fontSize="10px" letterSpacing=".1em">SECURITY OPERATIONS / ALERT INTAKE</Text><Heading as="h1" fontSize="26px" mt="6px">Investigations</Heading><Text color={ui.muted} mt="8px">Follow every received alert from intake to an evidence-backed review.</Text></Box><Button isDisabled={!queue || !!error} onClick={() => setIntake(true)}>Submit alert</Button></WorkspaceHeader>
     <Grid templateColumns="repeat(3, minmax(0, 1fr))" gap={{ base: "6px", md: "12px" }} mb="12px">{[[queue?.summary.alerts, "Received alerts"], [queue?.summary.active_runs, "Active local runs"], [queue?.summary.open_cases, "Open investigations"]].map(([value, label]) => <Box key={label} bg="white" border="1px solid" borderColor={ui.line} p={{ base: "10px", md: "12px 16px" }} rounded="6px"><Text color={ui.muted} fontSize="11px">{label}</Text><Text fontFamily="heading" fontWeight="700" fontSize="24px" mt="2px">{value ?? "—"}</Text></Box>)}</Grid>
     <Text fontSize="11px" color={ui.muted} mb="16px">Local deterministic processing · No external tools · Outcomes require analyst review · Refreshes every 2 seconds</Text>
     {error && <Alert status="error" mb="16px"><AlertIcon />{error}. Displayed records may be stale.<Button ml="auto" variant="outline" onClick={() => setVersion(v => v + 1)}>Retry</Button></Alert>}

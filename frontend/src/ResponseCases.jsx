@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -122,7 +123,7 @@ export default function ResponseCases({ setView }) {
         {c.title}
       </Heading>
       <Flex gap="6px" mt="12px" wrap="wrap">
-        <Badge variant="outline">{c.source}</Badge>
+        <Badge variant="outline" maxW="full" whiteSpace="normal" overflowWrap="anywhere">{c.source}</Badge>
         <Badge variant="subtle">{c.category || "other"}</Badge>
       </Flex>
       <Text color={ui.muted} mt="14px" fontSize="12px" noOfLines={3}>
@@ -154,12 +155,12 @@ export default function ResponseCases({ setView }) {
   );
   return (
     <Box px={{ base: "14px", md: "24px" }} pb="32px">
-      <Flex justify="space-between" wrap="wrap" gap="16px">
+      <WorkspaceHeader justify="space-between" wrap="wrap" gap="16px">
         <Box>
           <Text color={ui.muted} fontSize="10px" letterSpacing=".1em">
             RESPONSE OPERATIONS
           </Text>
-          <Heading mt="8px" fontSize="30px" fontWeight="500">
+          <Heading as="h1" mt="8px" fontSize="30px" fontWeight="500">
             Cases
           </Heading>
           <Text color={ui.muted} mt="8px">
@@ -181,7 +182,7 @@ export default function ResponseCases({ setView }) {
         >
           Create case
         </Button>
-      </Flex>
+      </WorkspaceHeader>
       <Flex my="24px" gap="10px" wrap="wrap">
         <Input
           bg="white"
@@ -220,12 +221,14 @@ export default function ResponseCases({ setView }) {
           <option value="updated">Recently updated</option>
         </Select>
         <Button
+          aria-pressed={layout === "board"}
           variant={layout === "board" ? "solid" : "outline"}
           onClick={() => setLayout("board")}
         >
           Board
         </Button>
         <Button
+          aria-pressed={layout === "list"}
           variant={layout === "list" ? "solid" : "outline"}
           onClick={() => setLayout("list")}
         >

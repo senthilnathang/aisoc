@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Select, Stack, Text, Textarea } from "@chakra-ui/react";
 import { api } from "./api";
@@ -102,7 +103,7 @@ export default function DetectionRegistry({ setView }) {
   const select = id => navigate({rule:id,tab:'details',catalog:null});
   const summary=data?.summary;
   return <Box className="page-enter detection-registry rules-screen" p={{base:'12px',md:'20px'}}>
-    <Flex align="center" gap="10px" wrap="wrap" mb="16px"><Heading fontSize="20px" flex="1">Detection Rules</Heading><Select aria-label="Rule metrics period" w="auto" size="sm" value={filters.days} onChange={e=>filter('days',Number(e.target.value))}>{[7,30,90].map(n=><option key={n} value={n}>Last {n} days</option>)}</Select><Button size="sm" variant="outline" onClick={()=>setView('apiSources')}>API sources</Button><Button size="sm" onClick={()=>{setTemplate(null);setCreating(true);}}>Create rule</Button></Flex>
+    <WorkspaceHeader align="center" gap="10px" wrap="wrap" mb="16px"><Heading as="h1" fontSize="20px" flex="1">Detection Rules</Heading><Select aria-label="Rule metrics period" w="auto" size="sm" value={filters.days} onChange={e=>filter('days',Number(e.target.value))}>{[7,30,90].map(n=><option key={n} value={n}>Last {n} days</option>)}</Select><Button size="sm" variant="outline" onClick={()=>setView('apiSources')}>API sources</Button><Button size="sm" onClick={()=>{setTemplate(null);setCreating(true);}}>Create rule</Button></WorkspaceHeader>
     <div className={selected?'rules-layout rules-selected':'rules-layout'}>
       <div className="rules-primary">
         <div className="rules-kpis">{[[summary?.registry_rules,'Registry Rules'],[summary?.triggered_alerts,'Triggered Alerts'],[summary?.registry_rules ? `${Math.round(summary.mapped_rules/summary.registry_rules*100)}%` : '—','Rules with MITRE mappings']].map(([value,label])=><div key={label}><span>{label}</span><strong>{loading?'—':value??'—'}</strong></div>)}</div>

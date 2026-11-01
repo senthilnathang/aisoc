@@ -305,3 +305,11 @@ draft editors, JSON file import, Go validation and evidence preview. Explicit im
 seals a tenant-scoped snapshot and feeds the existing workers without restart.
 Case note approval remains mandatory; provider endpoints and response execution
 remain disabled. Existing provider-specific connector records remain inspect-only.
+
+The React 19 / Chakra interface uses shared workspace headers, responsive controls,
+keyboard navigation and mobile submenus across Detect to Build. See the
+[UI/UX system and browser verification](docs/UI_UX_SYSTEM.md).
+
+Investigate now hands off to Respond through an [explicitly approved mock session
+revocation flow](docs/INVESTIGATE_RESPOND_SANDBOX.md), with case-linked evidence,
+a durable receipt and mock SOAR response note. Live identity providers remain disabled.

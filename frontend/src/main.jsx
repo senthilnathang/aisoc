@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import Overview from "./Overview";
 import React, { Profiler, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -63,7 +64,7 @@ import ResponseCases from "./ResponseCases";
 import ResponsePolicies from "./ResponsePolicies";
 import Navigation from "./Navigation";
 import Breadcrumbs from "./Breadcrumbs";
-import { pathForView } from "./navigation";
+import { pathForView, sectionForView, activeItem } from "./navigation";
 import "./app.css";
 
 const I = ({ d, size = 14, color = "currentColor", ...props }) => (
@@ -197,10 +198,26 @@ function ToolRail() {
 }
 
 function Shell({ view, setView, children, ids }) {
+  const mainRef = useRef(null);
+  const previousRoute = useRef(null);
+  const routeKey = `${view}:${JSON.stringify(ids)}`;
+  useEffect(() => {
+    const section = sectionForView(view);
+    const item = section.items.find(item => item.view === activeItem(view));
+    document.title = `${item?.label || section.label} · ${section.label} | AISOC`;
+    if (previousRoute.current !== null && previousRoute.current !== routeKey) {
+      mainRef.current?.focus({ preventScroll: true });
+    }
+    previousRoute.current = routeKey;
+  }, [view, routeKey]);
   return (
     <Box minH="100vh" bg={ui.page}>
+      <a className="skip-link" href="#workspace-main" onClick={event => {
+        event.preventDefault();
+        mainRef.current?.focus();
+      }}>Skip to workspace content</a>
       <Navigation view={view} setView={setView} />
-      <Box className="main-content">
+      <Box as="main" id="workspace-main" ref={mainRef} tabIndex={-1} aria-label="Workspace content" className="main-content">
         <Breadcrumbs view={view} ids={ids} setView={setView} />
         {children}
       </Box>
@@ -1404,10 +1421,10 @@ function ConnectorSetupLive({ setView }) {
   };
   return (
     <Box className="page-enter" px="15px">
-      <Flex justify="end" mb="12px">
+      <WorkspaceHeader><Box><Heading as="h1">Cribl connector</Heading><Text mt="8px" color={ui.muted}>Configure a saved connection. Live provider validation is not available.</Text></Box><Flex wrap="wrap" gap="8px">
         <Button variant="outline" onClick={() => setView("build")}>Cancel</Button>
-        <Button ml="5px" isLoading={saving} onClick={submit}>Add connector</Button>
-      </Flex>
+        <Button isLoading={saving} onClick={submit}>Add connector</Button>
+      </Flex></WorkspaceHeader>
       <HStack mb="15px">
         <Text fontSize="7px" fontWeight="600" color={ui.muted} letterSpacing=".04em" textTransform="uppercase">Connector</Text>
         <Badge bg="#19a6d4" color="white" fontSize="9px">▶</Badge>
@@ -1418,7 +1435,7 @@ function ConnectorSetupLive({ setView }) {
           <Stack spacing="10px">
             {fields.map(([key, label, placeholder]) => (
               <FormControl key={key} isRequired={label.includes("*")}>
-                <FormLabel fontSize="8px" mb="4px" fontWeight="600">{label.replace(" *", "")}</FormLabel>
+                <FormLabel fontSize="12px" mb="4px" fontWeight="600">{label.replace(" *", "")}</FormLabel>
                 <Input
                   type={key === "secret" ? "password" : "text"}
                   placeholder={placeholder}
@@ -1510,7 +1527,7 @@ function App() {
   const pages = {
     queue: <Overview setView={setView} />,
     investigations: <InvestigationQueue setView={setView} />,
-    investigationDetail: <InvestigationCase key={investigationId} id={investigationId} />,
+    investigationDetail: <InvestigationCase key={investigationId} id={investigationId} setView={setView} />,
     detect: <DetectionRegistry setView={setView} />,
     detectionIntelligence: <DetectionIntelligence setView={setView} />,
     detectionCoverage: <DetectionCoverage setView={setView} />,

@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, AlertIcon, Badge, Box, Button, Flex, Heading, Input, Select, Text } from '@chakra-ui/react';
 import { api } from './api';
@@ -41,7 +42,7 @@ export default function DetectionIntelligence({ setView }) {
   const chooseSource = value => { setSource(value); setRule(''); };
   const legend = tab === 'coverage' ? ['Full', 'Majority', 'Partial', 'None'] : ['Escalated', 'Not escalated'];
   return <Box className="detection-intelligence page-enter" aria-busy={loading}>
-    <Flex align="center" justify="space-between" gap="12px" wrap="wrap" mb="14px"><Heading fontSize="20px">Detection Intelligence</Heading><Text fontSize="11px" color="gray.500">Received alerts · UTC</Text></Flex>
+    <WorkspaceHeader align="center" justify="space-between" gap="12px" wrap="wrap" mb="14px"><Heading as="h1" fontSize="20px">Detection Intelligence</Heading><Text fontSize="11px" color="gray.500">Received alerts · UTC</Text></WorkspaceHeader>
     <Flex className="di-toolbar" gap="8px" wrap="wrap" align="center">
       <Input aria-label="Search alerts" placeholder="Search alerts, rules or sources" value={search} onChange={e => setSearch(e.target.value)} maxW={{base:'100%',md:'260px'}} size="sm" bg="white" />
       <Select aria-label="Time range" value={days} onChange={e => setDays(Number(e.target.value))} w="auto" size="sm">{[7,30,90].map(n => <option key={n} value={n}>Last {n} days</option>)}</Select>

@@ -287,3 +287,91 @@ select {
   .skills-metadata .chakra-form-control { display: grid; grid-template-columns: 145px minmax(0, 1fr); align-items: center; gap: 10px; }
   .skills-metadata .chakra-form__label { margin: 0; }
 }
+
+/* Workspace system: dense evidence, calm hierarchy, predictable controls. */
+:root {
+  --soc-ink: #151820;
+  --soc-muted: #596476;
+  --soc-line: #dfe2e8;
+  --soc-focus: #5145cd;
+  --soc-gutter: 24px;
+}
+.main-content { min-width: 0; }
+.main-content > :last-child { padding-inline: var(--soc-gutter); }
+.main-content .workspace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--soc-line);
+}
+.workspace-header > * { min-width: 0; max-width: 100%; }
+.main-content .workspace-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -.035em;
+  line-height: 1.25;
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+.workspace-header > div > p:last-child {
+  max-width: 76ch;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 8px;
+  color: var(--soc-muted);
+}
+.workspace-header > div > p:first-child:not(:last-child) {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+.workspace-header .chakra-stack { flex-wrap: wrap; row-gap: 8px; }
+.main-content .chakra-table__container { max-width: 100%; }
+.main-content table { font-variant-numeric: tabular-nums; }
+.main-content .chakra-table thead th {
+  background: #f7f8fa;
+  color: var(--soc-muted);
+  font-size: 11px;
+  letter-spacing: .045em;
+  line-height: 1.5;
+}
+.main-content .chakra-table tbody tr:hover { background: #f7f8fc; }
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--soc-focus);
+  outline-offset: 3px;
+}
+.app-header :is(a, button):focus-visible { outline-color: #c4bdff; }
+#workspace-main:focus { outline: none; }
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: -100px;
+  z-index: 1500;
+  background: white;
+  color: var(--soc-ink);
+  padding: 12px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.skip-link:focus { top: 8px; }
+.section-subnav { scrollbar-width: thin; scrollbar-color: #cbd0d9 transparent; }
+.section-subnav::-webkit-scrollbar { display: block; height: 3px; }
+.section-subnav::-webkit-scrollbar-thumb { background: #cbd0d9; }
+@media (max-width: 767px) {
+  :root { --soc-gutter: 16px; }
+  .main-content .workspace-header { gap: 12px; margin-bottom: 20px; padding-bottom: 16px; }
+  .main-content .workspace-header h1 { font-size: 24px; }
+  .workspace-header > .chakra-stack { width: 100%; }
+  /* 44px touch controls; compact badges and table text retain their density. */
+  body .chakra-button, body .chakra-input, body .chakra-select { min-height: 44px; }
+  body .chakra-input, body .chakra-select, body .chakra-textarea { font-size: 16px; }
+  .section-subnav a { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

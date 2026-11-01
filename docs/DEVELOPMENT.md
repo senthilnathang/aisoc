@@ -398,3 +398,19 @@ draft editors, JSON file import, Go validation and evidence preview. Explicit im
 seals a tenant-scoped snapshot and feeds the existing workers without restart.
 Case note approval remains mandatory; provider endpoints and response execution
 remain disabled. Existing provider-specific connector records remain inspect-only.
+
+## Shared frontend UI/UX
+
+Use `WorkspaceHeader` and the existing Chakra theme for workspace pages. Maintain
+one page h1, labeled controls, keyboard focus, reduced motion and responsive action
+wrapping. See [implementation conventions](UI_UX_SYSTEM.md). Run the live read-only
+`ui-consistency-browser-check.js` batches and `ui-accessibility-browser-check.js`
+after changes to shared shell/theme styles, followed by affected workflow checks.
+
+## Case-linked sandbox responses
+
+Migration 043 adds case/action linkage and append-only mock SOAR response notes.
+The new response queries use sqlc/pgx; the existing executor accepts the owning
+transaction so response effects, note and audit commit together. Configure a
+separate trusted `allow_sandbox_response` grant, never inherit it from Build imports.
+See [contracts, state handling and rollback](INVESTIGATE_RESPOND_SANDBOX.md).

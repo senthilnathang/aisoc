@@ -1,3 +1,5 @@
+import CaseSandboxResponses from "./CaseSandboxResponses";
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -264,7 +266,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
       }}
       pb="32px"
     >
-      <Flex
+      <WorkspaceHeader
         align="start"
         gap="16px"
         justify="space-between"
@@ -273,7 +275,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
       >
         <Box>
           <Eyebrow mb="8px">Response operations</Eyebrow>
-          <Heading
+          <Heading as="h1"
             fontSize={{
               base: "26px",
               md: "32px",
@@ -303,7 +305,8 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
             </Button>
           }
         </Flex>
-      </Flex>
+      </WorkspaceHeader>
+      <CaseSandboxResponses key={mode} mode={mode} setView={setView}/>
       {error && (
         <Alert status="error" mb="16px">
           <AlertIcon />

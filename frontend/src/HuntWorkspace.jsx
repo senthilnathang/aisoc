@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -124,8 +125,8 @@ export default function HuntWorkspace({ id, mode = "hunts", setView }) {
   };
   return (
     <Box px={{ base: "14px", md: "24px" }} pb="32px">
-      <Flex justify="space-between" gap="16px" wrap="wrap">
-        <Heading fontSize="28px" fontWeight="500">
+      <WorkspaceHeader justify="space-between" gap="16px" wrap="wrap">
+        <Heading as="h1" fontSize="28px" fontWeight="500">
           {mode === "intel" ? "Threat intelligence hunting" : "Threat hunting"}
         </Heading>
         <Button
@@ -144,7 +145,7 @@ export default function HuntWorkspace({ id, mode = "hunts", setView }) {
         >
           {mode === "intel" ? "Ingest TI report" : "Add threat hunt"}
         </Button>
-      </Flex>
+      </WorkspaceHeader>
       {mode === "intel" && (
         <Flex gap="16px" mt="24px">
           <Panel p="20px" minW="150px">

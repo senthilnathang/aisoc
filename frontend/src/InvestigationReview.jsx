@@ -1,3 +1,4 @@
+import CaseSandboxResponses from "./CaseSandboxResponses";
 import React, { useEffect, useState, useRef } from "react";
 import { Alert, AlertIcon, Badge, Box, Button, Flex, Grid, Heading, Stack, Text, Textarea, Checkbox } from "@chakra-ui/react";
 import { api } from "./api";
@@ -8,7 +9,7 @@ const missingLabels = { iam_mfa_context: "Identity and MFA context", endpoint_pr
 const hypothesisLabels = { credential_compromise: "Possible credential compromise", legitimate_user_or_automation: "Possible legitimate user or automation" };
 const formatTime = value => value && !value.startsWith("0001-") ? new Date(value).toLocaleString() : "Not recorded";
 
-export default function InvestigationReview({ caseId }) {
+export default function InvestigationReview({ caseId, setView }) {
   const [review, setReview] = useState(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -55,6 +56,7 @@ export default function InvestigationReview({ caseId }) {
     <Flex p={{ base: "14px", md: "20px" }} bg={ui.nav} color="white" align="center" gap="12px" wrap="wrap">
       <Box flex="1"><Text color="#b7c3d5" fontSize="10px" letterSpacing=".12em">EVIDENCE / REVIEW / HANDOFF</Text><Heading fontSize="20px" mt="5px">L1 investigation review</Heading></Box>
       {review?.mode && <Badge colorScheme={review.mode === "mock-v1" ? "orange" : "blue"}>{review.mode === "mock-v1" ? "Mock inference" : "Model inference"}</Badge>}
+      <Button as="a" href="#case-sandbox-responses" size="sm" bg="white" color={ui.ink}>Review response handoff</Button>
       <Button size="sm" bg="white" color={ui.ink} isDisabled={approving} onClick={() => setRefresh(v => v + 1)}>Refresh review</Button>
     </Flex>
     <Box p={{ base: "14px", md: "20px" }}>
@@ -94,6 +96,7 @@ export default function InvestigationReview({ caseId }) {
           {!evidence.length && <Text color={ui.muted} mt="10px">No validated evidence metadata available.</Text>}
         </Box>
       </>}
+      <CaseSandboxResponses key={caseId} caseId={caseId} review={review} setView={setView}/>
     </Box>
   </Box>;
 }

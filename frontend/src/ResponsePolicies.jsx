@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -129,9 +130,9 @@ export default function ResponsePolicies({ setView }) {
   );
   return (
     <Box px={{ base: "14px", md: "24px" }} pb="32px">
-      <Flex justify="space-between" gap="16px" wrap="wrap">
+      <WorkspaceHeader justify="space-between" gap="16px" wrap="wrap">
         <Box>
-          <Heading fontSize="30px" fontWeight="500">
+          <Heading as="h1" fontSize="30px" fontWeight="500">
             Remediation actions
           </Heading>
           <Text color={ui.muted} mt="8px">
@@ -141,7 +142,7 @@ export default function ResponsePolicies({ setView }) {
         <Button onClick={() => setView("responseWorkflows")}>
           Create custom workflow →
         </Button>
-      </Flex>
+      </WorkspaceHeader>
       <Alert status="info" mt="20px">
         <AlertIcon />
         Sandbox policy only. Automatic dry run evaluates eligibility; it never

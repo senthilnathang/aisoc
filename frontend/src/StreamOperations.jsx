@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useState } from "react";
 import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Table, TableContainer, Tbody, Td, Text, Textarea, Th, Thead, Tr } from "@chakra-ui/react";
 import { api } from "./api";
@@ -57,10 +58,10 @@ export default function StreamOperations({ setView }) {
   };
   const snapshot = data?.snapshot;
   return <Stack spacing="18px" p={{ base: "14px", md: "24px" }}>
-    <Flex justify="space-between" align="center" gap="16px" wrap="wrap">
-      <Box><Text fontSize="10px" fontWeight="700" letterSpacing=".15em" color={ui.muted}>BUILD / PIPELINE CONTROL</Text><Heading size="lg" mt="5px">Stream operations</Heading><Text color={ui.muted} mt="6px">Inspect delivery, review failures, and test a complete investigation with JSON fixtures.</Text></Box>
+    <WorkspaceHeader justify="space-between" align="center" gap="16px" wrap="wrap">
+      <Box><Text fontSize="10px" fontWeight="700" letterSpacing=".15em" color={ui.muted}>BUILD / PIPELINE CONTROL</Text><Heading as="h1" size="lg" mt="5px">Stream operations</Heading><Text color={ui.muted} mt="6px">Inspect delivery, review failures, and test a complete investigation with JSON fixtures.</Text></Box>
       <Flex gap="8px"><Badge colorScheme="teal" alignSelf="center">LOCAL SANDBOX</Badge><Button variant="outline" onClick={() => setView("apiSources")}>API sources</Button></Flex>
-    </Flex>
+    </WorkspaceHeader>
     {error && <Alert status="error" role="alert"><AlertIcon />{error}</Alert>}
     {!scopes.length && !error && <Box bg="white" border="1px solid" borderColor={ui.line} p="24px"><Heading size="sm">No stream access configured</Heading><Text mt="8px" color={ui.muted}>Ask your operator administrator to grant access to a source. Other tenants’ streams are not shown.</Text></Box>}
     {!!scopes.length && <Flex gap="12px" align="end"><FormControl maxW="420px"><FormLabel>Source</FormLabel><Select value={selected} onChange={e => { setSelected(e.target.value); setData(null); setAfter(""); setReceipt(null); setReview(null); setFixture(""); }}>{scopes.map(s => <option key={s.id} value={s.id}>{s.connector_id} · {s.source}</option>)}</Select></FormControl><Button variant="outline" onClick={() => setVersion(v => v + 1)}>Refresh</Button></Flex>}

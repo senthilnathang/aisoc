@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -301,7 +302,7 @@ export default function ResponsePlans({ kind, setView }) {
   );
   return (
     <Box className="page-enter" px={{ base: "14px", md: "24px" }} pb="32px">
-      <Flex justify="space-between" gap="16px" wrap="wrap" mb="24px">
+      <WorkspaceHeader justify="space-between" gap="16px" wrap="wrap" mb="24px">
         <Box>
           <Text
             fontSize="10px"
@@ -311,7 +312,7 @@ export default function ResponsePlans({ kind, setView }) {
           >
             RESPONSE LIBRARY
           </Text>
-          <Heading fontSize="30px" fontWeight="500" mt="8px">
+          <Heading as="h1" fontSize="30px" fontWeight="500" mt="8px">
             {kind === "workflow" ? "Workflows" : "Runbooks"}
           </Heading>
           <Text mt="8px" color={ui.muted}>
@@ -354,7 +355,7 @@ export default function ResponsePlans({ kind, setView }) {
             Create {noun}
           </Button>
         </Flex>
-      </Flex>
+      </WorkspaceHeader>
       <Flex gap="12px" wrap="wrap" mb="20px">
         <Input
           aria-label="Search response plans"

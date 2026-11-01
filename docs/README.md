@@ -139,3 +139,11 @@ draft editors, JSON file import, Go validation and evidence preview. Explicit im
 seals a tenant-scoped snapshot and feeds the existing workers without restart.
 Case note approval remains mandatory; provider endpoints and response execution
 remain disabled. Existing provider-specific connector records remain inspect-only.
+
+## Shared frontend design
+
+See [UI/UX system](UI_UX_SYSTEM.md) for Detect-to-Build layout conventions, keyboard
+navigation and responsive browser verification.
+
+- [Investigate → Respond sandbox flow](INVESTIGATE_RESPOND_SANDBOX.md): explicit
+  approval, mock revocation, receipts, testing and retained showcase.

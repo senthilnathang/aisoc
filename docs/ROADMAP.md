@@ -215,3 +215,22 @@ draft editors, JSON file import, Go validation and evidence preview. Explicit im
 seals a tenant-scoped snapshot and feeds the existing workers without restart.
 Case note approval remains mandatory; provider endpoints and response execution
 remain disabled. Existing provider-specific connector records remain inspect-only.
+
+## UI/UX consistency — 2026-11-01
+
+- [x] Shared Detect-to-Build headers, control sizing, table treatments and gutters.
+- [x] Skip link, main landmark, route titles/focus, mobile active-submenu visibility.
+- [x] 28 routes at desktop/tablet/mobile sizes; keyboard and reduced-motion checks.
+- [ ] Broaden browser/assistive-technology coverage; optimize the large JS bundle.
+
+See [scope and verification](UI_UX_SYSTEM.md). Backend/provider release gates are unchanged.
+
+## Investigate → Respond — 2026-11-01
+
+- [x] Case-linked mock session proposal with evidence snapshot and review rationale.
+- [x] Explicit expiring approval, preview, kill switch and idempotent execution.
+- [x] Atomic receipt, mock SOAR response note and audit; Respond links back to case.
+- [x] Disposable failure/replay tests and retained local browser showcase.
+- [ ] Real IAM execution, independent approver roles and production validation.
+
+See [local response scope and test results](INVESTIGATE_RESPOND_SANDBOX.md).

@@ -2,7 +2,7 @@ import { extendTheme } from "@chakra-ui/react";
 
 export const ui = {
   ink: "#151820",
-  muted: "#667080",
+  muted: "#596476",
   quiet: "#6a7385",
   page: "#f1f2f6",
   panel: "#ffffff",
@@ -38,8 +38,8 @@ export const theme = extendTheme({
   },
   components: {
     Button: {
-      baseStyle: { borderRadius: "4px", fontWeight: 600, fontSize: "11px", transition: "all .16s ease" },
-      sizes: { sm: { h: "34px", px: "13px" } },
+      baseStyle: { borderRadius: "6px", fontWeight: 600, fontSize: "12px", transition: "background-color .16s ease, border-color .16s ease" },
+      sizes: { xs: { h: "28px", px: "10px", fontSize: "11px" }, sm: { h: "36px", px: "14px", fontSize: "12px" } },
       variants: {
         solid: { bg: ui.nav, color: "white", _hover: { bg: "#272a35" } },
         outline: {
@@ -54,13 +54,13 @@ export const theme = extendTheme({
     },
     Input: {
       sizes: {
-        sm: { field: { h: "34px", fontSize: "11px", borderRadius: "4px" } },
+        sm: { field: { h: "36px", fontSize: "13px", borderRadius: "6px" } },
       },
       defaultProps: { size: "sm" },
     },
     Select: {
       sizes: {
-        sm: { field: { h: "34px", fontSize: "11px", borderRadius: "4px" } },
+        sm: { field: { h: "36px", fontSize: "13px", borderRadius: "6px" } },
       },
       defaultProps: { size: "sm" },
     },
@@ -69,8 +69,8 @@ export const theme = extendTheme({
         borderRadius: "8px",
         px: "6px",
         py: "2px",
-        fontSize: "9px",
-        lineHeight: 1,
+        fontSize: "10px",
+        lineHeight: 1.3,
         fontWeight: 700,
       },
     },

@@ -565,3 +565,25 @@ are part of the release checks. The existing frontend bundle-size warning remain
 
 No live connectivity, model-quality, throughput or production response capability
 is established by these checks. See [contracts and rollback](BUILD_INTEGRATIONS.md).
+
+## Shared UI/UX regression — 2026-11-01
+
+Run `scripts/framework/ui-consistency-browser-check.js` through Playwright after
+opening `http://127.0.0.1:8080/?uiBatch=N`, for N=0..3. The 28 routes are checked at
+1440/768/390px against real local Go reads (84 checks). It fails on missing h1/main,
+wrong title size, hidden selected submenu, overflow, JS errors or HTTP API errors.
+Run `ui-accessibility-browser-check.js` for keyboard, focus, mobile controls and
+reduced motion. These scripts do not mutate database records. See
+[UI/UX verification scope](UI_UX_SYSTEM.md) for limits and supporting regression checks.
+
+## Investigate → Respond sandbox
+
+`python3 scripts/framework/check.py --with-streams` invokes `check_case_response.py`
+after a reviewed Build import. It checks foreign tenants, absent grants, evidence
+references, proposal replay, explicit/expired approval, kill switch, source-version
+conflicts, legacy bypass denial, audit rollback and four concurrent requests
+producing one revocation/note. See `output/backend-framework/case-response-flow.json`.
+Run `case-response-browser-check.js` through Playwright for intercepted-write UI
+regression. `case-response-demo.js` deliberately writes one retained local mock
+showcase and restores the kill switch; run only for that intended purpose.
+See [validation and demo receipt](INVESTIGATE_RESPOND_SANDBOX.md).

@@ -504,7 +504,10 @@ def main():
                 assert response_op('execute')['replayed']
                 assert response_op('create_session')['revoked'] # Never resurrect an existing session.
                 response_op('policy',stopped=True)
-                sql("INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) SELECT 'auth-a','mock-qradar','qradar-siem','capacity-'||n,'demo-session',1,'TEST' FROM generate_series(1,99) n")
+                from check_case_response import check_case_response
+                case_response_report=check_case_response(stream_http, sql, managed_case['investigation_id'])
+                (report/'case-response-flow.json').write_text(json.dumps(case_response_report,indent=2)+'\n')
+                sql("INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) SELECT 'auth-a','mock-qradar','qradar-siem','capacity-'||n,'demo-session',1,'TEST' FROM generate_series(1,98) n")
                 response_op('propose',409,id='capacity-overflow')
                 stream_worker.terminate();stream_worker.wait(timeout=10)
             py.terminate();py.wait(timeout=10)

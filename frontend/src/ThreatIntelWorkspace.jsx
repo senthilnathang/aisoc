@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -110,12 +111,12 @@ export default function ThreatIntelWorkspace({ id, setView, hunting = false }) {
   if (id) return <ReportDetail key={id} id={id} setView={setView} />;
   return (
     <Box px={{ base: "14px", md: "24px" }} pb="30px">
-      <Flex justify="space-between" gap="14px" wrap="wrap">
-        <Heading fontSize="28px" fontWeight="500">
+      <WorkspaceHeader justify="space-between" gap="14px" wrap="wrap">
+        <Heading as="h1" fontSize="28px" fontWeight="500">
           {hunting ? "Threat intelligence hunting" : "Threat intelligence"}
         </Heading>
         <Button onClick={() => setCreating(true)}>Ingest TI report</Button>
-      </Flex>
+      </WorkspaceHeader>
       <Flex gap="16px" mt="24px" wrap="wrap">
         {[
           [data.total, "REPORTS IN FILTER"],

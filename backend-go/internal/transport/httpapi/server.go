@@ -44,6 +44,7 @@ func buildWithStreams(ready func(context.Context) error, log *slog.Logger, secur
 		registerPlans(mux, response.Store{Pool: pool})
 		registerCases(mux, pool)
 		registerL1Review(mux, pool, scopes)
+		registerCaseSandbox(mux, pool, scopes)
 		registerQueue(mux, pool)
 		registerNavigation(mux, pool)
 		registerDetection(mux, pool)

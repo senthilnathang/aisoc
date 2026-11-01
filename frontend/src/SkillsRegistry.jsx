@@ -1,5 +1,6 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
-import { Badge, Box, Button, Flex, HStack, Input, Select, Stack, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from "@chakra-ui/react";
+import { Badge, Box, Button, Flex, Heading, HStack, Input, Select, Stack, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
 
@@ -32,8 +33,9 @@ export default function SkillsRegistry({ setView }) {
   };
   const items = data?.items || [];
   return <Box p={{ base: "12px", md: "24px" }} className="skills-page skills-library">
+    <WorkspaceHeader><Box><Heading as="h1">Skills</Heading><Text mt="8px" color={ui.muted}>Manage reusable investigation guidance, review its scope, and control where it applies.</Text></Box></WorkspaceHeader>
     <Flex borderBottom="1px solid" borderColor={ui.line} gap="24px" mb="16px">
-      {[["custom", "My Custom Skills"], ["augmented", "My Augmented Skills"]].map(([key,label]) => <Button key={key} variant="ghost" borderRadius="0" borderBottom={origin === key ? "2px solid" : "2px solid transparent"} borderColor={origin === key ? ui.ink : "transparent"} onClick={() => filter(setOrigin)(key)}>{label}</Button>)}
+      {[["custom", "My Custom Skills"], ["augmented", "My Augmented Skills"]].map(([key,label]) => <Button key={key} aria-pressed={origin===key} variant="ghost" borderRadius="0" borderBottom={origin === key ? "2px solid" : "2px solid transparent"} borderColor={origin === key ? ui.ink : "transparent"} onClick={() => filter(setOrigin)(key)}>{label}</Button>)}
     </Flex>
     <Flex gap="8px" wrap="wrap" align="center" mb="16px">
       <Input aria-label="Search skills" placeholder="Search skills" maxW={{ base: "full", md: "280px" }} value={search} onChange={e => filter(setSearch)(e.target.value)} />

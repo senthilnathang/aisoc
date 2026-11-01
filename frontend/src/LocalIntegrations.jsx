@@ -1,3 +1,4 @@
+import WorkspaceHeader from "./WorkspaceHeader";
 import React, {useEffect, useRef, useState} from 'react';
 import {Alert,AlertIcon,Badge,Box,Button,Checkbox,Flex,FormControl,FormLabel,Heading,Input,Select,SimpleGrid,Stack,Table,TableContainer,Tbody,Td,Text,Textarea,Th,Thead,Tr} from '@chakra-ui/react';
 import {api} from './api';
@@ -28,7 +29,7 @@ export default function LocalIntegrations({setView}){
  const dirty=!!form&&form.version>0&&(()=>{const p=catalog?.items.find(x=>x.id===form.id);return !p||pretty(draft(p))!==pretty(form)})();
  const confirmDiscard=()=>!form||form.state==='sealed'||!(form.version?dirty:(form.name||form.context||form.events!=='[]'))||window.confirm('Discard unsaved local integration changes?');
  return <Box p={{base:'12px',md:'24px'}}>
-  <Flex justify="space-between" gap="16px" wrap="wrap" mb="22px"><Box><Text color={ui.muted} fontSize="11px" letterSpacing=".1em">BUILD / INTEGRATIONS</Text><Heading size="lg" fontWeight="500" mt="6px">Local integration studio</Heading><Text color={ui.muted} mt="8px">Prepare evidence, inspect the mapping, then send a reviewed fixture through your SOC.</Text></Box><Badge alignSelf="start" colorScheme="orange" px="10px" py="6px">LOCAL / MOCK ONLY</Badge></Flex>
+  <WorkspaceHeader justify="space-between" gap="16px" wrap="wrap" mb="22px"><Box><Text color={ui.muted} fontSize="11px" letterSpacing=".1em">BUILD / INTEGRATIONS</Text><Heading as="h1" size="lg" fontWeight="500" mt="6px">Local integration studio</Heading><Text color={ui.muted} mt="8px">Prepare evidence, inspect the mapping, then send a reviewed fixture through your SOC.</Text></Box><Badge alignSelf="start" colorScheme="orange" px="10px" py="6px">LOCAL / MOCK ONLY</Badge></WorkspaceHeader>
   <Alert status="info" mb="20px"><AlertIcon/><Text fontSize="13px">These profiles run JSON fixtures through Go, Redis and Python. They cannot connect to a vendor, store credentials or enable response actions.</Text></Alert>
   <SimpleGrid columns={{base:1,lg:2}} templateColumns={{lg:'280px minmax(0,1fr)'}} gap="20px">
    <Box {...panel} p="16px" alignSelf="start"><Flex align="center" justify="space-between" mb="12px"><Heading size="sm">Your profiles</Heading><Badge>{catalog?.items.length||0} / 20</Badge></Flex>
