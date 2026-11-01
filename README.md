@@ -333,3 +333,7 @@ Published Skill edits and materials are staged until explicit publication. Sourc
 ## Build integration lifecycle — November 2026
 
 Build → Local integrations now supports guarded archive, retry-safe draft cloning with lineage, retained revision snapshots, complete JSON bundle uploads and accepted/processed/replay visibility. Integrations remain local/mock. See [Build lifecycle](docs/BUILD_INTEGRATION_LIFECYCLE.md).
+
+## Memory → Hunt — November 2026
+
+Local hunts now capture eligible enterprise Memory with provenance and validity checks, preserve it across replay/promotion, and expose hunt usage from Memory. See [Memory → Hunt](docs/MEMORY_HUNT_FLOW.md).

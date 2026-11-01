@@ -2,6 +2,7 @@ package hunts
 
 import (
 	"aisoc/backend/internal/modules/hunts/huntsql"
+	"aisoc/backend/internal/modules/insights"
 	"aisoc/backend/internal/modules/investigations"
 	"aisoc/backend/internal/platform/fault"
 	"context"
@@ -35,15 +36,18 @@ type Finding struct {
 	Entity   string `json:"entity"`
 }
 type Run struct {
-	ID        string    `json:"id"`
-	Query     string    `json:"query"`
-	Expected  string    `json:"expected_updated_at"`
-	Actor     string    `json:"actor"`
-	CreatedAt string    `json:"created_at"`
-	Verdict   string    `json:"verdict"`
-	Scope     string    `json:"scope"`
-	Truncated bool      `json:"truncated"`
-	Findings  []Finding `json:"findings"`
+	Memory          []map[string]any `json:"memory"`
+	MemoryTruncated bool             `json:"memory_truncated"`
+	MemoryPolicy    string           `json:"memory_policy"`
+	ID              string           `json:"id"`
+	Query           string           `json:"query"`
+	Expected        string           `json:"expected_updated_at"`
+	Actor           string           `json:"actor"`
+	CreatedAt       string           `json:"created_at"`
+	Verdict         string           `json:"verdict"`
+	Scope           string           `json:"scope"`
+	Truncated       bool             `json:"truncated"`
+	Findings        []Finding        `json:"findings"`
 }
 type Note struct {
 	ID        string `json:"id"`
@@ -126,6 +130,15 @@ func (s Store) Search(ctx context.Context, tenant, id, actor, key, expected stri
 	for _, row := range rows {
 		r.Findings = append(r.Findings, Finding{row.RecordID, row.CaseID, row.Kind, row.Label, row.Excerpt, row.Source, row.Entity})
 	}
+	entities := []string{query}
+	for _, finding := range r.Findings {
+		entities = append(entities, finding.Entity)
+	}
+	r.Memory, r.MemoryTruncated, err = insights.HuntSnapshots(ctx, tx, tenant, id, key, actor, r.CreatedAt, entities)
+	if err != nil {
+		return Run{}, err
+	}
+	r.MemoryPolicy = "exact-entity-current-approved-v1"
 	if len(r.Findings) > 0 {
 		r.Verdict = "review_required"
 	}

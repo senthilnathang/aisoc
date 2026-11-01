@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import HuntMemory from "./HuntMemory";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Alert,
   AlertIcon,
@@ -196,6 +197,7 @@ export function PromoteFinding({
     [error, setError] = useState(""),
     [saved, setSaved] = useState(null);
   const active = useActive();
+  const commentID = useId();
   const prior =
     saved ||
     promotions.find(
@@ -271,8 +273,9 @@ export function PromoteFinding({
                 does not confirm a threat, run AI, or execute a response.
               </Text>
               <FormControl isRequired>
-                <FormLabel>Promotion review comment</FormLabel>
+                <FormLabel htmlFor={commentID}>Promotion review comment</FormLabel>
                 <Textarea
+                  id={commentID}
                   value={comment}
                   maxLength={2000}
                   onChange={(e) => setComment(e.target.value)}
@@ -355,6 +358,7 @@ export function HuntOrigin({ caseID, setView }) {
         {p.finding.excerpt}
       </Text>
       <Text mt="10px">Review: {p.comment}</Text>
+      <HuntMemory snapshots={p.memory} policy={p.memory_policy} truncated={p.memory_truncated} setView={setView}/>
       <Text mt="6px" fontSize="xs" color={ui.muted}>
         {p.actor} · {new Date(p.created_at).toLocaleString()} · Run {p.run_id}
       </Text>

@@ -614,3 +614,7 @@ foundation and the Build IAM/EDR showcase; it retains one archived clone per run
 never imports it and never enables a response. The existing
 `local-integrations-browser-check.js` intercepts mutations to exercise errors and
 uncertain-import recovery without changing database state.
+
+## Memory → Hunt — November 2026
+
+Memory-to-Hunt regression: hunts/memory_integration_test.go verifies freshness/exclusion, historical replay/promotion, caps, tenant isolation and audit rollback. check_platform_acceptance.py covers learned-source reapproval/archive; tests/frontend/hunt-memory.test.mjs checks date labels. See [workflow](MEMORY_HUNT_FLOW.md).

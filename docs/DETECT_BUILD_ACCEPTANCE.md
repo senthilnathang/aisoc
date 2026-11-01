@@ -67,3 +67,7 @@ The Skills/Memory stage now also verifies staged publication, source-change dete
 ## Build integration lifecycle — November 2026
 
 Build lifecycle coverage now checks extended-window intake, accepted/processed counts, clone lineage and retry, saved revision history, archived import denial, unfinished-work archive rejection, tenant isolation and preservation of synced mock notes. See [Build lifecycle](BUILD_INTEGRATION_LIFECYCLE.md).
+
+## Memory → Hunt — November 2026
+
+The skills_memory stage now includes memory_hunt: approved source context, source-change exclusion, explicit reapproval, archive exclusion, immutable replay and investigation promotion with original provenance. See [Memory → Hunt](MEMORY_HUNT_FLOW.md).

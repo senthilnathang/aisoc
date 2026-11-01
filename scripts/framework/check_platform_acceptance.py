@@ -46,11 +46,23 @@ def check_platform_acceptance(http, sql, case_id, record):
     assert count('skill_applications', "target_id='"+follow['id']+"' AND skill_id='"+sid+"'") == 1
     assert count('enterprise_insight_applications', "investigation_id='"+follow['id']+"' AND insight_id='"+mid+"'") == 1
     assert count('case_learning', "investigation_id='"+case_id+"'") == 1
+    memory_hunt=api('/hunts',dict(name='Approved Memory acceptance',query='acceptance-user'),expected=201)
+    mh='/hunts/'+memory_hunt['id']
+    def memory_search(key, **kw):
+        return api(mh+'/search',dict(id=key,expected_updated_at=memory_hunt['updated_at']),**kw)
+    memory_run=memory_search('approved-memory')
+    assert len(memory_run['memory'])==1 and memory_run['memory'][0]['id']==mid
+    assert memory_run['memory'][0]['learning_origin']['approved_by']
+    memory_search('foreign-memory',actor='b',expected=404)
+    assert api('/enterprise-insights/'+mid+'/uses',actor='b')['hunt_items']==[]
+    assert len(api('/enterprise-insights/'+mid+'/uses')['hunt_items'])==1
     # Lifecycle hardening: edits cannot replace a published release without review.
     original=api('/skills/'+sid)['content_markdown']
     staged=api('/skills/'+sid+'/workspace',dict(expected_version=2,content_markdown='New reviewed local lifecycle guidance.'),method='PATCH')
     assert staged['content_markdown']==original and staged['staged_edit']['content_markdown']!=original
     api(case_path,dict(determination='benign'),method='PATCH')
+    assert memory_search('stale-memory')['memory']==[]
+    assert memory_search('approved-memory')['memory']==memory_run['memory']
     for kind,identity in [('skills',sid),('enterprise-insights',mid)]:
         state=api('/'+kind+'/'+identity+'/lifecycle')
         assert not state['current']
@@ -59,6 +71,8 @@ def check_platform_acceptance(http, sql, case_id, record):
         api('/'+kind+'/'+identity+'/lifecycle',{**request,'confirm':False},expected=400)
         api('/'+kind+'/'+identity+'/lifecycle',request)
         api('/'+kind+'/'+identity+'/lifecycle',request,expected=409)
+    reapproved_memory=memory_search('reapproved-memory')['memory']
+    assert len(reapproved_memory)==1 and reapproved_memory[0]['version']>memory_run['memory'][0]['version']
     state=api('/skills/'+sid+'/lifecycle')
     api('/skills/'+sid+'/lifecycle',dict(operation='publish-staged',expected_version=state['version'],confirm=True,rationale='Explicitly approve saved staged instructions.'))
     assert api('/skills/'+sid)['content_markdown']=='New reviewed local lifecycle guidance.'
@@ -66,7 +80,15 @@ def check_platform_acceptance(http, sql, case_id, record):
         state=api('/'+kind+'/'+identity+'/lifecycle')
         api('/'+kind+'/'+identity+'/lifecycle',dict(operation='archive',expected_version=state['version'],confirm=True,rationale='Explicitly retire this disposable fixture guidance.'))
         assert api('/'+kind+'/'+identity+'/lifecycle')['archived']
-    record('skills_memory', dict(source_case=case_id, followup_case=follow['id'], skill_id=sid, insight_id=mid, approval_replay=True, snapshots=True, foreign_reads_writes_denied=True, staged_publication=True, source_change_detection=True, explicit_reapproval=True, explicit_archive=True))
+    assert memory_search('archived-memory')['memory']==[]
+    assert memory_search('approved-memory')['memory']==memory_run['memory']
+    selected=memory_run['findings'][0]
+    promotion=dict(run_id=memory_run['id'],record_id=selected['record_id'],kind=selected['kind'],comment='Reviewed local evidence; historical Memory retained as advisory context.',confirm=True)
+    memory_promoted=api(mh+'/promote',promotion)
+    assert memory_promoted['memory']==memory_run['memory']
+    assert api(mh+'/promote',promotion)['investigation_id']==memory_promoted['investigation_id']
+    assert api('/investigations/'+memory_promoted['investigation_id'])['determination']=='unknown'
+    record('skills_memory', dict(source_case=case_id, followup_case=follow['id'], skill_id=sid, insight_id=mid, approval_replay=True, snapshots=True, foreign_reads_writes_denied=True, staged_publication=True, source_change_detection=True, explicit_reapproval=True, explicit_archive=True,memory_hunt=dict(hunt_id=memory_hunt['id'],promoted_case=memory_promoted['investigation_id'],approved_snapshot=True,stale_excluded=True,reapproval=True,archive_excluded=True,immutable_replay=True,tenant_isolation=True)))
 
     document = dict(schema_version='1', source='local-acceptance', external_id='acceptance-feed', title='Synthetic domain report', summary='Local fixture only', severity='medium', published_at=datetime.now(timezone.utc).isoformat(timespec='seconds'), indicators=[dict(type='domain', value='Acceptance.Example.Test.'), dict(type='domain', value='acceptance.example.test')])
     preview=api('/threat-intel/import/preview',document)

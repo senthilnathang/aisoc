@@ -98,6 +98,73 @@ func (q *Queries) GetInsight(ctx context.Context, arg GetInsightParams) (Enterpr
 	return i, err
 }
 
+const huntMatchingInsights = `-- name: HuntMatchingInsights :many
+SELECT tenant_id, id, document, artifact_key, version, archived, valid_from, valid_until, created_at, updated_at FROM enterprise_insights
+WHERE tenant_id=$1 AND artifact_key=ANY($2::text[])
+ AND NOT archived AND aisoc_learning_current(tenant_id,document)
+ AND document->>'origin' IN ('analyst','prevalence_reviewed') AND COALESCE(document->>'created_by','')<>''
+ AND (NOT (document ? 'learning_origin') OR COALESCE(document#>>'{learning_origin,approved_by}','')<>'')
+ AND (valid_from IS NULL OR valid_from<=now()) AND (valid_until IS NULL OR valid_until>now())
+ORDER BY id LIMIT 21 FOR SHARE
+`
+
+type HuntMatchingInsightsParams struct {
+	TenantID string
+	Entities []string
+}
+
+func (q *Queries) HuntMatchingInsights(ctx context.Context, arg HuntMatchingInsightsParams) ([]EnterpriseInsight, error) {
+	rows, err := q.db.Query(ctx, huntMatchingInsights, arg.TenantID, arg.Entities)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EnterpriseInsight
+	for rows.Next() {
+		var i EnterpriseInsight
+		if err := rows.Scan(
+			&i.TenantID,
+			&i.ID,
+			&i.Document,
+			&i.ArtifactKey,
+			&i.Version,
+			&i.Archived,
+			&i.ValidFrom,
+			&i.ValidUntil,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const huntUses = `-- name: HuntUses :one
+SELECT jsonb_build_object('items',COALESCE((SELECT jsonb_agg(x ORDER BY applied_at DESC) FROM (
+ SELECT r.hunt_id,r.id AS run_id,h.document->>'name' AS title,r.created_at AS applied_at,jsonb_path_query_first(r.document,'$.memory[*] ? (@.id == $id)',jsonb_build_object('id',$1::text)) AS snapshot
+ FROM hunt_search_runs r JOIN hunts h ON h.tenant_id=r.tenant_id AND h.id=r.hunt_id
+ WHERE r.tenant_id=$2 AND (r.document->'memory') @> jsonb_build_array(jsonb_build_object('id',$1::text))
+ ORDER BY r.created_at DESC,r.id LIMIT 100
+) x),'[]'::jsonb))
+`
+
+type HuntUsesParams struct {
+	InsightID string
+	TenantID  string
+}
+
+func (q *Queries) HuntUses(ctx context.Context, arg HuntUsesParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, huntUses, arg.InsightID, arg.TenantID)
+	var jsonb_build_object []byte
+	err := row.Scan(&jsonb_build_object)
+	return jsonb_build_object, err
+}
+
 const insertApplication = `-- name: InsertApplication :execrows
 INSERT INTO enterprise_insight_applications(tenant_id,insight_id,investigation_id,insight_version,snapshot) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING
 `

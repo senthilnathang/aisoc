@@ -1,3 +1,4 @@
+import HuntMemory from "./HuntMemory";
 import { PromoteFinding } from "./IntelHuntFlow";
 import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useState } from "react";
@@ -630,6 +631,7 @@ function HuntDetail({ id, setView }) {
               </Text>
             </Box>
           )}
+          {current&&<HuntMemory snapshots={current.memory} policy={current.memory_policy} truncated={current.memory_truncated} setView={setView}/>}
           <Select
             aria-label="Search history"
             placeholder="Latest search"

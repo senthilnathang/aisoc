@@ -66,3 +66,20 @@ SELECT pg_advisory_xact_lock(hashtextextended(sqlc.arg(lock_key)::text,0));
 SELECT count(*) FROM investigations WHERE tenant_id=$1 AND lower(btrim(primary_entity))=$2 AND created_at>=now()-interval '30 days' AND status IN ('closed','resolved') AND determination IN ('benign','suspicious','malicious','mitigated');
 -- name: ExistingArtifact :one
 SELECT count(*) FROM enterprise_insights WHERE tenant_id=$1 AND artifact_key=$2 AND NOT archived;
+
+-- name: HuntMatchingInsights :many
+SELECT * FROM enterprise_insights
+WHERE tenant_id=sqlc.arg(tenant_id) AND artifact_key=ANY(sqlc.arg(entities)::text[])
+ AND NOT archived AND aisoc_learning_current(tenant_id,document)
+ AND document->>'origin' IN ('analyst','prevalence_reviewed') AND COALESCE(document->>'created_by','')<>''
+ AND (NOT (document ? 'learning_origin') OR COALESCE(document#>>'{learning_origin,approved_by}','')<>'')
+ AND (valid_from IS NULL OR valid_from<=now()) AND (valid_until IS NULL OR valid_until>now())
+ORDER BY id LIMIT 21 FOR SHARE;
+
+-- name: HuntUses :one
+SELECT jsonb_build_object('items',COALESCE((SELECT jsonb_agg(x ORDER BY applied_at DESC) FROM (
+ SELECT r.hunt_id,r.id AS run_id,h.document->>'name' AS title,r.created_at AS applied_at,jsonb_path_query_first(r.document,'$.memory[*] ? (@.id == $id)',jsonb_build_object('id',sqlc.arg(insight_id)::text)) AS snapshot
+ FROM hunt_search_runs r JOIN hunts h ON h.tenant_id=r.tenant_id AND h.id=r.hunt_id
+ WHERE r.tenant_id=sqlc.arg(tenant_id) AND (r.document->'memory') @> jsonb_build_array(jsonb_build_object('id',sqlc.arg(insight_id)::text))
+ ORDER BY r.created_at DESC,r.id LIMIT 100
+) x),'[]'::jsonb));

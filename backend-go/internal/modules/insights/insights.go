@@ -286,5 +286,18 @@ func (s Store) Uses(ctx context.Context, tenant, id string) (map[string]any, err
 	if err != nil {
 		return nil, err
 	}
-	return decode(raw)
+	result, err := decode(raw)
+	if err != nil {
+		return nil, err
+	}
+	huntRaw, err := insightsql.New(s.Pool).HuntUses(ctx, insightsql.HuntUsesParams{TenantID: tenant, InsightID: id})
+	if err != nil {
+		return nil, err
+	}
+	huntUses, err := decode(huntRaw)
+	if err != nil {
+		return nil, err
+	}
+	result["hunt_items"] = huntUses["items"]
+	return result, nil
 }

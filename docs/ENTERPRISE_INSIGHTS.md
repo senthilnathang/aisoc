@@ -37,7 +37,7 @@ The existing `skills.Apply` investigation entrypoint invokes insight matching be
 
 Matching is case-insensitive trimmed exact text; no wildcard, substring, fuzzy identity resolution or graph traversal. Type is a display classification, not an identity namespace. Active validity is checked at transaction time. A matching application creates a visible investigation step with its context snapshot and an audit event. Replaying the same insight version on a case is a no-op for snapshots/steps/audit; a newer version may be recorded separately.
 
-Applications occur during case creation and existing intake/processing guidance calls. They are not retroactively inserted merely because an insight was created, nor automatically reapplied for every ad-hoc edit to an existing case. Hunt integration and retrieval into Python model prompts are not added by this change.
+Applications occur during case creation and existing intake/processing guidance calls. They are not retroactively inserted merely because an insight was created, nor automatically reapplied for every ad-hoc edit to an existing case. Local Hunt integration is now available through [immutable run snapshots](MEMORY_HUNT_FLOW.md). Retrieval into Python model prompts remains outside this flow.
 
 **Policy boundary:** stored context and suggested determinations are untrusted advisory data. Matching never changes case verdicts, status, approvals or response actions. A suspicious hint does not declare compromise; a benign hint cannot close a case. No model or privileged executor is activated.
 
@@ -89,3 +89,7 @@ Remaining work: model-backed suggestions and evaluated RAG consumption; entity c
 ## Source-aware lifecycle
 
 Derived Memory is excluded from future matching when its source revision changes, disappears or reopens. Explicit reapproval and archive preserve original provenance and prior usage snapshots. See [lifecycle controls](SKILLS_MEMORY_LIFECYCLE.md).
+
+## Memory → Hunt — November 2026
+
+Memory reuse now includes Hunt search runs. Usage shows separate hunt applications; registry investigation counts are unchanged. See [eligibility and immutable snapshots](MEMORY_HUNT_FLOW.md).

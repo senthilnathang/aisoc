@@ -249,8 +249,12 @@ Added a two-run disposable Detect-to-Build gate with stage reports, replay and a
 
 ## Skills/Memory lifecycle hardening
 
-Implemented staged Skill instructions/metadata/scopes/materials, committed source-revision change detection, explicit reapproval and terminal archive. Independent approver roles, Memory for hunts, entity resolution and production/model validation remain separate. See [scope](SKILLS_MEMORY_LIFECYCLE.md).
+Implemented staged Skill instructions/metadata/scopes/materials, committed source-revision change detection, explicit reapproval and terminal archive. Independent approver roles, entity resolution and production/model validation remain separate. Memory for local hunts is now implemented; see [Memory → Hunt](MEMORY_HUNT_FLOW.md). See [scope](SKILLS_MEMORY_LIFECYCLE.md).
 
 ## Build integration lifecycle — November 2026
 
 Build integration lifecycle: archive guards, safe draft clone/version history, bounded extended login JSON/bundle imports and clear processing/replay visibility are implemented for local/mock use. Live provider lifecycle, bulk multi-case import, configurable retained-profile quotas and production validation remain separate work. See [scope and gates](BUILD_INTEGRATION_LIFECYCLE.md).
+
+## Memory → Hunt — November 2026
+
+Memory → Hunt local flow implemented: approved context, validity/source-revision checks, immutable run and promotion snapshots, and Memory usage navigation. Independent approval roles, entity resolution beyond exact matches and live provider/model/production gates remain pending. See [scope](MEMORY_HUNT_FLOW.md).

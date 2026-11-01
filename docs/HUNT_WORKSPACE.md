@@ -77,3 +77,7 @@ The isolated PostgreSQL race suite covers matched cases/artifacts, cross-tenant 
 Commands: `python3 scripts/framework/check_detection_intelligence.py`, `make -C backend-go sqlc-check`, `npm --prefix frontend run lint`, `npm --prefix frontend run build`, `node --test tests/frontend/*.test.mjs`.
 
 Remaining: model-backed planning/chat, live SIEM/EDR queries, automatic TI feed hunts, asynchronous distributed execution/cancellation, richer entity typing, report metadata and retention/archive tooling. These require separate contracts and validation; the current screens label their local boundaries explicitly.
+
+## Memory → Hunt — November 2026
+
+Local search now captures approved Memory for its query and returned entity values. Historical run/promotion snapshots are preserved and cannot alter verdicts. See [Memory integration](MEMORY_HUNT_FLOW.md).

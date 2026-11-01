@@ -473,3 +473,7 @@ GET/POST /api/v1/{skills|enterprise-insights}/{id}/lifecycle exposes source revi
 ## Build integration lifecycle — November 2026
 
 Build adds `POST /api/v1/build/integrations/{id}/clone` (`id`, `name`, `expected_version`) and `/archive` (`expected_version`, `confirm`). GET detail includes `revisions`, `intake`, and clone lineage; import includes `replayed`. All routes retain tenant/operator/grant authorization. See [full lifecycle semantics](BUILD_INTEGRATION_LIFECYCLE.md).
+
+## Memory → Hunt — November 2026
+
+Hunt search/workspace runs add memory, memory_policy and memory_truncated. Promotion provenance carries the original run fields. Enterprise Insight uses adds hunt_items; no client-supplied Memory approval fields are accepted. See [Memory → Hunt contract](MEMORY_HUNT_FLOW.md).

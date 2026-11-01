@@ -174,3 +174,8 @@ grants. Go APIs validate and seal their evidence; the existing stream worker
 discovers them using bounded scheduling and its current durable processing methods.
 No browser edits startup grants or credentials. See
 [contracts and rollback](../docs/BUILD_INTEGRATIONS.md).
+
+Memory-to-Hunt local searches now capture bounded, versioned enterprise-context
+snapshots using existing Memory eligibility and sqlc queries. Replay and promotion
+retain those snapshots; no migration or new service is needed. See
+[Memory → Hunt contracts, tests and rollback](../docs/MEMORY_HUNT_FLOW.md).

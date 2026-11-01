@@ -22,18 +22,21 @@ type PromoteInput struct {
 	Confirm  bool   `json:"confirm"`
 }
 type Promotion struct {
-	InvestigationID string  `json:"investigation_id"`
-	HuntID          string  `json:"hunt_id"`
-	RunID           string  `json:"run_id"`
-	Query           string  `json:"query"`
-	Actor           string  `json:"actor"`
-	Comment         string  `json:"comment"`
-	CreatedAt       string  `json:"created_at"`
-	Finding         Finding `json:"finding"`
-	ReportID        string  `json:"report_id,omitempty"`
-	IndicatorID     string  `json:"indicator_id,omitempty"`
-	IndicatorValue  string  `json:"indicator_value,omitempty"`
-	Available       bool    `json:"available"`
+	MemoryPolicy    string           `json:"memory_policy"`
+	Memory          []map[string]any `json:"memory"`
+	MemoryTruncated bool             `json:"memory_truncated"`
+	InvestigationID string           `json:"investigation_id"`
+	HuntID          string           `json:"hunt_id"`
+	RunID           string           `json:"run_id"`
+	Query           string           `json:"query"`
+	Actor           string           `json:"actor"`
+	Comment         string           `json:"comment"`
+	CreatedAt       string           `json:"created_at"`
+	Finding         Finding          `json:"finding"`
+	ReportID        string           `json:"report_id,omitempty"`
+	IndicatorID     string           `json:"indicator_id,omitempty"`
+	IndicatorValue  string           `json:"indicator_value,omitempty"`
+	Available       bool             `json:"available"`
 }
 
 func validatePromotion(in PromoteInput) error {
@@ -106,7 +109,7 @@ func (s Store) Promote(ctx context.Context, tenant, id, actor string, in Promote
 	if e != nil {
 		return Promotion{}, e
 	}
-	p := Promotion{InvestigationID: record.ID, HuntID: id, RunID: run.ID, Query: run.Query, Actor: actor, Comment: strings.TrimSpace(in.Comment), CreatedAt: time.Now().UTC().Format(time.RFC3339Nano), Finding: *finding, Available: true}
+	p := Promotion{MemoryPolicy: run.MemoryPolicy, Memory: run.Memory, MemoryTruncated: run.MemoryTruncated, InvestigationID: record.ID, HuntID: id, RunID: run.ID, Query: run.Query, Actor: actor, Comment: strings.TrimSpace(in.Comment), CreatedAt: time.Now().UTC().Format(time.RFC3339Nano), Finding: *finding, Available: true}
 	links, e := q.HuntSourceIntel(ctx, huntsql.HuntSourceIntelParams{TenantID: tenant, HuntID: id})
 	if e != nil {
 		return p, e

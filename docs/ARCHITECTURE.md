@@ -413,3 +413,7 @@ Go retains owning transactions and immutable application snapshots. PostgreSQL s
 ## Build integration lifecycle — November 2026
 
 Build lifecycle remains Go-owned: authenticated grant → validated draft/CAS → immutable sealed intake → existing Redis/Python investigation → analyst-approved mock write-back. Migration 047 adds atomic revision snapshots, clone lineage and archive after completion; PostgreSQL remains authoritative. See [Build lifecycle](BUILD_INTEGRATION_LIFECYCLE.md).
+
+## Memory → Hunt — November 2026
+
+Go Hunt applies existing exact-entity Memory eligibility at local search time and stores immutable context inside existing run/promotion JSON. It does not change findings, invoke a model or authorize actions. See [Memory → Hunt architecture](MEMORY_HUNT_FLOW.md).
