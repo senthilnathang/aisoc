@@ -5,7 +5,11 @@ process.env.AISOC_TEST_WORKER='false';
 const options=argumentsFor(),server=await target(options),events=[],tenant='intelligence-'+randomUUID(),req=client(server.url,tenant,events),path='/api/v1/detection-intelligence';
 const empty={days:7,totals:{total_alerts:0,investigated:0,suppressed:0,not_sampled:0,pending_review:0},by_source:[],by_severity:[],by_routing:[],by_disposition:[],outcomes:[],daily:[],recent:[],sources:[]};
 try{
- assert.deepEqual(await req('GET',path),empty);
+ const goBackend=(await (await fetch(server.url+'/health')).json()).database==='postgresql';
+ const legacy=value=>({...Object.fromEntries(Object.keys(empty).map(key=>[key,value[key]])),totals:Object.fromEntries(Object.keys(empty.totals).map(key=>[key,value.totals[key]]))});
+ const validateWindow=value=>{if(goBackend){assert.ok(Number.isFinite(Date.parse(value.as_of)));assert.ok(Date.parse(value.window_start)<Date.parse(value.as_of));assert.ok(Array.isArray(value.groups));assert.ok(Array.isArray(value.by_category));assert.ok(value.group_count>=value.groups.length)}};
+ const initial=await req('GET',path);validateWindow(initial);assert.deepEqual(legacy(initial),empty);
+ if(goBackend){assert.equal(initial.totals.linked_alerts,0);assert.equal(initial.totals.escalated_alerts,0);assert.deepEqual(initial.investigations,[]);assert.equal(initial.group_count,0)}
  const rules={};for(const routing of ['Investigate','Escalate','Suppress','Sample (10%)'])rules[routing]=await req('POST','/api/v1/detection-rules',{name:routing+' rule',severity:'high',routing},201);
  const source=await req('POST','/api/v1/api-sources',{name:'Bound source',provider:'Provider A',rule_id:rules.Investigate.id},201);
  await req('POST','/api/v1/api-sources',{name:'Unused source',provider:'Unused provider',rule_id:rules.Suppress.id},201);
@@ -20,7 +24,7 @@ try{
  const choices=['Custom sensor','Other sensor','Provider A','Unused provider'];
  function grouped(rows,field){const counts=new Map();for(const a of rows){const name=field==='source'?provider(a.source):a[field];counts.set(name,(counts.get(name)||0)+1)}return [...counts].map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count||(a.name<b.name?-1:a.name>b.name?1:0))}
  function verify(result,rows,days=7){
-  assert.equal(result.days,days);const cases=new Set(rows.map(a=>a.investigation_id).filter(Boolean));assert.deepEqual(result.totals,{total_alerts:rows.length,investigated:cases.size,suppressed:rows.filter(a=>a.disposition==='suppressed').length,not_sampled:rows.filter(a=>a.disposition==='not_sampled').length,pending_review:cases.size});
+  assert.equal(result.days,days);const cases=new Set(rows.map(a=>a.investigation_id).filter(Boolean));validateWindow(result);if(goBackend){assert.equal(result.totals.linked_alerts,rows.filter(a=>a.investigation_id).length);assert.equal(result.totals.escalated_alerts,rows.filter(a=>a.routing==='Escalate').length);assert.equal(result.investigations.length,Math.min(50,cases.size))}assert.deepEqual(legacy(result).totals,{total_alerts:rows.length,investigated:cases.size,suppressed:rows.filter(a=>a.disposition==='suppressed').length,not_sampled:rows.filter(a=>a.disposition==='not_sampled').length,pending_review:cases.size});
   for(const field of ['source','severity','routing','disposition'])assert.deepEqual(result['by_'+field],grouped(rows,field));assert.deepEqual(result.outcomes,cases.size?[{name:'unknown',count:cases.size}]:[]);assert.deepEqual(result.sources,choices);
   const daily=new Map();for(const a of rows){const date=a.created_at.slice(0,10);if(!daily.has(date))daily.set(date,{date,critical:0,high:0,medium:0,low:0,total:0});daily.get(date)[a.severity]++;daily.get(date).total++}assert.deepEqual(result.daily,[...daily.values()].sort((a,b)=>a.date.localeCompare(b.date)));
   assert.equal(result.recent.length,Math.min(50,rows.length));const byId=new Map(rows.map(a=>[a.id,a]));let previous='9999';const cutoff=[...rows].sort((a,b)=>b.created_at.localeCompare(a.created_at))[Math.min(49,rows.length-1)]?.created_at;
@@ -32,7 +36,7 @@ try{
  verify(await req('GET',path+'?source=no-match'),[]);verify(await req('GET',path+'?source=Unused%20provider'),[]);
  await req('POST','/api/v1/api-sources/'+source.source.id+'/revoke');verify(await req('GET',path+'?source=Provider%20A'),alerts.filter(a=>a.source===source.source.source));
  for(const query of ['days=0','days=91','days=1.5','days=invalid','severity=invalid','source='+('x'.repeat(201)),'days=1&days=2']){const bad=await req('GET',path+'?'+query,undefined,400);assert.equal(bad.error.code,'VALIDATION_ERROR');assert.ok(bad.error.details.length)}
- assert.deepEqual(await req('GET',path,undefined,200,{'x-tenant-id':tenant+'-foreign'}),empty);await req('GET',path,undefined,401,{authorization:'Bearer '+source.api_key});
+ const foreign=await req('GET',path,undefined,200,{'x-tenant-id':tenant+'-foreign'});validateWindow(foreign);assert.deepEqual(legacy(foreign),empty);if(goBackend){assert.deepEqual(foreign.groups,[]);assert.deepEqual(foreign.by_category,[]);assert.equal(foreign.group_count,0);assert.deepEqual(foreign.investigations,[]);assert.equal(foreign.totals.linked_alerts,0);assert.equal(foreign.totals.escalated_alerts,0)}await req('GET',path,undefined,401,{authorization:'Bearer '+source.api_key});
  await output(options.output||'output/backend-parity/detection-intelligence.json',{passed:true,backend:options.label||(server.owned?'node':'external'),request_count:events.length,persistence_fixture:{tenant},checks:['totals and distinct investigations','source/provider and severity filters','routing/disposition groups','UTC daily totals','recent 50 cap with uncapped totals','unfiltered source choices','revoked source history','query validation','tenant isolation'],scope:'Shared fixtures; PostgreSQL integration tests cover old alerts, UTC boundaries and foreign provider spoofing'});
  console.log('PASS detection intelligence');
 }finally{await server.close();}

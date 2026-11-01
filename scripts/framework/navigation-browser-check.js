@@ -10,7 +10,7 @@ async page => {
   await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Respond',exact:true}).click();
   await current('Primary navigation','Respond');await current('Respond navigation','Overview');
   const response=page.getByRole('navigation',{name:'Respond navigation'});
-  if(await response.getByRole('link').count()!==7)throw Error('Response submenu missing');
+  for(const name of ['Overview','Cases','Remediation policies','Action records','Approvals','Workflows','Runbooks','Activity'])if(await response.getByRole('link',{name,exact:true}).count()!==1)throw Error('Response submenu missing: '+name);
   await response.getByRole('link',{name:'Approvals',exact:true}).click();
   if(!page.url().endsWith('/respond/approvals'))throw Error('Approvals URL wrong');await current('Respond navigation','Approvals');
   await page.reload();await page.getByRole('navigation',{name:'Respond navigation'}).waitFor();await current('Respond navigation','Approvals');

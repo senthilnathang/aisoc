@@ -117,3 +117,7 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Build workspace (2026-11-01)
 
 [Build scope, API and validation](BUILD_WORKSPACE.md) documents the new entry point. No standalone vendor Build screenshot was verified; this overview composes existing AISOC workspaces. Schema remains 040.
+
+## Platform review (2026-11-01)
+
+Review report covering all workspaces, fixes, live versus fixture verification and external validation limits. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).

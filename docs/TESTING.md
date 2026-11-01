@@ -454,3 +454,7 @@ The isolated PostgreSQL harness includes insights and the intake entity-value re
 ## Build workspace (2026-11-01)
 
 Run python3 scripts/framework/check_detection_intelligence.py for isolated PostgreSQL/race coverage including internal/modules/build. HTTP tests check invalid filters. Run frontend lint/build, node --test tests/frontend/*.test.mjs, and scripts/framework/build-workspace-browser-check.js through Playwright. Browser fixtures test metadata, navigation, errors, stale responses and responsive layout without writes. See [scope](BUILD_WORKSPACE.md).
+
+## Platform review (2026-11-01)
+
+Run the four batches of platform-live-browser-check.js and platform-regression-browser-check.js alongside per-workspace scripts. The expanded check_detection_intelligence.py covers all domain packages with disposable PostgreSQL. check.py --with-streams additionally verifies Redis and worker/HTTP integration. Report live reads separately from intercepted mutations. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).

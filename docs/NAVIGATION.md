@@ -1,21 +1,25 @@
 # Workspace navigation
 
-Updated 2026-10-31. The application opens at [localhost:8080](http://localhost:8080) with **Detect → Overview** selected. Overview is the first Detect submenu, not a separate main-menu section and not part of Respond.
+Updated 2026-11-01. The application opens at [localhost:8080](http://localhost:8080) with **Detect → Overview** selected. Overview is the first Detect submenu, not a separate main-menu section and not part of Respond.
 
 | Main menu | Submenu | Route |
 | --- | --- | --- |
 | Detect | Overview | `/` |
 | Detect | Rule registry | `/detect/rules` |
 | Detect | Intelligence | `/detect/intelligence` |
+| Detect | Coverage | `/detect/coverage` |
+| Detect | Routing | `/detect/routing` |
 | Investigate | Investigations | `/investigations` |
 | Respond | Overview | `/respond` |
 | Respond | Cases | `/respond/cases` |
-| Respond | Actions | `/respond/actions` |
+| Respond | Remediation policies | `/respond/remediation-actions` |
+| Respond | Action records | `/respond/actions` |
 | Respond | Approvals | `/respond/approvals` |
 | Respond | Workflows | `/respond/workflows` |
 | Respond | Runbooks | `/respond/runbooks` |
 | Respond | Activity | `/respond/activity` |
-| Hunt | Hunt workspace | `/hunt` |
+| Hunt | Threat hunting | `/hunt/threat-hunting` |
+| Hunt | Threat intelligence hunting | `/hunt/threat-intelligence` |
 | Threat Intel | Reports | `/threat-intel` |
 | Skills | Library | `/skills` |
 | Skills | Starter templates | `/skills/templates` |

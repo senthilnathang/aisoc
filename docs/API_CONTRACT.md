@@ -422,3 +422,7 @@ Added GET `/threat-intel/registry`, GET `/threat-intel-reports/{id}/workspace`, 
 ## Build workspace (2026-11-01)
 
 GET /api/v1/build/catalog returns items, filtered total, global tenant counts, limit and offset. Filters: kind (all/skill/workflow/runbook/api_source/connector), literal search ≤200 characters, limit 1–100 (default 25), offset 0–1,000,000 (default 0). Unknown/repeated/invalid filters return 400. No mutations or credentials. See [fields and state semantics](BUILD_WORKSPACE.md).
+
+## Platform review (2026-11-01)
+
+GET /api/v1/remediations/summary returns tenant-wide pending, completed, cases and workflows integer counts from one statement. Existing remediation collection supports status/search/limit/offset; the UI uses pages of 25. GET /api/v1/api-sources now accepts limit 1–500 (default 100) and offset 0–1,000,000 (default 0); invalid, repeated or unknown parameters return 400. Existing items response is preserved. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).

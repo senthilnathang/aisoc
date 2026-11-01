@@ -188,3 +188,7 @@ Implemented persistent Memory context, reference-based table/cards/prevalence sc
 ## Build workspace (2026-11-01)
 
 Implemented the read-only tenant asset catalog and Build entry point, reusing existing owners. Pending: existing-record connector editors, large-catalog benchmarks and separately specified advanced builder features. No external execution added. See [Build](BUILD_WORKSPACE.md).
+
+## Platform review (2026-11-01)
+
+Completed local screen review and fixes for sample Overview facts, paginated response records, tenant-wide response totals, source rule selection and Cribl capability messaging. Live providers, model-quality evaluation and production operation gates remain separate pending work. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).

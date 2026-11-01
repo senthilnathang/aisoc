@@ -238,3 +238,7 @@ No new tables/migration: library projections read existing `skills.document` ori
 ## Build workspace (2026-11-01)
 
 Build projects existing skills, response plans/policies, API sources/rules and connectors without duplicate records or migration (schema 040). Counts and page share a query snapshot. Credentials, instructions and connector configuration are excluded. See [Build](BUILD_WORKSPACE.md).
+
+## Platform review (2026-11-01)
+
+No schema changes. Response summary aggregates existing remediation and response-plan records per tenant. API-source paging reuses the existing tenant/order index and excludes credential hashes through the existing view projection. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).

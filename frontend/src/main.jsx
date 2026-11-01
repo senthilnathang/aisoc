@@ -1,3 +1,4 @@
+import Overview from "./Overview";
 import React, { Profiler, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -260,287 +261,7 @@ const SampleDataNotice = ({ show }) =>
     </Alert>
   ) : null;
 
-function QueueDashboard({ setView }) {
-  const [dashboard, setDashboard] = useState({
-    queueItems: 8,
-    openInvestigations: 3,
-    openRemediations: 5,
-  });
-  const [loadFailed, setLoadFailed] = useState(false);
-  useEffect(() => {
-    let active = true;
-    api
-      .dashboard()
-      .then((result) => active && setDashboard(result))
-      .catch(() => active && setLoadFailed(true));
-    return () => {
-      active = false;
-    };
-  }, []);
-  return (
-    <Box className="page-enter" px="15px" pb="14px">
-      <SampleDataNotice show={loadFailed} />
-      <Flex align="center" mb="10px">
-        <Heading fontSize="20px" fontWeight="400">
-          There Are {dashboard.queueItems} Items In Your Queue:
-        </Heading>
-        <Badge ml="15px" bg="white" color={ui.ink}>
-          {Icon.alertCircle({ size: 11 })} {dashboard.openInvestigations} open cases
-        </Badge>
-        <Badge ml="8px" bg="white" color={ui.ink}>
-          {Icon.shield({ size: 11 })} {dashboard.openRemediations} open remediations
-        </Badge>
-        <Button ml="auto" variant="outline">
-          ∞ Agentic flywheel
-        </Button>
-      </Flex>
-      <Grid
-        templateColumns={{ base: "1fr", lg: "1.06fr 1.06fr 1fr" }}
-        gap="8px"
-      >
-        <QueueColumn
-          title="Federated SIEM"
-          subtitle="Query, search, and act on data wherever it lives"
-        >
-          <Label>Detect</Label>
-          <Heading fontSize="24px" fontWeight="400" mt="8px">Coverage analysis</Heading>
-          <Text fontSize="12px" color={ui.muted} my="24px">Review tenant-scoped ATT&CK mappings, assessment evidence, gaps and expiry. Coverage is assessed against a pinned reference; rule tags alone do not prove detection effectiveness.</Text>
-          <Button variant="outline" onClick={() => setView("detectionCoverage")}>Open detection coverage</Button>
-          <Divider my="14px" />
-          <Label>Data lakes</Label>
-          <Metric value="3" label="Watchlist hits on ingest" size="30px" />
-          <Stack mt="12px" spacing="7px">
-            {[
-              ["45.83.12.9", "Cobalt Strike C2", "2 HITS"],
-              ["31fc9a2b7e", "Lumma Stealer", "1 HITS"],
-            ].map((x) => (
-              <Flex key={x[0]} fontSize="8px">
-                <Text fontWeight="600">{x[0]}</Text>
-                <Text color={ui.muted} ml="5px">
-                  · {x[1]}
-                </Text>
-                <Text ml="auto" color={ui.red}>
-                  {x[2]}
-                </Text>
-              </Flex>
-            ))}
-          </Stack>
-          <Text mt="12px" fontSize="7px" color={ui.muted}>
-            LAKE HEALTH
-          </Text>
-          {[1, 2, 3].map((i) => (
-            <HStack key={i} mt="5px">
-              <Badge
-                bg={i === 1 ? "#111827" : i === 2 ? ui.red : ui.violet}
-                color="white"
-              >
-                {i === 1 ? "AI" : i === 2 ? "CS" : "AZ"}
-              </Badge>
-              <Box className="spark-line" flex="1" />
-              <Text color={ui.green} fontSize="7px">
-                ● OPERATIONAL
-              </Text>
-            </HStack>
-          ))}
-          <Box mt="auto" pt="22px">
-            <Text fontSize="8px">
-              Review: Credential theft around 185.220.101.45
-            </Text>
-            <Text color={ui.violet} fontSize="8px">
-              Dive into your search results ›
-            </Text>
-          </Box>
-        </QueueColumn>
-        <QueueColumn
-          title="AI SOC"
-          subtitle="Investigate and respond to every alert"
-        >
-          <Label>Investigate</Label>
-          <Metric value="14" label="Escalated investigations" />
-          <SankeyMini />
-          <Text mt="15px" fontSize="8px">
-            AiTM session token replay from anomalous infrastructure
-          </Text>
-          <Text color={ui.violet} fontSize="8px">
-            Investigate this alert ›
-          </Text>
-          <Divider my="14px" />
-          <Label>Respond</Label>
-          <Metric value="5" label="Open remediations" size="30px" />
-          <Flex align="end" minH="180px">
-            <Stack spacing="4px" fontSize="7px" flex="1">
-              {[
-                [ui.red, "Open"],
-                [ui.teal, "Closed"],
-                [ui.steel, "AISOC Auto"],
-                ["#687488", "AISOC PLAID Elite"],
-                ["#283446", "Analysts"],
-              ].map(([c, t]) => (
-                <HStack key={t}>
-                  <Box w="6px" h="6px" rounded="full" bg={c} />
-                  <Text>{t}</Text>
-                </HStack>
-              ))}
-            </Stack>
-            <Donut />
-          </Flex>
-          <Box mt="auto">
-            <Text fontSize="8px">
-              Credential-store access and outbound transfer on OKAMI-FIN-074 ·{" "}
-              <Text as="span" color={ui.red}>
-                Critical
-              </Text>
-            </Text>
-            <Text
-              color={ui.violet}
-              fontSize="8px"
-              onClick={() => setView("investigationDetail")}
-              cursor="pointer"
-            >
-              Review the case ›
-            </Text>
-          </Box>
-        </QueueColumn>
-        <QueueColumn
-          title="Hunt & Services"
-          subtitle="Threat hunting and 24/7 managed services"
-        >
-          <Label>Hunt</Label>
-          <Metric value="17" label="Reports processed" />
-          <Stack mt="15px" spacing="12px">
-            {[
-              [
-                "AISOC Threat Intelligence",
-                "CRXfiltrate — Remote-Controlled Manifest V3 Browser Extensions",
-                "MALICIOUS",
-                "TIR-001",
-              ],
-              [
-                "Google Threat Intelligence",
-                "Click, Install, Compromise: The New Wave of Zoom-Themed Attacks",
-                "SUSPICIOUS",
-                "TIR-003",
-              ],
-              [
-                "Google Threat Intelligence",
-                "UNC1549 — Aerospace Harvest",
-                "MITIGATED",
-                "TIR-004",
-              ],
-            ].map(([source, title, status, reportId]) => (
-              <Box key={title} cursor="pointer" onClick={() => setView("threatIntelDetail", reportId)}>
-                <HStack>
-                  <Badge bg="#20232d" color="white">
-                    AISOC
-                  </Badge>
-                  <Text fontSize="8px">{source}</Text>
-                </HStack>
-                <Flex mt="5px">
-                  <Text color={ui.violet} fontSize="8px">
-                    {title}
-                  </Text>
-                  <Badge
-                    ml="auto"
-                    bg={
-                      status === "MALICIOUS"
-                        ? ui.red
-                        : status === "SUSPICIOUS"
-                          ? ui.amber
-                          : ui.steel
-                    }
-                    color="white"
-                  >
-                    {status}
-                  </Badge>
-                </Flex>
-              </Box>
-            ))}
-          </Stack>
-          <Box mt="auto">
-            <Divider my="14px" />
-            <Label>Plaid Elite 24/7 Services</Label>
-            <Metric value="84%" label="workload reduced" size="30px" />
-            <Flex align="end" minH="190px">
-              <Stack spacing="6px" fontSize="7px" color={ui.muted} flex="1">
-                <Text>● Not escalated</Text>
-                <Text>● Cases Resolved</Text>
-                <Text color={ui.amber}>● Pending action</Text>
-                <Text>● Assigned to Plaid Elite</Text>
-              </Stack>
-              <Donut workload />
-            </Flex>
-            <Text fontSize="8px">Confirmation required</Text>
-            <Text color={ui.violet} fontSize="8px">
-              Accept Plaid Elite's recommended action ›
-            </Text>
-          </Box>
-        </QueueColumn>
-      </Grid>
-    </Box>
-  );
-}
 
-function QueueColumn({ title, subtitle, children }) {
-  return (
-    <Panel
-      minH={{ base: "auto", lg: "calc(100vh - 94px)" }}
-      display="flex"
-      flexDirection="column"
-      overflow="hidden"
-    >
-      <Box px="10px" py="8px" borderBottom="1px solid" borderColor={ui.line}>
-        <Text fontSize="10px" fontWeight="600">
-          {Icon.activity({ size: 12, color: ui.violet })} &nbsp;{title}
-        </Text>
-        <Text fontSize="7px" color={ui.muted} mt="2px">
-          {subtitle}
-        </Text>
-      </Box>
-      <Flex direction="column" flex="1" p="12px">
-        {children}
-      </Flex>
-    </Panel>
-  );
-}
-
-function SankeyMini() {
-  return (
-    <Box mt="12px" h="105px" position="relative" overflow="hidden">
-      {[12, 39, 66].map((top, i) => (
-        <React.Fragment key={top}>
-          <Box
-            position="absolute"
-            left="8px"
-            top={`${top}px`}
-            w="10px"
-            h="18px"
-            bg="#43516a"
-          />
-          <Box
-            position="absolute"
-            left="18px"
-            right="20px"
-            top={`${top + 4}px`}
-            h={`${24 - i * 4}px`}
-            bg={`linear-gradient(90deg,rgba(67,81,106,.32),rgba(142,161,183,.12))`}
-            transform={`skewY(${i === 0 ? -3 : i === 2 ? 3 : 0}deg)`}
-          />
-        </React.Fragment>
-      ))}
-      <Stack
-        position="absolute"
-        right="0"
-        top="5px"
-        spacing="4px"
-        fontSize="7px"
-      >
-        <Text color={ui.red}>Escalated</Text>
-        <Text>Mitigated</Text>
-        <Text>Benign</Text>
-      </Stack>
-    </Box>
-  );
-}
 function Donut({ workload = false }) {
   return (
     <Box
@@ -1657,8 +1378,8 @@ function ConnectorSetupLive({ setView }) {
   const wizardSteps = [
     { num: 1, title: "Create API Credentials in Cribl", instructions: ["Navigate to your Cribl Cloud workspace Settings.", "Go to API Credentials and click Create Credential.", "Choose Search scope with read access.", "Copy the Client ID and Client Secret."] },
     { num: 2, title: "Enable Search in Cribl", instructions: ["Open Settings → Search in your Cribl workspace.", "Enable the Cribl Search feature if not already active.", "Verify the search group (default_search) is configured.", "Test a sample query to confirm access."] },
-    { num: 3, title: "Enter Connection Information in AISOC", instructions: ["Enter the API Base URL from Step 2.", "Enter the Client ID and Client Secret from Step 1.", "Click Save.", "Once the credentials are accepted, the Cribl connector will appear in the Active Connectors section. After 5–10 minutes, a heartcheck will run automatically. If successful, the connector tile will display as Operational, confirming the installation was successful."] },
-    { num: 4, title: "Verify Connection", instructions: ["Check that the connector status shows Operational.", "Run a test search to verify data is flowing.", "Configure any search filters or log routing rules.", "The connector is now ready for investigations."] },
+    { num: 3, title: "Enter Connection Information in AISOC", instructions: ["Enter the API Base URL from Step 2.", "Enter the Client ID and Client Secret from Step 1.", "Click Save.", "AISOC stores this configuration and encrypts the secret. Live Cribl connection testing and automatic health checks are not supported by this backend."] },
+    { num: 4, title: "Verify Connection", instructions: ["Inspect the saved configuration in Build → Workspace.", "A saved record does not verify credentials or data flow.", "Live provider validation requires a separately configured adapter.", "Do not treat this configuration as an active investigation data source."] },
   ];
   const currentStep = wizardSteps.find((s) => s.num === setupStep) || wizardSteps[2];
   const submit = async () => {
@@ -1668,13 +1389,14 @@ function ConnectorSetupLive({ setView }) {
     }
     setSaving(true);
     try {
-      const connector = await api.createConnector({
+      await api.createConnector({
         type: "cribl", name: form.name, description: form.description,
         workspace_url: form.workspace_url, client_id: form.client_id, secret: form.secret,
         config: { searchGroup: form.search_group, tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean) },
       });
-      const tested = await api.testConnector(connector.id);
-      toast({ title: "Connector saved", description: tested.test_result?.message || `Connection status: ${tested.status}`, status: tested.test_result?.status === "operational" ? "success" : "info", duration: 5000 });
+      setForm(current => ({ ...current, secret: "" }));
+      toast({ title: "Connector configuration saved", description: "Live Cribl validation is not supported. No provider request was sent.", status: "info", duration: 5000 });
+      setView("build");
     } catch (error) {
       toast({ title: "Could not add connector", description: error.message, status: "error", duration: 3500 });
     } finally { setSaving(false); }
@@ -1682,7 +1404,7 @@ function ConnectorSetupLive({ setView }) {
   return (
     <Box className="page-enter" px="15px">
       <Flex justify="end" mb="12px">
-        <Button variant="outline" onClick={() => setView("queue")}>Cancel</Button>
+        <Button variant="outline" onClick={() => setView("build")}>Cancel</Button>
         <Button ml="5px" isLoading={saving} onClick={submit}>Add connector</Button>
       </Flex>
       <HStack mb="15px">
@@ -1785,7 +1507,7 @@ function App() {
   };
   const { view, investigationId, reportId, ruleId, skillId, huntId } = route;
   const pages = {
-    queue: <QueueDashboard setView={setView} />,
+    queue: <Overview setView={setView} />,
     investigations: <InvestigationQueue setView={setView} />,
     investigationDetail: <InvestigationCase key={investigationId} id={investigationId} />,
     detect: <DetectionRegistry setView={setView} />,

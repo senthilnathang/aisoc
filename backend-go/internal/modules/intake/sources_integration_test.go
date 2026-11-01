@@ -171,3 +171,52 @@ func TestCredentialsRollbackAndRuleDeletion(t *testing.T) {
 		t.Fatal("mapping audit", err)
 	}
 }
+
+func TestSourceListPagination(t *testing.T) {
+	url := os.Getenv("AISOC_GO_TEST_DATABASE_URL")
+	if url == "" {
+		t.Skip("isolated PostgreSQL required")
+	}
+	ctx := context.Background()
+	pool, err := database.Open(ctx, url, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	if err = database.Migrate(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	tenant := "source-page-" + jobs.ID()
+	s := Store{Pool: pool}
+	defer pool.Exec(ctx, `DELETE FROM tenants WHERE id=$1`, tenant)
+	defer pool.Exec(ctx, `DELETE FROM audit_events WHERE tenant_id=$1`, tenant)
+	defer pool.Exec(ctx, `DELETE FROM detection_rules WHERE tenant_id=$1`, tenant)
+	defer pool.Exec(ctx, `DELETE FROM api_sources WHERE tenant_id=$1`, tenant)
+	rule, err := (detection.Store{Pool: pool}).Create(ctx, tenant, map[string]any{"name": "Source paging", "severity": "low"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = pool.Exec(ctx, `INSERT INTO api_sources(id,tenant_id,name,provider,rule_id,expires_at,created_at,updated_at) SELECT $1||n,$1,'Source '||n,'fixture',$2,now()+interval '1 day',now(),now() FROM generate_series(1,27) n`, tenant, rule["id"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := s.ListPage(ctx, tenant, 25, 0)
+	if err != nil || len(first) != 25 {
+		t.Fatal(first, err)
+	}
+	next, err := s.ListPage(ctx, tenant, 25, 25)
+	if err != nil || len(next) != 2 {
+		t.Fatal(next, err)
+	}
+	for _, a := range first {
+		for _, b := range next {
+			if a["id"] == b["id"] {
+				t.Fatal("overlapping pages")
+			}
+		}
+	}
+	foreign, err := s.ListPage(ctx, tenant+"foreign", 25, 0)
+	if err != nil || len(foreign) != 0 {
+		t.Fatal(foreign, err)
+	}
+}

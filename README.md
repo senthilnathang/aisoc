@@ -279,3 +279,7 @@ Open `/skills` for the screenshot-aligned library and three-column editor: pagin
 ## Build workspace (2026-11-01)
 
 Open `/build` for saved assets, metadata inspection and links to Skills, response design and integrations. See [Build scope and API](docs/BUILD_WORKSPACE.md).
+
+## Platform review (2026-11-01)
+
+Detect-to-Build review: live desktop/mobile route coverage, corrected Overview data, complete response/source pagination and honest connector capability messaging. See [review and verification](docs/PLATFORM_REVIEW_2026-11-01.md).

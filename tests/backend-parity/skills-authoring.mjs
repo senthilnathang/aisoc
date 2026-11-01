@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {argumentsFor,target,client,output} from './harness.mjs';
 const options=argumentsFor(),server=await target(options),events=[],tenant='skills-'+randomUUID(),req=client(server.url,tenant,events),root='/api/v1/skills';
 try{
+ const goBackend=(await (await fetch(server.url+'/health')).json()).database==='postgresql';
  assert.deepEqual(await req('GET',root),{items:[],total:0,limit:25,offset:0});
  const created=await req('POST',root,{name:'  Review endpoint  ',description:'SOC workflow',modules:['investigations'],tags:['PowerShell'],origin:'system',version:99},201),path=root+'/'+created.id;
  assert.equal(created.name,'Review endpoint');assert.equal(created.version,1);assert.equal(created.origin,'user');assert.equal(created.state,'draft');assert.equal(created.enabled,false);assert.equal(created.created_by,'local-development');assert.deepEqual(created.connectors,[]);
@@ -28,7 +29,7 @@ try{
  assert.equal((await req('POST',root,{},400)).error.code,'INVALID_SKILL');for(const q of ['limit=0','limit=101','offset=-1','state=other','search='+('x'.repeat(201))])await req('GET',root+'?'+q,undefined,400);
  const history=await req('GET',path+'/history');assert.ok(history.items.some(e=>e.action==='material_archived'));assert.ok(history.items.every(e=>e.details.actor==='local-development'));const count=history.items.length;
  const foreign={'x-tenant-id':tenant+'-foreign'};await req('GET',path,undefined,404,foreign);await req('PATCH',path,{},404,foreign);await req('POST',path+'/publish',undefined,404,foreign);await req('GET',mp,undefined,404,foreign);await req('POST',materials,{name:'x.txt',content:'x'},404,foreign);assert.deepEqual((await req('GET',path+'/history',undefined,200,foreign)).items,[]);
- await req('DELETE',path,undefined,204);await req('GET',mp,undefined,404);assert.equal((await req('GET',path+'/history')).items.length,count,'legacy deletion retains history without adding a delete audit');
+ await req('DELETE',path,undefined,204);await req('GET',mp,undefined,404);const deletedHistory=(await req('GET',path+'/history')).items;assert.equal(deletedHistory.length,count+(goBackend?1:0),'Go deletion adds an audit; legacy Node retains prior history');if(goBackend)assert.equal(deletedHistory.filter(e=>e.action==='deleted'&&e.details.actor==='local-development').length,1);
  await output(options.output||'output/backend-parity/skills-authoring.json',{passed:true,backend:options.label||(server.owned?'node':'external'),request_count:events.length,persistence_fixture:{tenant,skill_id:other.id},checks:['CRUD/publish/toggle/history','search/filter/pagination','material versions and parent revisions','archive and cascade','material size/type/count limits','tenant isolation','validation'],scope:'Skill authoring and materials; matching, suggestions and outcomes are separate migration work.'});
  console.log('PASS Skills authoring and materials');
 }finally{await server.close();}

@@ -20,7 +20,7 @@ def main():
         env.update(PGHOST='127.0.0.1', PGPORT=str(pgport), PGUSER='aisoc', PGPASSWORD=password)
         env['AISOC_GO_TEST_DATABASE_URL'] = f'postgres://aisoc:{password}@127.0.0.1:{pgport}/aisoc_go_detection_test?sslmode=disable'
         def run(args, **kwargs):
-            subprocess.run([str(a) for a in args], check=True, timeout=180,
+            subprocess.run([str(a) for a in args], check=True, timeout=600,
                            env=env, **kwargs)
         run([PG/'initdb', '-D', temp/'pg', '-U', 'aisoc', '--auth-local=trust',
              '--auth-host=scram-sha-256', '--pwfile', pw], stdout=subprocess.DEVNULL)
@@ -30,7 +30,7 @@ def main():
                  f'-h 127.0.0.1 -p {pgport} -k {temp}', '-w', 'start'], stdout=subprocess.DEVNULL)
             started = True
             run([PG/'createdb', 'aisoc_go_detection_test'])
-            run(['go', 'test', '-p', '1', '-race', '-count=1', '-v', './internal/modules/detection', './internal/modules/routing', './internal/modules/investigations', './internal/modules/intake', './internal/modules/response', './internal/modules/hunts', './internal/modules/threatintel', './internal/modules/skills', './internal/modules/insights', './internal/modules/build', './internal/modules/navigation', './internal/transport/httpapi'], cwd=ROOT/'backend-go')
+            run(['go', 'test', '-p', '1', '-race', '-count=1', '-v', './internal/modules/...', './internal/transport/httpapi'], cwd=ROOT/'backend-go')
         except subprocess.CalledProcessError:
             print((temp / "pg.log").read_text()[-12000:])
             raise

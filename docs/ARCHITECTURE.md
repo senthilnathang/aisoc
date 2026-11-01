@@ -193,9 +193,8 @@ implement investigations, detection, Skills, API sources and response authoring.
 Editable assets live in `public/`; generated bundles and `app.html` stay in `dist/`.
 
 Vite proxies same-origin `/api` and `/health` to `AISOC_API_PROXY_TARGET`.
-API-backed workflows show persisted state. Some dashboard/Memory content remains
-demonstration-only. Stored queries and simulated actions are not live provider
-execution. Current browser/mobile limits are recorded in [testing](TESTING.md).
+Overview and Memory show tenant-scoped persisted data, with explicit empty/error
+states. Stored queries and simulated actions are not live provider execution. Current browser/mobile limits are recorded in [testing](TESTING.md).
 
 ## Runtime and recovery
 
@@ -349,3 +348,7 @@ Go `internal/modules/insights` owns tenant-scoped organizational context and sql
 ## Build workspace (2026-11-01)
 
 Build adds a read-only Go/sqlc projection over existing Skills, response plans/policies, API sources/rules and connectors. Tenant predicates cover every query branch and join. One statement returns a consistent page and counts. The UI navigates to existing owners; no duplicate orchestrator, migration or provider calls. See [flow](BUILD_WORKSPACE.md).
+
+## Verified workspace read paths
+
+The Detect overview reads the existing tenant dashboard contract without sample activity. Respond uses a sqlc summary over existing remediation/plan tables plus separately paginated action reads. Build API-source pages propagate bounded limit/offset to the existing tenant-scoped query. These are read-path corrections, not new orchestration services or schema changes. See [platform review](PLATFORM_REVIEW_2026-11-01.md).

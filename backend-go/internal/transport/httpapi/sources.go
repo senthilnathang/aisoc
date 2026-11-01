@@ -5,6 +5,7 @@ import (
 	"aisoc/backend/internal/platform/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"net/http"
+	"strconv"
 )
 
 func sourceInput(r *http.Request, create bool) (map[string]any, error) {
@@ -34,7 +35,30 @@ func sourceInput(r *http.Request, create bool) (map[string]any, error) {
 func registerSources(mux *http.ServeMux, pool *pgxpool.Pool) {
 	store := intake.Store{Pool: pool}
 	mux.HandleFunc("GET /api/v1/api-sources", respond(func(r *http.Request) (any, int, error) {
-		items, err := store.List(r.Context(), auth.From(r.Context()).Tenant)
+		q := r.URL.Query()
+		limit, offset := 100, 0
+		for key, values := range q {
+			if len(values) != 1 {
+				return nil, 0, invalid()
+			}
+			if key != "limit" && key != "offset" {
+				return nil, 0, invalid()
+			}
+		}
+		var err error
+		if q.Has("limit") {
+			limit, err = strconv.Atoi(q.Get("limit"))
+			if err != nil || limit < 1 || limit > 500 {
+				return nil, 0, invalid()
+			}
+		}
+		if q.Has("offset") {
+			offset, err = strconv.Atoi(q.Get("offset"))
+			if err != nil || offset < 0 || offset > 1000000 {
+				return nil, 0, invalid()
+			}
+		}
+		items, err := store.ListPage(r.Context(), auth.From(r.Context()).Tenant, limit, offset)
 		return map[string]any{"items": items}, 200, err
 	}))
 	mux.HandleFunc("GET /api/v1/api-sources/{id}", respond(func(r *http.Request) (any, int, error) {

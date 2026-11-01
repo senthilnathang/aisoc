@@ -54,7 +54,11 @@ func (s Store) Get(ctx context.Context, tenant, id string) (map[string]any, erro
 	return v.View(), nil
 }
 func (s Store) List(ctx context.Context, tenant string) ([]map[string]any, error) {
-	rows, err := s.Pool.Query(ctx, `SELECT `+columns+` FROM api_sources WHERE tenant_id=$1 ORDER BY created_at DESC,ordinal DESC LIMIT 100`, tenant)
+	return s.ListPage(ctx, tenant, 100, 0)
+}
+
+func (s Store) ListPage(ctx context.Context, tenant string, limit, offset int) ([]map[string]any, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT `+columns+` FROM api_sources WHERE tenant_id=$1 ORDER BY created_at DESC,ordinal DESC LIMIT $2 OFFSET $3`, tenant, limit, offset)
 	if err != nil {
 		return nil, err
 	}

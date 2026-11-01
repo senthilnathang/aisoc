@@ -292,3 +292,7 @@ Each slice adds a route under Skills and leaves existing investigation, hunt, an
 detection workflows intact. Current runtime matching records guidance snapshots
 and reasons for analysts; it does not inject instructions into an autonomous
 agent planner or execute response actions.
+
+## Local workspace verification — 2026-11-01
+
+Detect through Build now have recorded live desktop/mobile route checks and local API/interaction coverage. Overview uses tenant records; response lists and source configuration support server-side paging/search. Cribl setup remains configuration-only. See [review scope and remaining release gates](PLATFORM_REVIEW_2026-11-01.md).

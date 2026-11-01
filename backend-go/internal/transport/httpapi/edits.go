@@ -93,6 +93,10 @@ func registerEdits(mux *http.ServeMux, pool *pgxpool.Pool) {
 		result, err := store.CreateRemediation(r.Context(), auth.From(r.Context()).Tenant, raw)
 		return result, 201, err
 	}))
+	mux.HandleFunc("GET /api/v1/remediations/summary", respond(func(r *http.Request) (any, int, error) {
+		result, err := cases.ResponseSummary(r.Context(), auth.From(r.Context()).Tenant)
+		return result, 200, err
+	}))
 	mux.HandleFunc("GET /api/v1/remediations", respond(func(r *http.Request) (any, int, error) {
 		q := r.URL.Query()
 		limit, offset := 100, 0

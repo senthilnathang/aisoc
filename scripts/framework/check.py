@@ -258,7 +258,11 @@ def main():
             assert http(connector_path,200,{'x-tenant-id':connector['tenant']})==connector_before
             assert http(hunt_path,200,{'x-tenant-id':hunt['tenant']})==hunt_before
             assert http(threat_path,200,{'x-tenant-id':threat['tenant']})==threat_before
-            assert http('/api/v1/detection-intelligence',200,{'x-tenant-id':intelligence['tenant']})==intelligence_before
+            # Read timestamps advance after restart; compare persisted projection data.
+            intelligence_after=http('/api/v1/detection-intelligence',200,{'x-tenant-id':intelligence['tenant']})
+            for value in (intelligence_before,intelligence_after):
+                assert value.get('as_of') and value.get('window_start')
+            assert {k:v for k,v in intelligence_after.items() if k not in ('as_of','window_start')}=={k:v for k,v in intelligence_before.items() if k not in ('as_of','window_start')}
             # Kill a real worker while its first phase is blocked inside the
             # step insert. Terminating the orphaned DB session releases the test
             # sleep immediately; all phase writes must roll back.

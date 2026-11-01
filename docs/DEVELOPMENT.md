@@ -372,3 +372,7 @@ Use `HuntWorkspace.jsx` and `internal/modules/hunts/workspace.go`; new SQL is in
 ## Build workspace (2026-11-01)
 
 frontend/src/BuildWorkspace.jsx consumes GET /api/v1/build/catalog. backend-go/internal/modules/build/queries/catalog.sql defines the allowlist; regenerate with make -C backend-go sqlc. Exclude credentials, config and instruction bodies. Keep connector rows inspect-only and preserve stale-response protection. See [contracts](BUILD_WORKSPACE.md).
+
+## Platform review (2026-11-01)
+
+Overview.jsx uses only the dashboard contract. Response filters and pagination must reach Go; keep the search toolbar mounted during refresh. Response summary is generated from investigations/queries/response_summary.sql. Source paging extends the existing parameterized intake query; validate limit/offset at the HTTP boundary. Rule selection uses server search. Preserve stale-response guards. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).

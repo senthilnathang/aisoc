@@ -54,3 +54,7 @@ Rollback: revert the additive module, route and UI, regenerate sqlc and rebuild.
 ## Verified local result (2026-11-01)
 
 PostgreSQL integration tests, full Go race suite, sqlc drift, focused vet, frontend lint/build and 9 frontend test files passed. Browser fixture checks passed at 1440px and 390px; live API returned 200 with 10 existing demo assets and all 10 rendered. No test data was added to the demo database. Independent review corrected connector navigation to inspect-only. The existing Vite large-bundle warning remains.
+
+## Platform review (2026-11-01)
+
+API-source manager now pages sources and searches/pages detection-rule choices. The Cribl creation wizard stores configuration and explicitly states live validation is unsupported; saving returns to Build and clears the secret from the form. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).

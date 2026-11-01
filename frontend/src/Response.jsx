@@ -93,25 +93,24 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
   const [running, setRunning] = useState(false),
     [reload, setReload] = useState(0);
   const toast = useToast();
-  const [planCount, setPlanCount] = useState(0);
+  const [summary, setSummary] = useState({});
+  const [offset, setOffset] = useState(0);
+  const effectiveFilter = mode === "respond" || mode === "responseApprovals" ? "pending" : mode === "responseActivity" ? "completed" : filter;
   useEffect(() => {
     setQuery("");
     setFilter("all");
     setSelected(null);
+    setOffset(0);
   }, [mode]);
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
-    Promise.all([api.remediations(), api.list("response-plans")])
+    Promise.all([api.remediations({status:effectiveFilter === "all" ? undefined : effectiveFilter, search:query.trim(), limit:25, offset}), api.request("/remediations/summary")])
       .then((result) => {
         if (active) {
           setItems(result[0].items);
-          setPlanCount(
-            result[1].items.filter(
-              (plan) => plan.kind === "workflow" && plan.state === "active",
-            ).length,
-          );
+          setSummary(result[1]);
         }
       })
       .catch((err) => {
@@ -123,7 +122,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
     return () => {
       active = false;
     };
-  }, [reload]);
+  }, [reload, effectiveFilter, query, offset]);
   const pending = items.filter((item) => item.status === "pending"),
     completed = items.filter((item) => item.status === "completed");
   const cases = [...new Set(items.map((item) => item.investigation_id))].map(
@@ -132,30 +131,8 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
       actions: items.filter((item) => item.investigation_id === id),
     }),
   );
-  const matches = (record) =>
-    Object.values(record)
-      .join(" ")
-      .toLowerCase()
-      .includes(query.trim().toLowerCase());
-  const visibleCases = cases.filter((record) =>
-    matches({
-      id: record.id,
-      actions: record.actions
-        .map((item) => Object.values(item).join(" "))
-        .join(" "),
-    }),
-  );
-  const effectiveFilter =
-    mode === "responseApprovals"
-      ? "pending"
-      : mode === "responseActivity"
-        ? "completed"
-        : filter;
-  const visible = items.filter(
-    (item) =>
-      (effectiveFilter === "all" || item.status === effectiveFilter) &&
-      matches(item),
-  );
+  const visibleCases = cases;
+  const visible = items;
   const execute = async () => {
     setRunning(true);
     try {
@@ -164,6 +141,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
       setSelected(updated);
+      setReload(value=>value+1);
       toast({
         title: "Simulation recorded",
         description: "The record was updated. No provider action was sent.",
@@ -199,6 +177,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
           onClick={() => {
             setQuery("");
             setFilter("all");
+            setOffset(0);
           }}
         >
           Clear filters
@@ -334,6 +313,55 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
           </Button>
         </Alert>
       )}
+      {mode !== "respond" && (              <Flex gap="12px" mb="18px" wrap="wrap">
+                <Input
+                  aria-label="Search response records"
+                  placeholder={
+                    "Search action titles or descriptions…"
+                  }
+                  bg="white"
+                  value={query}
+                  onChange={(event) => {setQuery(event.target.value);setOffset(0);}}
+                  maxW="440px"
+                />
+                <Select
+                  aria-label={"Filter by status"}
+                  bg="white"
+                  value={filter}
+                  onChange={(event) => {setFilter(event.target.value);setOffset(0);}}
+                  maxW="210px"
+                  display={
+                    [
+                      "responseApprovals",
+                      "responseActivity",
+                      "responseCases",
+                    ].includes(mode)
+                      ? "none"
+                      : "block"
+                  }
+                >
+                  <option value="all">{"All statuses"}</option>
+                  {
+                    <>
+                      <option value="pending">Awaiting approval</option>
+                      <option value="completed">Simulation recorded</option>
+                    </>
+                  }
+                </Select>
+                <Text
+                  ml={{
+                    base: "0",
+                    md: "auto",
+                  }}
+                  alignSelf="center"
+                  color={ui.muted}
+                  fontSize="11px"
+                >
+                  {mode === "responseCases"
+                    ? `${visibleCases.length} cases on this page`
+                    : `${visible.length} actions on this page`}
+                </Text>
+              </Flex>)}
       {loading ? (
         <Flex py="70px" gap="12px" justify="center">
           <Spinner size="sm" />
@@ -353,25 +381,25 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
               >
                 {[
                   [
-                    pending.length,
+                    summary.pending ?? 0,
                     "Awaiting approval",
                     "Review proposed actions",
                     "responseApprovals",
                   ],
                   [
-                    cases.length,
+                    summary.cases ?? 0,
                     "Response cases",
                     "Investigations with actions",
                     "responseCases",
                   ],
                   [
-                    completed.length,
+                    summary.completed ?? 0,
                     "Simulations recorded",
                     "Review action history",
                     "responseActivity",
                   ],
                   [
-                    planCount,
+                    summary.workflows ?? 0,
                     "Active workflows",
                     "Review saved definitions",
                     "responseWorkflows",
@@ -508,7 +536,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
                     variant="ghost"
                     onClick={() => setView("responseApprovals")}
                   >
-                    View all ({pending.length}) →
+                    View all ({summary.pending ?? 0}) →
                   </Button>
                 </Flex>
                 {actionRows(pending.slice(0, 4))}
@@ -517,55 +545,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
           )}
           {mode !== "respond" && (
             <>
-              <Flex gap="12px" mb="18px" wrap="wrap">
-                <Input
-                  aria-label="Search response records"
-                  placeholder={
-                    "Search actions, providers, or investigation ID…"
-                  }
-                  bg="white"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  maxW="440px"
-                />
-                <Select
-                  aria-label={"Filter by status"}
-                  bg="white"
-                  value={filter}
-                  onChange={(event) => setFilter(event.target.value)}
-                  maxW="210px"
-                  display={
-                    [
-                      "responseApprovals",
-                      "responseActivity",
-                      "responseCases",
-                    ].includes(mode)
-                      ? "none"
-                      : "block"
-                  }
-                >
-                  <option value="all">{"All statuses"}</option>
-                  {
-                    <>
-                      <option value="pending">Awaiting approval</option>
-                      <option value="completed">Simulation recorded</option>
-                    </>
-                  }
-                </Select>
-                <Text
-                  ml={{
-                    base: "0",
-                    md: "auto",
-                  }}
-                  alignSelf="center"
-                  color={ui.muted}
-                  fontSize="11px"
-                >
-                  {mode === "responseCases"
-                    ? `${visibleCases.length} cases`
-                    : `${visible.length} actions`}
-                </Text>
-              </Flex>
+
               {mode === "responseCases" ? (
                 <SimpleGrid
                   columns={{
@@ -713,6 +693,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
           )}
         </>
       )}
+      {!loading && !error && mode !== "respond" && <Flex justify="space-between" mt="16px" align="center"><Text>Page {Math.floor(offset/25)+1}</Text><Flex gap="8px"><Button variant="outline" isDisabled={!offset} onClick={()=>{setSelected(null);setOffset(Math.max(0,offset-25));}}>Previous</Button><Button variant="outline" isDisabled={items.length<25} onClick={()=>{setSelected(null);setOffset(offset+25);}}>Next</Button></Flex></Flex>}
       <Drawer
         isOpen={Boolean(selected)}
         placement="right"

@@ -78,3 +78,7 @@ Run normal Go migration/startup before using the new frontend. Rollback is code-
 - Browser checks: Cases board/list/create/status request, policy save request, workflow preview/history and stale-result clearing, runbook table/import, desktop/mobile overflow. Mutations are intercepted fixtures; database behavior is tested separately in the disposable cluster.
 
 Commands: `python3 scripts/framework/check_detection_intelligence.py`, `make -C backend-go sqlc-check`, `npm --prefix frontend run lint`, `npm --prefix frontend run build`, `node --test tests/frontend/*.test.mjs`. The database harness runs packages serially against its shared disposable cluster to avoid concurrent migration-lock timeouts; race detection remains enabled.
+
+## Platform review (2026-11-01)
+
+Action records, Approvals and Activity now use server status/search filters and 25-row pages. Search covers titles/descriptions. Overview counts are tenant-wide through /remediations/summary; list counts describe only the visible page. Approval remains local simulation only. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
