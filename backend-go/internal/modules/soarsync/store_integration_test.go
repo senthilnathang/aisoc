@@ -104,7 +104,7 @@ func setup(t *testing.T) (Store, string, string, string, qradarmock.CaseRevision
 	return s, tenant, id, receipt.InvestigationID, revision
 }
 func target(r qradarmock.CaseRevision) Target {
-	return Target{r.Binding.ConnectorID, r.ExternalID, r.Version}
+	return Target{ConnectorID: r.Binding.ConnectorID, ExternalID: r.ExternalID, Version: r.Version}
 }
 
 func TestEscalationAndNoteConcurrentReplay(t *testing.T) {

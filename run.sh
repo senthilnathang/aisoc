@@ -10,6 +10,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ./run.sh {start|stop|status|logs} [all|both|backend|frontend]
+  ./run.sh suspicious-login [--configure] [--config FILE] [--approve-mock-note --comment TEXT]
   ./run.sh import-demo all [--bundle DIRECTORY] [--dry-run]
   ./run.sh import-demo showcase [--dry-run]
   ./run.sh import-demo files FILE.json [FILE.json ...] [--dry-run]
@@ -27,6 +28,11 @@ case "$runtime_profile" in release|foundation) ;; *) echo 'Runtime profile must 
 if [[ -f "$RUN/backend-mode" ]]; then read -r backend_mode < "$RUN/backend-mode"; fi
 case "$backend_mode" in node|go) ;; *) echo 'Invalid .run/backend-mode; expected node or go' >&2; exit 2;; esac
 if [[ "$runtime_profile" == foundation && "$backend_mode" != go ]]; then echo 'Foundation requires the Go backend' >&2; exit 2; fi
+if [[ "$command_name" == suspicious-login ]]; then
+  [[ "$runtime_profile" == foundation && "$backend_mode" == go ]] || { echo 'Scenario requires the local Go foundation' >&2; exit 2; }
+  shift
+  exec python3 "$ROOT/scripts/framework/suspicious_login.py" "$@"
+fi
 if [[ "$command_name" == import-demo ]]; then
   [[ "$runtime_profile" == foundation && "$backend_mode" == go ]] || { echo 'Demo imports require AISOC_RUNTIME_PROFILE=foundation and the Go backend' >&2; exit 2; }
   shift

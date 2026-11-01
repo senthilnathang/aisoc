@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Alert, AlertIcon, Badge, Box, Button, Flex, Grid, Heading, Stack, Text } from "@chakra-ui/react";
+import React, { useEffect, useState, useRef } from "react";
+import { Alert, AlertIcon, Badge, Box, Button, Flex, Grid, Heading, Stack, Text, Textarea, Checkbox } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
 
@@ -12,6 +12,13 @@ export default function InvestigationReview({ caseId }) {
   const [review, setReview] = useState(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const [confirming,setConfirming]=useState(false),[comment,setComment]=useState(""),[confirmed,setConfirmed]=useState(false),[approving,setApproving]=useState(false),[approvalError,setApprovalError]=useState("");
+  const lifecycle=useRef(0);
+  useEffect(()=>{const generation=++lifecycle.current;return()=>{lifecycle.current=generation+1}},[caseId]);
+  const approve=async()=>{const generation=lifecycle.current;setApproving(true);setApprovalError("");try{
+   await api.request(`/stream-operations/${encodeURIComponent(review.review_scope)}/approve-mock-note`,{method:"POST",body:{job_id:review.job_id,comment:comment.trim()}});
+   if(generation===lifecycle.current){setConfirming(false);setComment("");setConfirmed(false);setRefresh(v=>v+1)}
+  }catch(e){if(generation===lifecycle.current)setApprovalError(e.message)}finally{if(generation===lifecycle.current)setApproving(false)}};
   useEffect(() => {
     let active = true;
     let timer;
@@ -22,7 +29,7 @@ export default function InvestigationReview({ caseId }) {
         const data = await api.request(`/investigations/${encodeURIComponent(caseId)}/l1`);
         if (!active) return;
         setReview(data); setError("");
-        again = ["queued", "running", "awaiting_dispatch"].includes(data.state) || data.sync_state === "draft" || (data.state === "completed" && data.sync_state === "not_started");
+        again = ["queued", "running", "awaiting_dispatch"].includes(data.state) || ["draft", "awaiting_review"].includes(data.sync_state) || (data.state === "completed" && data.sync_state === "not_started");
       } catch (e) { if (active) setError(e.message); }
       finally { if (active && again) timer = setTimeout(load, 5000); }
     };
@@ -37,6 +44,7 @@ export default function InvestigationReview({ caseId }) {
     ["Evidence linked", evidence.length > 0],
     ["Python review", review?.state === "completed"],
     ["Go contract checks", review?.result_status === "verified"],
+    ...(review?.review_required ? [["Analyst note approval", !!review.reviewed_by]] : []),
     ["SOAR note", review?.sync_state === "synced"],
   ];
   const citations = refs => (refs || []).map(ref => {
@@ -47,14 +55,14 @@ export default function InvestigationReview({ caseId }) {
     <Flex p={{ base: "14px", md: "20px" }} bg={ui.nav} color="white" align="center" gap="12px" wrap="wrap">
       <Box flex="1"><Text color="#b7c3d5" fontSize="10px" letterSpacing=".12em">EVIDENCE / REVIEW / HANDOFF</Text><Heading fontSize="20px" mt="5px">L1 investigation review</Heading></Box>
       {review?.mode && <Badge colorScheme={review.mode === "mock-v1" ? "orange" : "blue"}>{review.mode === "mock-v1" ? "Mock inference" : "Model inference"}</Badge>}
-      <Button size="sm" bg="white" color={ui.ink} onClick={() => setRefresh(v => v + 1)}>Refresh review</Button>
+      <Button size="sm" bg="white" color={ui.ink} isDisabled={approving} onClick={() => setRefresh(v => v + 1)}>Refresh review</Button>
     </Flex>
     <Box p={{ base: "14px", md: "20px" }}>
       {error && <Alert status="warning" mb="12px"><AlertIcon />Review refresh failed: {error}. {review ? "Displayed review may be stale." : "Review data is unavailable."} Retrying automatically.</Alert>}
       {!review && !error && <Text role="status">Loading worker review…</Text>}
       {review?.state === "not_requested" ? <Text color={ui.muted}>No specialist review has been requested for this case. Deterministic processing and analyst findings remain available below.</Text> : review && <>
         <Flex align="center" gap="10px" wrap="wrap"><Badge colorScheme={failed ? "red" : "blue"}>{label(review.state)}</Badge><Text color={ui.muted} fontSize="12px">Attempt {review.attempts} of {review.max_attempts || "—"} · Updated {formatTime(review.updated_at)}</Text></Flex>
-        <Grid as="ol" aria-label="L1 review stages" listStyleType="none" m="0" templateColumns={{ base: "1fr 1fr", md: "repeat(4,minmax(0,1fr))" }} gap="12px" mt="18px" mb="20px">
+        <Grid as="ol" aria-label="L1 review stages" listStyleType="none" m="0" templateColumns={{ base: "1fr 1fr", md: `repeat(${stages.length},minmax(0,1fr))` }} gap="12px" mt="18px" mb="20px">
           {stages.map(([name, complete], i) => <Box as="li" key={name} borderTop="3px solid" borderColor={complete ? ui.green : ui.line} pt="8px"><Text fontSize="12px" fontWeight="600">{i + 1}. {name}</Text><Text fontSize="11px" color={ui.muted}>{complete ? "Recorded" : "Not completed"}</Text></Box>)}
         </Grid>
         {failed && <Alert status="error" mb="14px"><AlertIcon /><Box><Text fontWeight="600">{invalid ? "Result withheld: Go contract checks failed" : `Worker ${review.state}`}</Text><Text fontSize="12px">{review.error_code ? label(review.error_code) + ". " : ""}No usable L1 verdict is available. Review the worker configuration and case history before retrying.</Text></Box></Alert>}
@@ -65,6 +73,17 @@ export default function InvestigationReview({ caseId }) {
             <Text mt="6px" color={ui.muted} fontSize="12px">{result ? "The evidence does not remove the need for analyst review. This worker verdict does not change the analyst determination or authorize a response." : "Queued, failed or incomplete work must not be treated as a benign outcome."}</Text>
             {result && <><Text fontWeight="600" mt="18px" mb="8px">Missing evidence / escalation reasons</Text><Stack as="ul" pl="18px" spacing="5px">{result.missing_evidence.map(item => <Text as="li" key={item}>{missingLabels[item] || label(item)}</Text>)}</Stack><Text mt="16px" fontSize="11px" color={ui.muted}>Model: {result.model_version} · Contract checks passed; evidence truth is not certified.</Text></>}
             <Text mt="16px" fontSize="12px">SOAR note: <strong>{label(review.sync_state)}</strong></Text>
+            {review.review_required && !review.reviewed_by && <Alert status="warning" mt="10px"><AlertIcon/>Mock SOAR write-back is waiting for analyst approval. No note or response action has been sent.</Alert>}
+            {review.reviewed_by && <Box mt="12px"><Text fontSize="12px">Mock note approved by {review.reviewed_by} · {formatTime(review.reviewed_at)}</Text><Text fontSize="12px" whiteSpace="pre-wrap" overflowWrap="anywhere">{review.review_comment}</Text></Box>}
+            {review.review_required && !review.reviewed_by && review.review_scope && result && !invalid && <Box mt="14px">
+             {!confirming?<Button isDisabled={!!error} variant="outline" onClick={()=>setConfirming(true)}>Review mock SOAR note</Button>:<Stack spacing="10px">
+              <Text fontSize="12px">Approve only the Go-generated INCONCLUSIVE note with evidence references and missing-context warnings. The source case remains open; no containment or case closure is authorized.</Text>
+              <Textarea aria-label="Analyst review comment" value={comment} maxLength={2000} isDisabled={approving} onChange={e=>setComment(e.target.value)} placeholder="Record what you reviewed (at least 10 characters)"/>
+              <Checkbox isChecked={confirmed} isDisabled={approving} onChange={e=>setConfirmed(e.target.checked)}>I reviewed the evidence and approve this mock note only</Checkbox>
+              {approvalError&&<Alert status="error"><AlertIcon/>{approvalError}</Alert>}
+              <Flex gap="8px" wrap="wrap"><Button isLoading={approving} isDisabled={!confirmed||comment.trim().length<10||!!error} onClick={approve}>Approve mock note</Button><Button variant="ghost" isDisabled={approving} onClick={()=>{setConfirming(false);setConfirmed(false)}}>Cancel review</Button></Flex>
+             </Stack>}
+            </Box>}
             {review.sync_state === "synced" && <Text fontSize="11px" color={ui.muted}>A note was saved to the mock SOAR case. The incident was not closed.</Text>}
             {review.sync_state === "conflict" && <Alert status="warning" mt="10px"><AlertIcon />Analyst changes need reconciliation in Stream operations.</Alert>}
           </Box>

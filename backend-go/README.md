@@ -148,3 +148,12 @@ private state and recovery artifacts.
 
 Real providers, external queries, enterprise identity, remote TLS workers and
 arbitrary third-party plugin hosting are [future work](../docs/ROADMAP.md).
+
+### Opt-in mock SOAR review gate
+
+Stream source grants may set `require_analyst_review: true`. All enabled mock import
+grants for a tenant/connector/source must agree, including across processors. The
+worker persists the gate on `l1_escalations` (migration 041); synchronization waits
+for a scope-authorized, audited note-only approval. Omitted flags preserve existing
+mock behavior. See [local JSON scenario](../docs/SUSPICIOUS_LOGIN_FLOW.md) for
+configuration, UI/HTTP approval, replay testing and rollback constraints.

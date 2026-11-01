@@ -105,3 +105,12 @@ sql:
         out: internal/modules/build/buildsql
         sql_package: pgx/v5
         omit_unused_structs: true
+  - engine: postgresql
+    schema: migrations
+    queries: internal/modules/soarsync/queries
+    gen:
+      go:
+        package: soarsql
+        out: internal/modules/soarsync/soarsql
+        sql_package: pgx/v5
+        omit_unused_structs: true

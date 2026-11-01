@@ -19,6 +19,7 @@ type Effect func(context.Context, pgx.Tx, telemetry.Event) error
 var workerName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 
 type Runtime struct {
+	RequireAnalystReview           bool
 	Store                          eventstate.Store
 	Publisher, Consumer            *streams.Client
 	Binding                        telemetry.Binding

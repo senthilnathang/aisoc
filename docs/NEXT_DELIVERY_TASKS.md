@@ -95,3 +95,9 @@ public TLS endpoint, external alert destination or production response was activ
 transport from live integration and inference. The user supplied JSON/local scope,
 not vendor versions, credentials, model endpoint or analyst-labelled evaluations.
 Those remain explicit production acceptance gates, rather than claimed completions.
+
+## Reviewed suspicious-login scenario
+
+The next local slice is available via `run.sh suspicious-login`; see
+[scenario guide](SUSPICIOUS_LOGIN_FLOW.md). It uses configurable JSON and a persisted
+mock-note approval gate. Live integrations and actual model validation remain pending.

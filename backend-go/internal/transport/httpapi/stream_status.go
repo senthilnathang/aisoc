@@ -36,7 +36,7 @@ func streamStatus(ctx context.Context, pool *pgxpool.Pool, b telemetry.Binding, 
 		}
 		worker = map[string]any{"status": state, "last_seen": last, "age_seconds": age, "error_code": code}
 	}
-	rows, err := pool.Query(ctx, `SELECT f.investigation_id,f.finding_id,COALESCE(e.state,'awaiting_mock_inference'),COALESCE(e.job_id::text,''),COALESCE(e.note_id,''),COALESCE(c.version,'') FROM stream_findings f LEFT JOIN l1_escalations e ON e.tenant_id=f.tenant_id AND e.investigation_id=f.investigation_id LEFT JOIN mock_soar_cases c ON c.tenant_id=e.tenant_id AND c.connector_id=e.connector_id AND c.external_id=e.external_id WHERE f.tenant_id=$1 AND f.connector_id=$2 AND f.source=$3 ORDER BY f.created_at DESC,f.finding_id LIMIT 25`, b.TenantID, b.ConnectorID, b.Source)
+	rows, err := pool.Query(ctx, `SELECT f.investigation_id,f.finding_id,CASE WHEN e.state='draft' AND e.review_required AND e.reviewed_by IS NULL THEN 'awaiting_review' ELSE COALESCE(e.state,'awaiting_mock_inference') END,COALESCE(e.job_id::text,''),COALESCE(e.note_id,''),COALESCE(c.version,'') FROM stream_findings f LEFT JOIN l1_escalations e ON e.tenant_id=f.tenant_id AND e.investigation_id=f.investigation_id LEFT JOIN mock_soar_cases c ON c.tenant_id=e.tenant_id AND c.connector_id=e.connector_id AND c.external_id=e.external_id WHERE f.tenant_id=$1 AND f.connector_id=$2 AND f.source=$3 ORDER BY f.created_at DESC,f.finding_id LIMIT 25`, b.TenantID, b.ConnectorID, b.Source)
 	if err != nil {
 		return nil, nil, err
 	}

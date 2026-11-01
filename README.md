@@ -283,3 +283,10 @@ Open `/build` for saved assets, metadata inspection and links to Skills, respons
 ## Platform review (2026-11-01)
 
 Detect-to-Build review: live desktop/mobile route coverage, corrected Overview data, complete response/source pagination and honest connector capability messaging. See [review and verification](docs/PLATFORM_REVIEW_2026-11-01.md).
+
+## Suspicious-login local flow
+
+Use `./run.sh suspicious-login --configure`, restart the foundation backend, then
+`./run.sh suspicious-login`. Four local JSON observations reach a verified Python
+mock result and wait for explicit mock-note approval in the case review UI.
+See [configuration, commands and boundaries](docs/SUSPICIOUS_LOGIN_FLOW.md).

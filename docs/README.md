@@ -1,7 +1,7 @@
 # Documentation index
 
 Current architecture and local migration status: 2026-11-01. The selected foundation
-uses API 3003/schema 040, with a 70,000-event local demo. The release on 3002 is
+uses API 3003/schema 041, with a 70,000-event local demo. The release on 3002 is
 preserved separately. Historical migration reports and ADR dates remain unchanged.
 
 | Document | Purpose |
@@ -121,3 +121,6 @@ The investigation detail now provides screenshot-inspired Summary, Report, Remed
 ## Platform review (2026-11-01)
 
 Review report covering all workspaces, fixes, live versus fixture verification and external validation limits. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+[Suspicious-login scenario](SUSPICIOUS_LOGIN_FLOW.md): configurable local JSON,
+Python gRPC mock, Go QA, explicit analyst mock-note approval and replay checks.

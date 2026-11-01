@@ -1,0 +1,21 @@
+{
+  "schema_version": "1",
+  "name": "Suspicious login \u2014 local JSON acceptance",
+  "mode": "local-json-mock-v1",
+  "api_base": "http://127.0.0.1:3003",
+  "scope": {
+    "id": "suspicious-login-v1",
+    "operator_id": "local-development",
+    "tenant_id": "demo",
+    "connector_id": "suspicious-login-v1",
+    "source": "qradar-siem",
+    "processor": "mock-login-v1",
+    "allow_retry": true,
+    "allow_mock_import": true,
+    "require_analyst_review": true,
+    "allow_sandbox_response": false,
+    "pending_warning": 100,
+    "age_warning_seconds": 15
+  },
+  "events_file": "events.json"
+}

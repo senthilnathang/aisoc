@@ -242,3 +242,11 @@ Build projects existing skills, response plans/policies, API sources/rules and c
 ## Platform review (2026-11-01)
 
 No schema changes. Response summary aggregates existing remediation and response-plan records per tenant. API-source paging reuses the existing tenant/order index and excludes credential hashes through the existing view projection. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+## Analyst review receipt (041)
+
+Additive columns on `l1_escalations`: `review_required` (default false), nullable
+`reviewed_by`, `review_comment`, `reviewed_at`. A constraint requires a complete
+receipt with a valid comment only for gated rows. Approval and its audit event are
+atomic; row locking serializes approval/sync and identical retry cannot append a
+second audit. No new table. See [scenario](SUSPICIOUS_LOGIN_FLOW.md).

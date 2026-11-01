@@ -105,3 +105,13 @@ Detect → Routing uses `/detect/routing` (alias `/detect/detection-routing`) wi
 ### Investigation workspace (2026-11-01)
 
 The investigation detail now provides screenshot-inspired Summary, Report, Remediation, Artifacts graph/table and a private case evidence-lookup drawer. Existing L1 review, runbooks, feedback and action simulations remain available. Go supplies bounded provenance projections; migration 036 stores actor-scoped idempotent lookup messages with atomic audit. No model-backed conversation or external containment is implied. See [screens, APIs, architecture, limits, tests and rollback](INVESTIGATION_WORKSPACE.md).
+
+## Suspicious-login review gate
+
+The case L1 panel displays an optional analyst approval stage from the Go `/l1`
+projection. Only an authorized `review_scope` exposes the mock-note confirmation
+form. A review comment and checkbox are required; a failed write preserves the
+comment. Async completion is guarded by the case component lifecycle, and polling
+continues while awaiting review so approvals in other tabs appear. The button
+records approval only; the worker performs conflict-aware mock synchronization.
+See [scenario](SUSPICIOUS_LOGIN_FLOW.md).

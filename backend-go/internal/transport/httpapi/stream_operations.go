@@ -74,6 +74,24 @@ func registerStreamOperations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []c
 		}
 		return config.StreamScope{}, telemetry.Binding{}, eventstate.ErrRecoveryDenied
 	}
+	mux.HandleFunc("POST /api/v1/stream-operations/{scope}/approve-mock-note", streamRespond(func(r *http.Request) (any, int, error) {
+		scope, b, err := get(r)
+		if err != nil {
+			return nil, 0, streamError(err)
+		}
+		if !scope.RequireAnalystReview {
+			return nil, 0, streamError(eventstate.ErrRecoveryDenied)
+		}
+		var input struct {
+			JobID   string `json:"job_id"`
+			Comment string `json:"comment"`
+		}
+		if err = streamBody(r, &input); err != nil {
+			return nil, 0, streamError(err)
+		}
+		err = (soarsync.Store{Pool: pool}).ApproveMockNote(r.Context(), b, input.JobID, auth.From(r.Context()).ID, input.Comment)
+		return map[string]any{"state": "approved", "mode": "mock-note-only"}, 200, streamError(err)
+	}))
 	mux.HandleFunc("POST /api/v1/stream-operations/{scope}/sandbox-session", streamRespond(func(r *http.Request) (any, int, error) {
 		s, b, err := get(r)
 		if err != nil {

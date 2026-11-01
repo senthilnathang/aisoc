@@ -66,3 +66,9 @@ No schema, deployment or core startup change is required. Rollback removes use o
 the optional mock/rule; existing services and stored data are unaffected.
 S06 adds durable finding/case/job admission with bounded tenant scheduling.
 Next: [S07](IMPLEMENTATION_TASKS.md), Python investigation and QA.
+
+## Integrated reviewed scenario
+
+The offline demonstration above remains available. For the complete persistent
+Go/Redis/Python/QA/analyst/mock-SOAR path, use the
+[suspicious-login scenario](SUSPICIOUS_LOGIN_FLOW.md).

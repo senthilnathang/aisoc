@@ -100,7 +100,7 @@ func (r Runtime) AdvanceMock(ctx context.Context) error {
 		if state != "completed" {
 			continue
 		}
-		target := soarsync.Target{ConnectorID: "mock-soar", ExternalID: receipt.InvestigationID, Version: "1"}
+		target := soarsync.Target{ConnectorID: "mock-soar", ExternalID: receipt.InvestigationID, Version: "1", RequireReview: r.RequireAnalystReview}
 		if _, err = r.Store.Pool.Exec(ctx, `INSERT INTO mock_soar_cases(tenant_id,connector_id,external_id,version,status,owner) VALUES($1,$2,$3,'1','open','sandbox-analyst') ON CONFLICT DO NOTHING`, r.Binding.TenantID, target.ConnectorID, target.ExternalID); err != nil {
 			return err
 		}

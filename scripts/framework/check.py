@@ -323,13 +323,13 @@ def main():
             run([python,'-c',"import sys; from aisoc.worker.v1.investigation_pb2 import InvestigationResult; r=InvestigationResult.FromString(bytes.fromhex(sys.stdin.read())); assert r.verdict=='INCONCLUSIVE' and r.requires_human_review and r.tenant_id=='framework-e2e' and len(r.hypotheses)==2; print('PASS durable typed investigation result after Go QA')"],ROOT/'services/python-worker',input=investigation_output)
             if options.with_streams:
                 scopes=temp/'stream-scopes.json'
-                scopes.write_text(json.dumps([{'id':'mock-siem','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-qradar','source':'qradar-siem','processor':'mock-login-v1','allow_retry':True,'allow_mock_import':True,'allow_sandbox_response':True}]))
+                scopes.write_text(json.dumps([{'id':'mock-siem','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-qradar','source':'qradar-siem','processor':'mock-login-v1','allow_retry':True,'allow_mock_import':True,'allow_sandbox_response':True}, {'id':'mock-review','operator_id':'fixture-a','tenant_id':'auth-a','connector_id':'mock-review','source':'qradar-siem','processor':'mock-login-v1','allow_mock_import':True,'require_analyst_review':True}]))
                 env.update(AISOC_GO_STREAM_OPERATIONS_FILE=str(scopes),AISOC_STREAM_REDIS_ADDR=env['AISOC_TEST_REDIS_ADDR'],AISOC_STREAM_REDIS_PUBLISHER_PASSWORD=env['AISOC_TEST_REDIS_PUBLISHER_PASSWORD'],AISOC_STREAM_REDIS_CONSUMER_PASSWORD=env['AISOC_TEST_REDIS_CONSUMER_PASSWORD'])
                 api.terminate();api.wait(timeout=10)
                 api=spawn([ROOT/'backend-go/bin/api']);wait_port(apiport)
-                def stream_http(path, body=None, actor='a', expected=200):
+                def stream_http(path, body=None, actor='a', expected=200, root='/api/v1/stream-operations'):
                     headers={'Authorization':'Bearer parity_fixture_'+actor*40,'Content-Type':'application/json'}
-                    request=urllib.request.Request('http://'+env['AISOC_GO_ADDR']+'/api/v1/stream-operations'+path,headers=headers,data=None if body is None else json.dumps(body).encode())
+                    request=urllib.request.Request('http://'+env['AISOC_GO_ADDR']+root+path,headers=headers,data=None if body is None else json.dumps(body).encode())
                     try:
                         with urllib.request.urlopen(request,timeout=10) as response: code,value=response.status,json.load(response)
                     except urllib.error.HTTPError as error: code,value=error.code,json.load(error)
@@ -376,6 +376,36 @@ def main():
                 assert observed['snapshot']['accepted']==observed['snapshot']['completed']==8 and observed['snapshot']['pending']==0
                 assert sql("SELECT count(*) FROM l1_escalations WHERE tenant_id='auth-a' AND state='synced'")=='2'
                 (report/'sandbox-flow.json').write_text(json.dumps({'passed':True,'mode':'JSON mocks; no privileged actions','accepted':8,'replayed_insertions':0,'mock_soar_notes':2,'worker_restart_recovered':True,'tenant_denial_verified':True},indent=2)+'\n')
+                # A separate opt-in source must stop after Go QA until explicit review.
+                review_page=stream_http('/mock-review/mock-example')
+                assert stream_http('/mock-review/mock-import',review_page,expected=202)['accepted']['Inserted']==4
+                for _ in range(200):
+                    review_state=stream_http('/mock-review')
+                    if review_state['cases'] and review_state['cases'][0]['state']=='awaiting_review': break
+                    time.sleep(.1)
+                else: raise RuntimeError('Review gate was not reached')
+                review_case=review_state['cases'][0]
+                assert not review_case['note_id']
+                assert sql("SELECT count(*) FROM mock_soar_notes WHERE tenant_id='auth-a'")=='2'
+                reviewed=stream_http('/'+review_case['investigation_id']+'/l1',root='/api/v1/investigations')
+                assert reviewed['result_status']=='verified' and reviewed['review_required'] and len(reviewed['evidence'])==4
+                assert reviewed['result']['verdict']=='INCONCLUSIVE' and reviewed['review_scope']=='mock-review'
+                approval={'job_id':review_case['job_id'],'comment':'Automated sandbox acceptance: evidence and missing-context warnings reviewed; mock note only.'}
+                stream_http('/mock-review/approve-mock-note',approval,actor='b',expected=403)
+                stream_http('/mock-siem/approve-mock-note',approval,expected=403)
+                stream_http('/mock-review/approve-mock-note',approval)
+                stream_http('/mock-review/approve-mock-note',approval)
+                stream_http('/mock-review/approve-mock-note',{**approval,'comment':'Different comment must not overwrite receipt'},expected=409)
+                for _ in range(200):
+                    review_state=stream_http('/mock-review')
+                    if review_state['cases'][0]['state']=='synced': break
+                    time.sleep(.1)
+                else: raise RuntimeError('Approved mock note did not synchronize')
+                assert sql("SELECT count(*) FROM mock_soar_notes WHERE tenant_id='auth-a'")=='3'
+                assert sql("SELECT count(*) FROM audit_events WHERE tenant_id='auth-a' AND action='mock_soar_note_approved'")=='1'
+                review_page['expected_checkpoint']=review_state['checkpoint']
+                assert stream_http('/mock-review/mock-import',review_page,expected=202)['accepted']['Inserted']==0
+                (report/'suspicious-login-flow.json').write_text(json.dumps({'passed':True,'mode':'JSON fixtures and simulated analyst approval','qa':'verified','evidence_count':4,'blocked_before_review':True,'single_approval_audit':True,'single_note':True,'cross_operator_denied':True,'replay_inserted':0,'real_model':False,'privileged_actions':False},indent=2)+'\n')
                 action={'id':'demo-revoke','session_id':'demo-session','principal_ref':'demo-user','expected_version':1,'ticket':'TEST-REVIEW'}
                 def response_op(operation, expected=200, **extra):
                     return stream_http('/mock-siem/sandbox-session',{**action,'operation':operation,**extra},expected=expected)

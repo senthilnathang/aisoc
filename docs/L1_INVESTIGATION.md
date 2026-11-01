@@ -77,9 +77,9 @@ contract and evaluation policy.
 
 These are contract/sandbox evaluations, not LLM accuracy, precision/recall or
 production performance results. No live model or provider has been enabled.
-Running foundation/release binaries and Python processes remain unchanged. Deploy
-after applying source migrations (23 in total, still 37 tables). Migration 023 was
-tested only in disposable databases; the running databases remain on 019. Deploy
+The current foundation runs the later integrated pipeline; migration 041 adds the
+optional analyst gate described in [the end-to-end scenario](SUSPICIOUS_LOGIN_FLOW.md).
+The release profile remains separate. Deploy
 Go/Python generated contracts together; an older Python service returns UNIMPLEMENTED
 and normal bounded job retry applies. Rollback stops new mock enqueues and pauses or
 cancels pending mock jobs before reverting the dispatcher; retain existing outputs.

@@ -376,3 +376,10 @@ frontend/src/BuildWorkspace.jsx consumes GET /api/v1/build/catalog. backend-go/i
 ## Platform review (2026-11-01)
 
 Overview.jsx uses only the dashboard contract. Response filters and pagination must reach Go; keep the search toolbar mounted during refresh. Response summary is generated from investigations/queries/response_summary.sql. Source paging extends the existing parameterized intake query; validate limit/offset at the HTTP boundary. Rule selection uses server search. Preserve stale-response guards. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+## Repeatable suspicious-login scenario
+
+See [the scenario guide](SUSPICIOUS_LOGIN_FLOW.md) for `run.sh suspicious-login`,
+versioned JSON configuration, local scope setup, restart and approval. Migration 041
+is additive; sqlc generates the approval queries. Keep the foundation mock profile
+and explicit analyst gate when editing fixtures.

@@ -458,3 +458,31 @@ Run python3 scripts/framework/check_detection_intelligence.py for isolated Postg
 ## Platform review (2026-11-01)
 
 Run the four batches of platform-live-browser-check.js and platform-regression-browser-check.js alongside per-workspace scripts. The expanded check_detection_intelligence.py covers all domain packages with disposable PostgreSQL. check.py --with-streams additionally verifies Redis and worker/HTTP integration. Report live reads separately from intercepted mutations. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+## Reviewed suspicious-login slice — 2026-11-01
+
+The local foundation ran the versioned JSON scenario through actual Go intake,
+PostgreSQL/outbox, Redis workers and the Python gRPC mock. Four events produced one
+case with four evidence references and a QA-verified INCONCLUSIVE result. Before
+approval: `awaiting_review`, no note. Explicitly simulated approval: one mock note,
+case still open, replay inserted zero events. Reports are under
+`output/suspicious-login/{before-review,after-review}.json`.
+
+`python3 scripts/framework/check.py --with-streams` tests the isolated pipeline,
+including withheld note, operator denial, immutable approval replay and one audit/
+note. Store tests verify wrong source/tenant, gate downgrade and audit-failure
+rollback; configuration tests reject conflicting policies across processors.
+The scenario loader's three unit tests cover unsafe origins, weakened grants,
+path traversal and foreign event identity. `sqlc-check`, frontend lint and build
+pass (the existing bundle-size warning remains).
+
+Run `scripts/framework/suspicious-login-browser-check.js` through the Playwright
+browser tool on the scenario case. At 1440px and 375px it checks confirmation,
+comment requirements, a failed write retaining its comment, successful receipt and
+no horizontal overflow. Writes in this browser fixture are intercepted. Existing
+`investigation-review-browser-check.js` also passed real evidence links, queued/
+failed/invalid/empty states, HTML escaping and stale-refresh handling. Screenshot
+receipts are under `output/playwright/suspicious-login-review-*.png`.
+
+These results establish local mock contract behavior, not live QRadar support,
+real-model quality or production performance. See [scenario guide](SUSPICIOUS_LOGIN_FLOW.md).

@@ -426,3 +426,18 @@ GET /api/v1/build/catalog returns items, filtered total, global tenant counts, l
 ## Platform review (2026-11-01)
 
 GET /api/v1/remediations/summary returns tenant-wide pending, completed, cases and workflows integer counts from one statement. Existing remediation collection supports status/search/limit/offset; the UI uses pages of 25. GET /api/v1/api-sources now accepts limit 1–500 (default 100) and offset 0–1,000,000 (default 0); invalid, repeated or unknown parameters return 400. Existing items response is preserved. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+## Mock note approval (041)
+
+`POST /api/v1/stream-operations/{scope}/approve-mock-note` accepts only
+`{"job_id":"<uuid>","comment":"Reviewed evidence and missing context"}`.
+The authenticated operator must have the matching tenant/source scope with
+`require_analyst_review: true`. The gate must also be persisted on the escalation.
+Trimmed comment length is 10–2000 Unicode characters. Returns 200 with
+`state: approved`, `mode: mock-note-only`; identical receipt replay is idempotent,
+a different receipt returns 409. Missing permission returns 403; malformed input
+returns 400. No arbitrary actor, verdict, destination or action is accepted.
+The existing case `/l1` projection adds `review_required`, optional `reviewed_by`,
+`review_comment`, `reviewed_at`, and an operator-authorized `review_scope`.
+Unapproved gated drafts project `sync_state: awaiting_review`.
+See [scenario](SUSPICIOUS_LOGIN_FLOW.md).

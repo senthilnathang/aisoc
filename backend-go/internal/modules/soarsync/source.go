@@ -12,7 +12,7 @@ import (
 // ObserveMockCase imports a synthetic authoritative revision, including analyst
 // fields. No provider calls; revisions must explicitly follow the stored version.
 func (s Store) ObserveMockCase(ctx context.Context, next qradarmock.CaseRevision, owner, note string) error {
-	if !valid(next.Binding.TenantID, Target{next.Binding.ConnectorID, next.ExternalID, next.Version}) || len(owner) > 256 || len(note) > 4096 || !utf8.ValidString(owner) || !utf8.ValidString(note) {
+	if !valid(next.Binding.TenantID, Target{ConnectorID: next.Binding.ConnectorID, ExternalID: next.ExternalID, Version: next.Version}) || len(owner) > 256 || len(note) > 4096 || !utf8.ValidString(owner) || !utf8.ValidString(note) {
 		return ErrInvalid
 	}
 	tx, err := s.Pool.Begin(ctx)

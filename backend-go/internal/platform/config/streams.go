@@ -14,6 +14,7 @@ type StreamScope struct {
 	Source               string `json:"source"`
 	Processor            string `json:"processor"`
 	AllowRetry           bool   `json:"allow_retry"`
+	RequireAnalystReview bool   `json:"require_analyst_review,omitempty"`
 	AllowMockImport      bool   `json:"allow_mock_import"`
 	AllowSandboxResponse bool   `json:"allow_sandbox_response"`
 	PendingWarning       int64  `json:"pending_warning"`
@@ -33,12 +34,20 @@ func validateStreamScopes(a Auth) error {
 	}
 	id := regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 	seen := map[string]bool{}
+	policies := map[string]bool{}
 	for _, s := range a.StreamOperations {
 		if s.MaxHotEvents != 0 && (s.MaxHotEvents < 100 || s.MaxHotEvents > 10000) {
 			return errors.New("hot event limit must be 100..10000")
 		}
 		if !id.MatchString(s.ID) || !id.MatchString(s.OperatorID) || !id.MatchString(s.TenantID) || !id.MatchString(s.ConnectorID) || !id.MatchString(s.Source) || !id.MatchString(s.Processor) || seen[s.ID] || s.PendingWarning < 0 || s.PendingWarning > 100000 || s.AgeWarningSeconds < 0 || s.AgeWarningSeconds > 86400 {
 			return errors.New("invalid stream operations scope")
+		}
+		if s.AllowMockImport {
+			key := s.TenantID + ":" + s.ConnectorID + ":" + s.Source
+			if prior, ok := policies[key]; ok && prior != s.RequireAnalystReview {
+				return errors.New("conflicting analyst review requirements for source")
+			}
+			policies[key] = s.RequireAnalystReview
 		}
 		seen[s.ID] = true
 		found := a.Mode == "local" && s.OperatorID == "local-development"

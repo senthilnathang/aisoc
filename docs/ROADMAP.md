@@ -192,3 +192,11 @@ Implemented the read-only tenant asset catalog and Build entry point, reusing ex
 ## Platform review (2026-11-01)
 
 Completed local screen review and fixes for sample Overview facts, paginated response records, tenant-wide response totals, source rule selection and Cribl capability messaging. Live providers, model-quality evaluation and production operation gates remain separate pending work. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+## Suspicious-login local slice (2026-11-01)
+
+The configurable [JSON-to-reviewed-mock-SOAR flow](SUSPICIOUS_LOGIN_FLOW.md) adds an
+opt-in analyst gate to the existing Go/Redis/Python pipeline. This completes the
+local walkthrough with verified evidence, explicit note approval and deduplicated
+replay. Live QRadar/API-version verification, real model quality evaluation and
+production response authorization remain separate pending work.

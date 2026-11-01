@@ -3,7 +3,7 @@
 `internal/modules/soarsync` consumes completed mock investigation jobs and produces
 audited L2-review records and note-only drafts. It never invokes a provider, sends a
 message to an analyst, or enables containment. All SOAR effects are explicit sandbox
-database records. No public API or background sync loop is enabled by this change.
+database records. The integrated stream worker stages and synchronizes these drafts; scoped HTTP operations expose mock import, reconciliation and approval.
 
 ## Escalation boundary
 
@@ -58,8 +58,8 @@ verified API/version scopes, provider idempotency or effect lookup, bounded retr
 leases, reconciliation and outage tests before rollout. No actual SOAR credentials
 are stored or used. Artifacts, tasks and status write-back are not allowlisted yet.
 
-Source mappings and review actors come from trusted Go callers. There is no new
-user-facing approval workflow or tenant-wide retention scheduler. Historical job
+Source mappings and review actors come from trusted Go callers. Migration 041 adds an opt-in user-facing mock-note approval workflow; see
+[the end-to-end scenario](SUSPICIOUS_LOGIN_FLOW.md). Historical job
 output is preserved; this path does not certify evidence freshness or propagate
 late corrections automatically. S10 must budget and test retention/backlog limits.
 
@@ -72,10 +72,12 @@ audit-failure rollback, and cancelled/stale/invalid outputs. Test setup builds a
 admitted finding and completes a QA-valid synthetic job through the existing job
 store; S07 separately verifies real Python RPC and dispatcher execution.
 
-Source now has 24 migrations and 40 tables. Migration 024 has been applied only to
-disposable databases. Running release/foundation services remain on 019. Rollback
-disables these optional operations and retains drafts, notes, audit and receipts;
-do not drop them or replay drafts blindly. Live SOAR writes remain a separate gate.
+The current foundation includes additive migration 041: persisted review requirement,
+actor, comment and time on `l1_escalations`. `SyncMock` returns `awaiting_review`
+without writing until the scoped approval is committed. Existing scopes default to
+ungated behavior. Rollback pauses scoped processing and retains drafts, notes, audit
+and receipts. An older binary predating 041 cannot enforce this gate.
+Live SOAR writes remain a separate gate.
 
 Next: [S09](IMPLEMENTATION_TASKS.md), tenant-aware caching for a justified bounded
 enrichment use case. See [S07 investigation](L1_INVESTIGATION.md) for output limits.

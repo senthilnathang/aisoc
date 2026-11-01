@@ -25,7 +25,10 @@ var ErrInvalid = errors.New("invalid mock SOAR request")
 var token = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$`)
 
 type Store struct{ Pool *pgxpool.Pool }
-type Target struct{ ConnectorID, ExternalID, Version string }
+type Target struct {
+	ConnectorID, ExternalID, Version string
+	RequireReview                    bool
+}
 type Receipt struct{ State, NoteID string }
 
 func valid(tenant string, t Target) bool {
@@ -81,9 +84,10 @@ func (s Store) Stage(ctx context.Context, tenant, jobID string, target Target) (
 	var prior []byte
 	var connector, external, initial string
 	var note *string
-	err = tx.QueryRow(ctx, `SELECT state,note_id,output_hash,connector_id,external_id,initial_version FROM l1_escalations WHERE tenant_id=$1 AND job_id=$2`, tenant, jobID).Scan(&receipt.State, &note, &prior, &connector, &external, &initial)
+	var requireReview bool
+	err = tx.QueryRow(ctx, `SELECT state,note_id,output_hash,connector_id,external_id,initial_version,review_required FROM l1_escalations WHERE tenant_id=$1 AND job_id=$2`, tenant, jobID).Scan(&receipt.State, &note, &prior, &connector, &external, &initial, &requireReview)
 	if err == nil {
-		if !bytes.Equal(prior, sum[:]) || connector != target.ConnectorID || external != target.ExternalID || initial != target.Version {
+		if !bytes.Equal(prior, sum[:]) || connector != target.ConnectorID || external != target.ExternalID || initial != target.Version || requireReview != target.RequireReview {
 			return Receipt{}, ErrConflict
 		}
 		if note != nil {
@@ -99,7 +103,7 @@ func (s Store) Stage(ctx context.Context, tenant, jobID string, target Target) (
 		refs = append(refs, e.Reference)
 	}
 	body := fmt.Sprintf("MOCK L1 review: INCONCLUSIVE. Human L2 review required. Missing evidence: iam_mfa_context, endpoint_process_tree. Evidence references: %s. Job: %s. No response actions executed.", strings.Join(refs, ", "), jobID)
-	if _, err = tx.Exec(ctx, `INSERT INTO l1_escalations(tenant_id,job_id,investigation_id,connector_id,external_id,initial_version,expected_version,output_hash,note_body) VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8)`, tenant, jobID, task.IncidentId, target.ConnectorID, target.ExternalID, target.Version, sum[:], body); err != nil {
+	if _, err = tx.Exec(ctx, `INSERT INTO l1_escalations(tenant_id,job_id,investigation_id,connector_id,external_id,initial_version,expected_version,output_hash,note_body,review_required) VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8,$9)`, tenant, jobID, task.IncidentId, target.ConnectorID, target.ExternalID, target.Version, sum[:], body, target.RequireReview); err != nil {
 		return Receipt{}, err
 	}
 	now := time.Now().UTC()
@@ -124,12 +128,16 @@ func (s Store) SyncMock(ctx context.Context, tenant, jobID string) (Receipt, err
 	defer tx.Rollback(ctx)
 	var state, connector, external, expected, body, incident string
 	var note *string
-	err = tx.QueryRow(ctx, `SELECT state,connector_id,external_id,expected_version,note_body,investigation_id,note_id FROM l1_escalations WHERE tenant_id=$1 AND job_id=$2 FOR UPDATE`, tenant, jobID).Scan(&state, &connector, &external, &expected, &body, &incident, &note)
+	var required, approved bool
+	err = tx.QueryRow(ctx, `SELECT state,connector_id,external_id,expected_version,note_body,investigation_id,note_id,review_required,reviewed_by IS NOT NULL FROM l1_escalations WHERE tenant_id=$1 AND job_id=$2 FOR UPDATE`, tenant, jobID).Scan(&state, &connector, &external, &expected, &body, &incident, &note, &required, &approved)
 	if err != nil {
 		return Receipt{}, err
 	}
 	if state == "synced" {
 		return Receipt{State: state, NoteID: *note}, tx.Commit(ctx)
+	}
+	if required && !approved {
+		return Receipt{State: "awaiting_review"}, tx.Commit(ctx)
 	}
 	if state == "conflict" {
 		return Receipt{State: state}, ErrConflict

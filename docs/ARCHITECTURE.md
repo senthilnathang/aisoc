@@ -352,3 +352,11 @@ Build adds a read-only Go/sqlc projection over existing Skills, response plans/p
 ## Verified workspace read paths
 
 The Detect overview reads the existing tenant dashboard contract without sample activity. Respond uses a sqlc summary over existing remediation/plan tables plus separately paginated action reads. Build API-source pages propagate bounded limit/offset to the existing tenant-scoped query. These are read-path corrections, not new orchestration services or schema changes. See [platform review](PLATFORM_REVIEW_2026-11-01.md).
+
+## Suspicious-login approval boundary (041)
+
+The [local scenario](SUSPICIOUS_LOGIN_FLOW.md) reuses intake/outbox → Redis → Go
+correlation → durable Python gRPC job → Go QA. Optional source-level analyst review
+is persisted on the escalation; note synchronization checks it under lock. A scoped
+HTTP operation records immutable approval and audit atomically. Mock source-version
+checks still apply; no containment or case closure is authorized.
