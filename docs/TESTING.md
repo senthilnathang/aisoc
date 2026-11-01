@@ -591,3 +591,7 @@ Run `case-response-browser-check.js` through Playwright for intercepted-write UI
 regression. `case-response-demo.js` deliberately writes one retained local mock
 showcase and restores the kill switch; run only for that intended purpose.
 See [validation and demo receipt](INVESTIGATE_RESPOND_SANDBOX.md).
+
+## Case detection feedback regression
+
+The disposable detection suite includes case ownership, pagination, concurrent CAS, audit rollback and label-change replay invalidation tests. Browser checks are scripts/framework/case-detection-feedback-browser-check.js and scripts/framework/rule-recommendations-browser-check.js. The real local demo replay preserved TP/unreviewed alerts and kept the applied rule disabled. See [test details](INVESTIGATE_DETECT_FEEDBACK.md).

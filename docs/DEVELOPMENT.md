@@ -418,3 +418,7 @@ The new response queries use sqlc/pgx; the existing executor accepts the owning
 transaction so response effects, note and audit commit together. Configure a
 separate trusted `allow_sandbox_response` grant, never inherit it from Build imports.
 See [contracts, state handling and rollback](INVESTIGATE_RESPOND_SANDBOX.md).
+
+## Case detection feedback
+
+The case panel reuses AlertLabelReview and the existing recommendation engine. Maintain rule-before-alert lock order and atomic label/case-audit/rule-audit writes. Regenerate sqlc after changing queries; exercise the disposable database and browser checks documented in [Investigate → Detect](INVESTIGATE_DETECT_FEEDBACK.md).

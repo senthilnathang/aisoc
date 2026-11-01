@@ -296,3 +296,7 @@ agent planner or execute response actions.
 ## Local workspace verification — 2026-11-01
 
 Detect through Build now have recorded live desktop/mobile route checks and local API/interaction coverage. Overview uses tenant records; response lists and source configuration support server-side paging/search. Cribl setup remains configuration-only. See [review scope and remaining release gates](PLATFORM_REVIEW_2026-11-01.md).
+
+## Investigate → Detect feedback status
+
+Local/mock end-to-end feedback is implemented: explicit source-alert review → existing recommendations → replay → confirmed disabled-rule application. No automatic verdict-to-label conversion or provider synchronization. See [details](INVESTIGATE_DETECT_FEEDBACK.md).

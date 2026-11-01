@@ -151,3 +151,5 @@ navigation and responsive browser verification.
 
 - [Investigate → Respond sandbox flow](INVESTIGATE_RESPOND_SANDBOX.md): explicit
   approval, mock revocation, receipts, testing and retained showcase.
+
+- [Investigate → Detect feedback](INVESTIGATE_DETECT_FEEDBACK.md): explicit source-alert labels, atomic audits, existing recommendation replay and guarded local application.

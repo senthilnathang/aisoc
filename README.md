@@ -317,3 +317,7 @@ keyboard navigation and mobile submenus across Detect to Build. See the
 Investigate now hands off to Respond through an [explicitly approved mock session
 revocation flow](docs/INVESTIGATE_RESPOND_SANDBOX.md), with case-linked evidence,
 a durable receipt and mock SOAR response note. Live identity providers remain disabled.
+
+## Investigation-to-detection feedback
+
+Investigations now expose explicit source-alert review with confirmation, rationale and version checks. Labels feed existing rule recommendations, frozen replay and confirmed application to disabled, unbound local rules. See [workflow, APIs and validation](docs/INVESTIGATE_DETECT_FEEDBACK.md).

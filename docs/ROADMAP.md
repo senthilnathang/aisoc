@@ -238,3 +238,7 @@ See [scope and verification](UI_UX_SYSTEM.md). Backend/provider release gates ar
 - [ ] Real IAM execution, independent approver roles and production validation.
 
 See [local response scope and test results](INVESTIGATE_RESPOND_SANDBOX.md).
+
+## Investigate → Detect local feedback — completed
+
+Explicit source-alert labels, analyst confirmation, case audit history, recommendation deep links, replay and guarded local application are implemented and locally tested. Production detection deployment and quality evaluation remain pending. See [validation and limits](INVESTIGATE_DETECT_FEEDBACK.md).

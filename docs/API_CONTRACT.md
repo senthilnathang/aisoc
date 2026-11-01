@@ -461,3 +461,7 @@ draft editors, JSON file import, Go validation and evidence preview. Explicit im
 seals a tenant-scoped snapshot and feeds the existing workers without restart.
 Case note approval remains mandatory; provider endpoints and response execution
 remain disabled. Existing provider-specific connector records remain inspect-only.
+
+## Investigation detection feedback
+
+GET /api/v1/investigations/{id}/detection-feedback accepts limit/offset. PUT /api/v1/investigations/{id}/detection-feedback/{alert} requires label, rationale, expected_version and confirm:true; tenant/reviewer/rule are server-derived. Stale label versions return 409. See [contracts and constraints](INVESTIGATE_DETECT_FEEDBACK.md).

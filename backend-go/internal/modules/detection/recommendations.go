@@ -85,9 +85,15 @@ type AlertLabelInput struct {
 	ExpectedVersion int    `json:"expected_version"`
 }
 
+func validateAlertLabel(actor string, in AlertLabelInput) error {
+	if actor == "" || !contains([]string{"true_positive", "false_positive", "unreviewed"}, in.Label) || strings.TrimSpace(in.Rationale) == "" || len(in.Rationale) > 2000 || strings.ContainsRune(in.Rationale, 0) || in.ExpectedVersion < 0 || in.ExpectedVersion > 2147483646 {
+		return fault.New(400, "VALIDATION_ERROR", "Explicit label, rationale and valid version are required")
+	}
+	return nil
+}
 func (s Store) LabelAlert(ctx context.Context, tenant, actor, ruleID, alertID string, in AlertLabelInput) (int, error) {
-	if actor == "" || !contains([]string{"true_positive", "false_positive", "unreviewed"}, in.Label) || strings.TrimSpace(in.Rationale) == "" || len(in.Rationale) > 2000 || in.ExpectedVersion < 0 || in.ExpectedVersion > 2147483646 {
-		return 0, fault.New(400, "VALIDATION_ERROR", "Explicit label, rationale and valid version are required")
+	if err := validateAlertLabel(actor, in); err != nil {
+		return 0, err
 	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
@@ -97,6 +103,15 @@ func (s Store) LabelAlert(ctx context.Context, tenant, actor, ruleID, alertID st
 	if _, _, err = get(ctx, tx, tenant, ruleID, true); err != nil {
 		return 0, err
 	}
+	v, err := labelAlertTx(ctx, tx, tenant, actor, ruleID, alertID, in)
+	if err != nil {
+		return 0, err
+	}
+	return v, tx.Commit(ctx)
+}
+
+// labelAlertTx is shared by case and rule workspaces. Caller holds the rule lock.
+func labelAlertTx(ctx context.Context, tx pgx.Tx, tenant, actor, ruleID, alertID string, in AlertLabelInput) (int, error) {
 	v, err := detectionsql.New(tx).SaveRecommendationLabel(ctx, detectionsql.SaveRecommendationLabelParams{TenantID: tenant, RuleID: ruleID, AlertID: alertID, Label: in.Label, Rationale: in.Rationale, Reviewer: actor, ExpectedVersion: int32(in.ExpectedVersion)})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, recommendationError("Alert label changed or alert does not belong to this rule; reload")
@@ -107,7 +122,7 @@ func (s Store) LabelAlert(ctx context.Context, tenant, actor, ruleID, alertID st
 	if err = investigations.ResourceAudit(ctx, tx, tenant, "detection_rules", ruleID, "alert_labelled", map[string]any{"alert_id": alertID, "label": in.Label, "reviewer": actor, "version": v, "rationale": in.Rationale}); err != nil {
 		return 0, err
 	}
-	return int(v), tx.Commit(ctx)
+	return int(v), nil
 }
 func (s Store) GenerateRecommendations(ctx context.Context, tenant, actor, id string, days, expected int) (int, error) {
 	if actor == "" || days < 1 || days > 90 {

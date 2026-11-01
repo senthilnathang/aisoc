@@ -73,3 +73,7 @@ No new infrastructure or throughput claims. Pending: provider-specific validator
 ### Verified result (2026-11-01)
 
 Passed: race-enabled disposable PostgreSQL detection/HTTP tests, eight frontend test files, ESLint, production build, sqlc generated-code diff and Go vet. Recommendation workflow and existing Rules browser suites passed on the local development and compiled preview builds. Browser mutations were intercepted; database mutation tests ran in the disposable cluster. Independent review prompted explicit UI guards for expired receipts and provider-bound rules, now covered by the browser suite. Additive migration 034 is applied to the local backend.
+
+## Investigation entry point
+
+Analysts can now label case-bound source alerts from Investigation Summary/Review and follow their rule into this workspace. The same labels, frozen replay and disabled/unbound apply guards apply. Case-origin labels additionally record a transactional case audit. See [Investigate → Detect](INVESTIGATE_DETECT_FEEDBACK.md).

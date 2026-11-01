@@ -397,3 +397,7 @@ uses the existing sandbox executor. PostgreSQL commits revocation, receipt, mock
 SOAR note and case audit atomically. Respond surfaces these case-linked records;
 Python and generic remediation actions do not gain execution authority. See the
 [sequence and security boundaries](INVESTIGATE_RESPOND_SANDBOX.md).
+
+## Investigation-to-detection feedback boundary
+
+Go derives the rule from authenticated tenant/case/alert ownership, locks the rule before the alert, and saves the label plus case/rule audits atomically in PostgreSQL. Existing sqlc queries and recommendation receipts are reused; no queue, model or external action is added. See [flow and boundaries](INVESTIGATE_DETECT_FEEDBACK.md).

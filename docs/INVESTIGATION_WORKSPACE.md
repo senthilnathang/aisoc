@@ -82,3 +82,7 @@ Roll back application binaries while retaining the additive message table and au
 ### Verified result (2026-11-01)
 
 Passed: disposable PostgreSQL/race suites including investigation lookup concurrency/isolation/audit rollback and the 101-step citation regression; nine frontend test files; ESLint; production build; sqlc generated-code diff; Go vet. The new workspace browser suite passed on development and compiled preview, including graph page-two connectivity and viewport-fixed copilot. Existing L1 review browser regressions passed on the compiled build for real mock review, citations, queued/failed/invalid/missing states, literal unsafe text and stale-refresh warnings. Independent review prompted aligned report/lookup record windows and a persistent graph root on every page. Migration 036 is applied locally; testing preserved demo case records.
+
+## Detection feedback
+
+Summary and Review expose paginated linked source alerts with explicit labels, rationale, reviewer and version. Confirmation saves atomically and refreshes case history. A rule link continues to the existing recommendation workspace; case determinations are not converted to alert labels. See [workflow](INVESTIGATE_DETECT_FEEDBACK.md).
