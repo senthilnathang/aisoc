@@ -531,11 +531,11 @@ function ReportDetail({ id, setView }) {
         </Alert>
       )}
       <Grid
-        templateColumns={{ base: "1fr", xl: "260px minmax(0,1fr)" }}
+        templateColumns={{ base: "minmax(0,1fr)", xl: "260px minmax(0,1fr)" }}
         gap="24px"
         mt="20px"
       >
-        <Panel p="20px" height="fit-content">
+        <Panel p="20px" height="fit-content" minW="0">
           <Text fontWeight="600">{r.source}</Text>
           {workspace.imports?.map((receipt) => (
             <Box
@@ -553,7 +553,7 @@ function ReportDetail({ id, setView }) {
               <Text mt="6px" fontSize="xs">
                 Imported {time(receipt.imported_at)} by {receipt.actor}
               </Text>
-              <Text mt="6px" fontSize="10px">
+              <Text mt="6px" fontSize="10px" overflowWrap="anywhere">
                 SHA-256: {receipt.content_hash}
               </Text>
             </Box>

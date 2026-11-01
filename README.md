@@ -355,3 +355,7 @@ Use **Respond → Approval inbox** to claim, reassign or release eligible work; 
 ## Build retention and recovery — November 2026
 
 Build now includes configurable archive policies, protected-record previews, verified snapshots and read-notification cleanup/restore. Source evidence and replay references remain retained; integrations stay local/mock. See [scope, contracts and recovery tests](docs/RETENTION_RECOVERY.md).
+
+## Repeatable browser release gate — November 2026
+
+Run `python3 scripts/framework/release_gate.py --chromium-executable /path/to/chrome` for fresh JSON fixtures, real browser workflows, API acceptance and isolated backup recovery. One run-bound report covers all stages; the active demo is not used. See [usage, coverage and limits](docs/BROWSER_RELEASE_GATE.md).

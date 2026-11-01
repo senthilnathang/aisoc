@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Build and verify the replacement framework against a disposable PostgreSQL cluster."""
 import hashlib
+import fcntl
+import signal
+import shutil
 import argparse
 import json
 import os
@@ -28,6 +31,7 @@ def port():
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--browser-release-id',default='',help='Internal unique local browser release run ID; requires full platform acceptance')
     parser.add_argument('--platform-acceptance',action='store_true',help='Add connected local Detect-to-Build HTTP acceptance paths; requires --with-streams')
     parser.add_argument('--with-streams',action='store_true',help='Include disposable Redis and PostgreSQL/stream bridge tests')
     parser.add_argument('--stream-load',action='store_true',help='Measure bounded synthetic traffic in isolated PostgreSQL/Redis after correctness checks')
@@ -46,6 +50,10 @@ def main():
     parser.add_argument('--pg-wal-sync-method',default='fdatasync',choices=('fdatasync','open_datasync','fsync'),help='Durable WAL synchronization method for the disposable cluster')
     parser.add_argument('--pg-wal-init-zero',default='on',choices=('on','off'),help='Whether to pre-zero new WAL segments in the disposable cluster')
     options=parser.parse_args()
+    def terminate(signum,frame):raise SystemExit(128+signum)
+    signal.signal(signal.SIGTERM,terminate)
+    if options.browser_release_id and (not re.fullmatch('[a-f0-9]{32}',options.browser_release_id) or not options.platform_acceptance):
+        parser.error('Browser release requires a fresh 32-character run ID and --platform-acceptance')
     if options.platform_acceptance and (not options.with_streams or options.stream_measure_only):
         parser.error('--platform-acceptance requires --with-streams and full correctness checks')
     if not __debug__:
@@ -64,6 +72,8 @@ def main():
         raise RuntimeError('Set AISOC_TEST_PG_BIN to the PostgreSQL binary directory')
     report = ROOT/'output/backend-framework'
     report.mkdir(parents=True, exist_ok=True)
+    check_lock=(report/'.check.lock').open('a')
+    fcntl.flock(check_lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     (report/'report.json').write_text(json.dumps({'passed':False,'status':'running','active_backend_modified':False})+'\n')
     if options.stream_load:
         for filename in ('stream-load.json','stream-load.json.cache.json','stream-load.json.resources.json'):
@@ -74,7 +84,11 @@ def main():
     env = os.environ.copy()
     if options.platform_acceptance:
         # Only runner-owned mock endpoints/configuration may reach child services.
-        env = {k:v for k,v in env.items() if not k.startswith("AISOC_")}
+        env = {k:v for k,v in env.items() if not k.startswith(('AISOC_','VITE_'))}
+    if options.browser_release_id:
+        env['AISOC_RELEASE_CHROMIUM']=os.environ['AISOC_RELEASE_CHROMIUM']
+        env['AISOC_RELEASE_WEB_PORT']=str(port())
+        env['AISOC_GO_APP_ORIGINS']='http://localhost:8080,http://127.0.0.1:8080,http://127.0.0.1:'+env['AISOC_RELEASE_WEB_PORT']
     env.pop('AISOC_STREAM_LOAD_REPORT',None)
     children = []
     pg_started = False
@@ -357,6 +371,8 @@ def main():
                     grant={**scenario['scope'],'tenant_id':'auth-a','operator_id':'fixture-a','mock_login_context':bundle}
                     grants.append(grant)
                     context_scenarios.append((scenario,grant))
+                if options.browser_release_id:
+                    grants.append(dict(id='release-archive',operator_id='fixture-a',tenant_id='auth-a',connector_id='release-archive',source='qradar-siem',processor='mock-login-v1',allow_mock_import=True,allow_retry=True))
                 for key in ('c','d'):
                     grants.extend([{**g,'id':g['id']+'-'+key,'operator_id':'fixture-'+key,'allow_mock_import':False,'allow_retry':False} for g in list(grants) if g['operator_id']=='fixture-a' and g.get('allow_sandbox_response')])
                 scopes.write_text(json.dumps(grants))
@@ -580,6 +596,9 @@ def main():
                     bulk_result=check_bulk_import(stream_http,sql)
                     (report/'bulk-import-flow.json').write_text(json.dumps(bulk_result,indent=2)+'\n')
                     check_platform_acceptance(stream_http, sql, managed_case['investigation_id'], record_stage)
+                    if options.browser_release_id:
+                        from release_checks import check_release
+                        check_release(options.browser_release_id,acceptance,stream_http,sql,env,temp,log,spawn,port,wait_port,PG,ROOT)
                 sql("INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) SELECT 'auth-a','mock-qradar','qradar-siem','capacity-'||n,'demo-session',1,'TEST' FROM generate_series(1,98) n")
                 response_op('propose',409,id='capacity-overflow')
                 stream_worker.terminate();stream_worker.wait(timeout=10)
@@ -604,6 +623,9 @@ def main():
             (report/'report.json').write_text(json.dumps({'passed':True,'checks':checks,'active_backend_modified':False},indent=2)+'\n')
             if options.platform_acceptance:
                 acceptance['passed']=True
+                if options.browser_release_id:
+                    release_api={**acceptance,'run_id':options.browser_release_id}
+                    (ROOT/'output/release-gate'/options.browser_release_id/'api.json').write_text(json.dumps(release_api,indent=2)+'\n')
                 (report/'platform-acceptance.json').write_text(json.dumps(acceptance,indent=2)+'\n')
             print('PASS isolated Go + PostgreSQL + Rust + Python framework',flush=True)
             print('Report: '+str(report/'report.json'),flush=True)
@@ -619,6 +641,10 @@ def main():
             finally:
                 if redis_state is not None:
                     redis_runtime.stop(redis_state)
+                if options.browser_release_id:
+                    log.flush()
+                    destination=ROOT/'output/release-gate'/options.browser_release_id
+                    if destination.is_dir():shutil.copyfile(report/'check.log',destination/'framework.log')
 
 
 if __name__=='__main__': main()

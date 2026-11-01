@@ -456,3 +456,7 @@ Apply migration051 through the normal runner. Edit parameterized queries in the 
 ## Retention development — November 2026
 
 Extend the candidate view and sqlc queries with explicit tenant scope. Keep policies disabled by default, preserve active source rows and audit, and require current digests/versions for changes. No domain cleanup endpoint should be added without a separate dependency/recovery design. Notification restore uses explicit columns, not a wildcard over jsonb_populate_record. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).
+
+## Browser release gate — November 2026
+
+Install frontend development dependencies with `npm --prefix frontend ci`; provide an installed Chromium binary. Use the release wrapper rather than replaying retained demo browser scripts. Keep synthetic fixtures run-scoped and require matching report IDs and explicit success for every stage. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).

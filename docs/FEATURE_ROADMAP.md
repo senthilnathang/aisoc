@@ -308,3 +308,7 @@ Implemented local/mock claim, reassignment/release, revision-bound ownership and
 ## Retention and recovery status — November 2026
 
 The local/mock Build retention workspace now provides policy editing, protected-record previews, immutable snapshot inspection and read-notification recovery. Full linked recovery uses the existing PostgreSQL and payload-file backup tools; archiving does not free profile/import quotas or erase source evidence. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).
+
+## Local release evidence — November 2026
+
+Detect-to-Build browser routes and selected connected UI workflows now have a fresh-fixture gate alongside API/worker and backup-recovery verification. The gate does not depend on retained demo records and does not imply production readiness. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).

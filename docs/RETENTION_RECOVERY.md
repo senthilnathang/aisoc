@@ -97,3 +97,7 @@ The Go database suite covers disabled policies, unread/active protection, stale 
 - Credential-free browser regression passed desktop/390px mobile archive→cleanup→restore and restored the disabled policy, with zero page errors or document overflow. The restored synthetic notice, archive and audit history remain as local demo fixtures. Screenshots: `output/playwright/retention-desktop.png` and `retention-mobile.png`.
 
 Local Go service is refreshed with migration052. No production credentials, live integrations, off-host delivery or destructive domain purge was enabled.
+
+## Combined release gate
+
+[The browser release gate](BROWSER_RELEASE_GATE.md) now combines fresh JSON browser workflows, this API acceptance suite and archive-backed recovery in one disposable run. Standalone commands remain supported.

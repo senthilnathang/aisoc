@@ -660,3 +660,9 @@ The disposable suite now covers concurrent claims, stale revisions/versions, rep
 ## Retention and recovery tests — November 2026
 
 Database and authenticated API tests cover protected states, version/digest conflicts, tenant/recipient isolation, role gates and notification archive/cleanup/restore replay. Browser regression covers the Build workspace on desktop/mobile. Two-clone recovery verifies copied payload files, retention policies/snapshots/audit and corruption rejection. Existing local backup verifies restored schema/readiness. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).
+
+## Combined browser/API/backup gate — November 2026
+
+The new release wrapper adds real JSON upload/import, independent guidance approval, notification and retention workflows, plus a desktop/mobile navigation sweep and two-clone backup recovery to the full API acceptance suite. Failure or missing evidence in any stage fails the combined result. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).
+
+Verified twice on 2026-11-01: runs `08cef8c303864d5e9df88b8e4ece8181` and `55d792f7e8374f16a3b33d498b37cd38` passed all four stages. Each completed 72 desktop/mobile route checks, all six browser workflows, frontend lint/build and 33 regression tests, full API/framework acceptance, and recovery of 76 table fingerprints, one payload archive and two retention snapshots. Archive/snapshot corruption was rejected. See the gate guide for timings, artifacts and coverage limits.

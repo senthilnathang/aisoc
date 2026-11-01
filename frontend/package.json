@@ -25,6 +25,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "10.14.0",
     "eslint-plugin-react-hooks": "7.1.1",
+    "playwright": "1.60.0",
     "vite": "6.4.5"
   },
   "overrides": {

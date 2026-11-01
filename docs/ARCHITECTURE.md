@@ -435,3 +435,7 @@ Migration051 adds a shared pending-work view, revision-bound advisory assignment
 ## Retention and recovery — November 2026
 
 Go/sqlc uses migration052 for tenant policies, immutable row snapshots and a cross-domain candidate view. Retention mutations and audit are transactional; source domain rows are preserved. Notification cleanup locks and compares the exact saved copy. PostgreSQL/payload backup verification now includes retention snapshot hashes. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).
+
+## Local release gate — November 2026
+
+The release runner reuses the disposable API/Redis/PostgreSQL/worker lifecycle, serves the built frontend on a temporary loopback port, and tests browser and backup recovery against the same run dataset. Application architecture and schema are unchanged. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).

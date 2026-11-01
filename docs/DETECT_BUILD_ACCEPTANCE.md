@@ -71,3 +71,7 @@ Build lifecycle coverage now checks extended-window intake, accepted/processed c
 ## Memory → Hunt — November 2026
 
 The skills_memory stage now includes memory_hunt: approved source context, source-change exclusion, explicit reapproval, archive exclusion, immutable replay and investigation promotion with original provenance. See [Memory → Hunt](MEMORY_HUNT_FLOW.md).
+
+## Combined release gate
+
+[The browser release gate](BROWSER_RELEASE_GATE.md) now combines fresh JSON browser workflows, this API acceptance suite and archive-backed recovery in one disposable run. Standalone commands remain supported.

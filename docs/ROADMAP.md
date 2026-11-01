@@ -278,3 +278,7 @@ Implemented local/mock claim, reassignment/release, revision-bound ownership and
 ## Retention and recovery — November 2026
 
 Implemented explicit age policies and archive snapshots across Detect to Build, safe cleanup previews, read-notification cleanup/restore and backup recovery verification. Domain evidence/replay records remain retained. Storage-reclaiming domain purges, retention/legal-hold policies, off-host archive operations, production scale and failover remain separate gates. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).
+
+## Repeatable browser release gate — November 2026
+
+Added a single local/mock gate generating fresh JSON fixtures and combining frontend, browser, full API and backup recovery evidence. Production identity, live providers, actual-model quality, sustained capacity, off-host recovery and authorized live actions remain separate release gates. See [usage, coverage and limits](BROWSER_RELEASE_GATE.md).
