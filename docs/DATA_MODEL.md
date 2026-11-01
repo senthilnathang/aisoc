@@ -1,5 +1,7 @@
 # Data Model
 
+Migration 044 adds tenant-scoped `threat_json_imports` and `hunt_promotions` receipts. Their target IDs intentionally have no foreign key so deletion cannot defeat replay protection; immutable promotion documents retain evidence provenance. See [lifecycle and rollback](INTEL_HUNT_INVESTIGATE.md#architecture-and-atomicity).
+
 PostgreSQL is the active datastore; current foundation schema status is 2026-10-31. The authoritative physical
 schema is in `backend-go/migrations/` (32 migrations, 49 tables including streaming and specialist dispatcher state). Foundation startup applies all source migrations. The separate release remains
 on migration 019 with 28 tables. The entity catalog

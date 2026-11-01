@@ -1,3 +1,4 @@
+import { PromoteFinding } from "./IntelHuntFlow";
 import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useState } from "react";
 import {
@@ -511,6 +512,16 @@ function HuntDetail({ id, setView }) {
           <Text color={ui.muted} mt="6px">
             Local evidence hunt · {data.hunt.source}
           </Text>
+          {data.intel?.map((link) => (
+            <Button
+              key={link.report_id}
+              variant="link"
+              mt="10px"
+              onClick={() => setView("threatIntelDetail", link.report_id)}
+            >
+              Source intelligence report →
+            </Button>
+          ))}
         </Box>
         <Flex gap="8px">
           <Button variant="outline" onClick={() => setView("hunt")}>
@@ -770,6 +781,14 @@ function HuntDetail({ id, setView }) {
                           >
                             Open evidence case →
                           </Button>
+                          <PromoteFinding
+                            key={`${current.id}:${f.kind}:${f.record_id}`}
+                            huntID={id}
+                            runID={current.id}
+                            finding={f}
+                            promotions={data.promotions}
+                            setView={setView}
+                          />
                         </Box>
                       ))}
               </Stack>

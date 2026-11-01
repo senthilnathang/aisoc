@@ -1,5 +1,7 @@
 # HTTP API Contract
 
+[Intelligence JSON import and hunt promotion contracts](INTEL_HUNT_INVESTIGATE.md#api-and-implementation) add strict preview/import endpoints, explicit saved-finding promotion and investigation provenance. Existing report/hunt workspace responses gain additive provenance fields.
+
 The Go/PostgreSQL backend implements this contract after the 2026-10-29 cutover.
 
 The selected foundation serves these routes on 3003; the preserved release uses

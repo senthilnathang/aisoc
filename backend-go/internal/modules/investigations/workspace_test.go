@@ -34,3 +34,10 @@ func TestEvidenceLookupQuotesAndAbstains(t *testing.T) {
 		t.Fatal("stopwords matched")
 	}
 }
+
+func TestWorkspaceHuntSnapshotProvenance(t *testing.T) {
+	r := &DetailRecord{Record: Record{ID: "case"}, Artifacts: []map[string]any{{"id": "a", "type": "hunt_finding", "value": "example.test", "provenance": map[string]any{"run_id": "saved-run"}}}}
+	if got := projectCase(r).Nodes[1].Provenance; got != "Stored hunt run: saved-run; analyst-promoted snapshot" {
+		t.Fatal(got)
+	}
+}

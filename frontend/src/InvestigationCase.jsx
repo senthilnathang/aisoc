@@ -1,3 +1,4 @@
+import { HuntOrigin } from "./IntelHuntFlow";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, HStack, Input, Portal, Select, Stack, Text, Textarea, useToast } from "@chakra-ui/react";
 import { CaseRunbooks } from "./ResponsePlans";
@@ -85,6 +86,7 @@ export default function InvestigationCase({ id, setView }) {
         {currentJob.error && <Text color="red.600" mt="14px">{currentJob.error}</Text>}
         {record.alerts?.[0] && <Flex gap="12px" mt="16px" align="center" wrap="wrap"><Text color={ui.muted} fontSize="11px" minW="0" maxW="100%" overflowWrap="anywhere">Source alert: {record.alerts[0].external_id} · Routing: {record.alerts[0].routing}</Text><Button as="a" href={`/detect/rules/${encodeURIComponent(record.alerts[0].rule_id)}`} variant="outline">View detection rule</Button></Flex>}
       </Card>}
+      {tab === "Summary" && <HuntOrigin key={caseId} caseID={caseId} setView={setView}/>}
       {tab === "Summary" && <SummaryExperience record={record} nodes={record.workspace.nodes} onArtifact={inspectNode} busy={busy} running={running} onTab={setTab} onDetermination={v=>mutate(()=>api.setDetermination(caseId,v),"Determination saved")}/>}
       {(tab === "Summary" || tab === "Review") && <Box mt="24px"><InvestigationReview key={caseId} caseId={caseId} setView={setView}/></Box>}
       {tab === "Report" && <ReportExperience record={record} onArtifact={inspectNode}/>}

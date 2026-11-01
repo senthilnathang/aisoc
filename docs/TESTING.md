@@ -1,5 +1,7 @@
 # Testing and verification
 
+The [intel/hunt/investigation test guide](INTEL_HUNT_INVESTIGATE.md#verification-and-demo) covers the real local browser flow, mobile layout, invalid imports, concurrent retries, tenant isolation, fabricated findings, audit rollback and deletion tombstones. New browser scripts retain clearly labeled demo data or intercept mutations as documented.
+
 The [multi-tenant threat model](MULTITENANT_STREAMING_THREAT_MODEL.md) defines
 common identity, isolation, replay, worker and response-security release gates.
 

@@ -52,10 +52,12 @@ type Note struct {
 	CreatedAt string `json:"created_at"`
 }
 type Workspace struct {
-	Hunt  map[string]any `json:"hunt"`
-	Runs  []Run          `json:"runs"`
-	Notes []Note         `json:"notes"`
-	Scope string         `json:"scope"`
+	Promotions []json.RawMessage `json:"promotions"`
+	Intel      []map[string]any  `json:"intel"`
+	Hunt       map[string]any    `json:"hunt"`
+	Runs       []Run             `json:"runs"`
+	Notes      []Note            `json:"notes"`
+	Scope      string            `json:"scope"`
 }
 
 func locked(ctx context.Context, q *huntsql.Queries, tenant, id string) (map[string]any, error) {
@@ -175,6 +177,22 @@ func (s Store) Workspace(ctx context.Context, tenant, id string) (Workspace, err
 	}
 	for _, n := range notes {
 		w.Notes = append(w.Notes, Note{n.ID, n.Actor, n.Body, investigations.Timestamp(n.CreatedAt.Time)})
+	}
+	promotions, e := q.HuntPromotions(ctx, huntsql.HuntPromotionsParams{TenantID: tenant, HuntID: id})
+	if e != nil {
+		return w, e
+	}
+	w.Promotions = []json.RawMessage{}
+	for _, raw := range promotions {
+		w.Promotions = append(w.Promotions, raw)
+	}
+	links, e := q.HuntSourceIntel(ctx, huntsql.HuntSourceIntelParams{TenantID: tenant, HuntID: id})
+	if e != nil {
+		return w, e
+	}
+	w.Intel = []map[string]any{}
+	for _, link := range links {
+		w.Intel = append(w.Intel, map[string]any{"report_id": link.ReportID, "indicator_id": link.IndicatorID, "indicator_value": link.IndicatorValue})
 	}
 	return w, tx.Commit(ctx)
 }

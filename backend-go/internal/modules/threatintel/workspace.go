@@ -95,7 +95,15 @@ func (s Store) Workspace(ctx context.Context, tenant, id string) (map[string]any
 	for _, r := range rows {
 		links = append(links, HuntLink{Available: r.Available, HuntID: r.HuntID, IndicatorID: r.IndicatorID, IndicatorValue: r.IndicatorValue, Actor: r.Actor, CreatedAt: investigations.Timestamp(r.CreatedAt.Time)})
 	}
-	return map[string]any{"report": report, "indicator_count": count, "hunts": links}, tx.Commit(ctx)
+	provenance, err := q.ReportImportProvenance(ctx, threatsql.ReportImportProvenanceParams{TenantID: tenant, ReportID: id})
+	if err != nil {
+		return nil, err
+	}
+	imports := []json.RawMessage{}
+	for _, raw := range provenance {
+		imports = append(imports, raw)
+	}
+	return map[string]any{"report": report, "indicator_count": count, "hunts": links, "imports": imports}, tx.Commit(ctx)
 }
 func (s Store) CreateLocalHunt(ctx context.Context, tenant, reportID, actor, key, indicatorID string) (HuntLink, error) {
 	if !linkRequestID.MatchString(key) || indicatorID == "" || len(indicatorID) > 100 {

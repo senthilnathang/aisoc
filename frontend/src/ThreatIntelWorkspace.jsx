@@ -1,3 +1,4 @@
+import { IntelJSONImport } from "./IntelHuntFlow";
 import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -76,7 +77,8 @@ export default function ThreatIntelWorkspace({ id, setView, hunting = false }) {
     [relevant, setRelevant] = useState(false),
     [offset, setOffset] = useState(0),
     [reload, setReload] = useState(0),
-    [creating, setCreating] = useState(false);
+    [creating, setCreating] = useState(false),
+    [importing, setImporting] = useState(false);
   useEffect(() => {
     if (id) return;
     let active = true;
@@ -115,8 +117,22 @@ export default function ThreatIntelWorkspace({ id, setView, hunting = false }) {
         <Heading as="h1" fontSize="28px" fontWeight="500">
           {hunting ? "Threat intelligence hunting" : "Threat intelligence"}
         </Heading>
-        <Button onClick={() => setCreating(true)}>Ingest TI report</Button>
+        <Flex gap="10px" wrap="wrap">
+          <Button variant="outline" onClick={() => setCreating(true)}>
+            Ingest TI report
+          </Button>
+          <Button onClick={() => setImporting(true)}>Import JSON</Button>
+        </Flex>
       </WorkspaceHeader>
+      {importing && (
+        <IntelJSONImport
+          onClose={() => setImporting(false)}
+          onImported={(reportID) => {
+            setImporting(false);
+            setView("threatIntelDetail", reportID);
+          }}
+        />
+      )}
       <Flex gap="16px" mt="24px" wrap="wrap">
         {[
           [data.total, "REPORTS IN FILTER"],
@@ -521,6 +537,27 @@ function ReportDetail({ id, setView }) {
       >
         <Panel p="20px" height="fit-content">
           <Text fontWeight="600">{r.source}</Text>
+          {workspace.imports?.map((receipt) => (
+            <Box
+              key={receipt.external_id}
+              mt="14px"
+              p="12px"
+              bg={ui.soft}
+              overflowWrap="anywhere"
+            >
+              <Badge>JSON import provenance</Badge>
+              <Text mt="8px" fontSize="xs">
+                {receipt.external_id} · {receipt.unique} unique IOCs ·{" "}
+                {receipt.duplicates} duplicates removed
+              </Text>
+              <Text mt="6px" fontSize="xs">
+                Imported {time(receipt.imported_at)} by {receipt.actor}
+              </Text>
+              <Text mt="6px" fontSize="10px">
+                SHA-256: {receipt.content_hash}
+              </Text>
+            </Box>
+          ))}
           <Text fontSize="11px" color={ui.muted} mt="8px">
             Published {time(r.published_at)}
           </Text>

@@ -1,0 +1,15 @@
+{
+  "schema_version": "1",
+  "source": "local-demo",
+  "external_id": "intel-login-001",
+  "title": "Local suspicious-login indicators",
+  "summary": "Synthetic intelligence for local evidence review.",
+  "severity": "medium",
+  "published_at": "2026-11-01T00:00:00Z",
+  "tags": ["demo"],
+  "indicators": [
+    {"type": "ip", "value": "203.0.113.77"},
+    {"type": "domain", "value": "EXAMPLE.TEST."},
+    {"type": "domain", "value": "example.test"}
+  ]
+}

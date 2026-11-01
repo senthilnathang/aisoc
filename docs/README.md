@@ -1,7 +1,9 @@
 # Documentation index
 
+[Threat Intel → Hunt → Investigate](INTEL_HUNT_INVESTIGATE.md) documents JSON import, IOC validation/deduplication, evidence-linked hunts, analyst promotion, APIs and local browser verification.
+
 Current architecture and local migration status: 2026-11-01. The selected foundation
-uses API 3003/schema 042, with a 70,000-event local demo. The release on 3002 is
+uses API 3003/schema 044, with a 70,000-event local demo. The release on 3002 is
 preserved separately. Historical migration reports and ADR dates remain unchanged.
 
 | Document | Purpose |

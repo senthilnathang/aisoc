@@ -1,5 +1,7 @@
 # Delivery roadmap
 
+Completed 2026-11-01: [Threat Intel → Hunt → Investigate](INTEL_HUNT_INVESTIGATE.md), including JSON import, normalized within-report IOC deduplication, idempotent import/promotion, local evidence search and explicit analyst promotion. Live feed validation, broader telemetry search and cross-run case correlation remain follow-up work.
+
 Updated 2026-10-30. The local backend migration is complete. Operational follow-up
 and new product capabilities are separate from replacement parity.
 
@@ -175,7 +177,7 @@ Implemented screenshot-based registry, TI report table, Plan/notes/Entities/Find
 
 ## Threat Intel workspace (2026-11-01)
 
-Implemented report table/detail, bounded analyst metadata, relevance/status filters, actual IOC counts and atomic idempotent draft hunts from report-owned active indicators. Removed sample reports and unsupported automatic scanning claims. Remaining: live feeds/STIX/TAXII, enrichment, bulk import, automatic relevance/verdict attribution and live execution. See [boundaries](THREAT_INTEL_WORKSPACE.md).
+Implemented report table/detail, bounded analyst metadata, relevance/status filters, actual IOC counts and atomic idempotent draft hunts from report-owned active indicators. Removed sample reports and unsupported automatic scanning claims. JSON report/IOC import is now implemented with validation and deduplication; see [the end-to-end flow](INTEL_HUNT_INVESTIGATE.md). Remaining: live feeds/STIX/TAXII, enrichment, automatic relevance/verdict attribution and live execution. See [boundaries](THREAT_INTEL_WORKSPACE.md).
 
 ## Skills workspace update (2026-11-01)
 

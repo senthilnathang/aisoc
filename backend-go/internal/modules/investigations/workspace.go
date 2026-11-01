@@ -56,6 +56,9 @@ func projectCase(r *DetailRecord) *Workspace {
 		if m, ok := a["metadata"].(map[string]any); ok && field(m, "provenance") != "" {
 			provenance = field(m, "provenance")
 		}
+		if p, ok := a["provenance"].(map[string]any); ok && field(a, "type") == "hunt_finding" && field(p, "run_id") != "" {
+			provenance = "Stored hunt run: " + field(p, "run_id") + "; analyst-promoted snapshot"
+		}
 		label := field(a, "label")
 		if label == "" {
 			label = field(a, "type")

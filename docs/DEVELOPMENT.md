@@ -1,5 +1,7 @@
 # Developer guide
 
+For [JSON intelligence import and hunt promotion](INTEL_HUNT_INVESTIGATE.md), use the example JSON, module sqlc queries and migration 044. Extend canonical validation before adding IOC types. Promotion must read a server-stored tenant finding and use the existing case-creation transaction; never accept an evidence snapshot or tenant from the browser.
+
 Current backend: Go/PostgreSQL. The retained TypeScript/SQLite implementation is
 for comparison and rollback, not normal application startup.
 

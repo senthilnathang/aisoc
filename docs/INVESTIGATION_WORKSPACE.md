@@ -1,5 +1,7 @@
 # Investigation workspace
 
+The [Threat Intel → Hunt → Investigate extension](INTEL_HUNT_INVESTIGATE.md) adds JSON import, IOC validation/deduplication, saved-finding promotion and retained source provenance (2026-11-01, migration 044). Existing local workspace behavior below remains available.
+
 Implemented locally on 2026-11-01 after reviewing the five images on [7AI Investigations](https://7ai.com/platform/investigations). This is a presentation and local evidence workflow upgrade, not a claim to implement the vendor's private agent algorithms or live containment.
 
 ## Screenshot review and mapping

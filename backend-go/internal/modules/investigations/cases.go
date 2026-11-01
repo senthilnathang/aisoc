@@ -120,14 +120,24 @@ func ResourceAudit(ctx context.Context, tx pgx.Tx, tenant, resource, id, action 
 	return err
 }
 func (s Store) Create(ctx context.Context, tenant string, in Input) (Record, error) {
-	if in.Title == "" || in.Source == "" || !contains([]string{"low", "medium", "high", "critical"}, in.Severity) || !contains([]string{"open", "investigating", "contained", "resolved", "closed"}, in.Status) || !contains([]string{"unknown", "benign", "suspicious", "malicious", "mitigated"}, in.Determination) || in.RiskScore < 0 || in.RiskScore > 100 {
-		return Record{}, fault.New(400, "VALIDATION_ERROR", "Invalid investigation fields.")
-	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return Record{}, err
 	}
 	defer tx.Rollback(ctx)
+	record, err := CreateTx(ctx, tx, tenant, in)
+	if err != nil {
+		return Record{}, err
+	}
+	return record, tx.Commit(ctx)
+}
+
+// CreateTx preserves normal case creation, skills and audit inside an owning
+// transaction (for example an analyst-reviewed hunt promotion).
+func CreateTx(ctx context.Context, tx pgx.Tx, tenant string, in Input) (Record, error) {
+	if in.Title == "" || in.Source == "" || !contains([]string{"low", "medium", "high", "critical"}, in.Severity) || !contains([]string{"open", "investigating", "contained", "resolved", "closed"}, in.Status) || !contains([]string{"unknown", "benign", "suspicious", "malicious", "mitigated"}, in.Determination) || in.RiskScore < 0 || in.RiskScore > 100 {
+		return Record{}, fault.New(400, "VALIDATION_ERROR", "Invalid investigation fields.")
+	}
 	id := "INV-" + jobs.ID()[:8]
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	if in.InsightRefs == nil {
@@ -160,7 +170,7 @@ func (s Store) Create(ctx context.Context, tenant string, in Input) (Record, err
 	if err = Audit(ctx, tx, tenant, id, "created", nil); err != nil {
 		return Record{}, err
 	}
-	return r, tx.Commit(ctx)
+	return r, nil
 }
 func (s Store) Get(ctx context.Context, tenant, id string) (Record, error) {
 	return scan(s.Pool.QueryRow(ctx, `SELECT `+columns+` FROM investigations WHERE tenant_id=$1 AND id=$2`, tenant, id))
