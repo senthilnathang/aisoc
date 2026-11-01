@@ -304,3 +304,7 @@ Local/mock end-to-end feedback is implemented: explicit source-alert review → 
 ## Approval assignment and notifications — November 2026
 
 Implemented local/mock claim, reassignment/release, revision-bound ownership and expiry, recipient-scoped in-app notices, and independent reviewer-to-executor handoffs. Self-approval restrictions remain enforced. External notification delivery, production identity provisioning, history retention and scale validation remain separate. See [scope and acceptance](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).
+
+## Retention and recovery status — November 2026
+
+The local/mock Build retention workspace now provides policy editing, protected-record previews, immutable snapshot inspection and read-notification recovery. Full linked recovery uses the existing PostgreSQL and payload-file backup tools; archiving does not free profile/import quotas or erase source evidence. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).

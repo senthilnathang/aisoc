@@ -351,3 +351,7 @@ Build → Bulk JSON imports supports up to 10 local/mock cases with per-case evi
 ## Approval ownership and notifications — November 2026
 
 Use **Respond → Approval inbox** to claim, reassign or release eligible work; use **Notifications** in the workspace bar for handoffs and read status. Ownership and expiry indicators preserve independent approval/execution checks. Local/mock only. See [contracts, source map and limits](docs/APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).
+
+## Build retention and recovery — November 2026
+
+Build now includes configurable archive policies, protected-record previews, verified snapshots and read-notification cleanup/restore. Source evidence and replay references remain retained; integrations stay local/mock. See [scope, contracts and recovery tests](docs/RETENTION_RECOVERY.md).

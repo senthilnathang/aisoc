@@ -274,3 +274,7 @@ Implemented bounded local/mock multi-case manifests, per-case evidence previews,
 ## Approval assignment and notifications — November 2026
 
 Implemented local/mock claim, reassignment/release, revision-bound ownership and expiry, recipient-scoped in-app notices, and independent reviewer-to-executor handoffs. Self-approval restrictions remain enforced. External notification delivery, production identity provisioning, history retention and scale validation remain separate. See [scope and acceptance](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).
+
+## Retention and recovery — November 2026
+
+Implemented explicit age policies and archive snapshots across Detect to Build, safe cleanup previews, read-notification cleanup/restore and backup recovery verification. Domain evidence/replay records remain retained. Storage-reclaiming domain purges, retention/legal-hold policies, off-host archive operations, production scale and failover remain separate gates. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).

@@ -59,6 +59,7 @@ import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import ResponsePlans from "./ResponsePlans";
 import ApprovalInbox from "./ApprovalInbox";
 import BuildBulkImport from "./BuildBulkImport";
+import RetentionWorkspace from "./RetentionWorkspace";
 import ResponseWorkspace from "./Response";
 import HuntWorkspace from "./HuntWorkspace";
 import ThreatIntelWorkspace from "./ThreatIntelWorkspace";
@@ -1539,6 +1540,7 @@ function App() {
     responseCases: <ResponseCases setView={setView} />,
     responsePolicies: <ResponsePolicies setView={setView} />,
     responseActions: <ResponseWorkspace key="responseActions" setView={setView} mode="responseActions" />,
+    retention: <RetentionWorkspace />,
     buildBulkImport: <BuildBulkImport setView={setView} />,
     responseInbox: <ApprovalInbox setView={setView} />,
     responseApprovals: <ResponseWorkspace key="responseApprovals" setView={setView} mode="responseApprovals" />,

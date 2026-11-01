@@ -656,3 +656,7 @@ A final NUL-input guard passed targeted Go tests after the full run. See
 ## Approval ownership regression — November 2026
 
 The disposable suite now covers concurrent claims, stale revisions/versions, replay, expiry/reclaim, atomic audit failure rollback, recipient/tenant isolation and independent response handoffs. Frontend helpers cover expiry and composite links. `scripts/framework/approval-ownership-browser.js` covers assign/release, author claim denial, expired Memory repair claim, notification read/deep-link and desktop/mobile layouts using synthetic local data. See [contracts, source map and limits](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).
+
+## Retention and recovery tests — November 2026
+
+Database and authenticated API tests cover protected states, version/digest conflicts, tenant/recipient isolation, role gates and notification archive/cleanup/restore replay. Browser regression covers the Build workspace on desktop/mobile. Two-clone recovery verifies copied payload files, retention policies/snapshots/audit and corruption rejection. Existing local backup verifies restored schema/readiness. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).

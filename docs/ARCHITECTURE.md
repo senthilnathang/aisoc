@@ -431,3 +431,7 @@ Go/sqlc stores a durable batch manifest and leases per-case intake attempts. Eac
 ## Approval coordination — November 2026
 
 Migration051 adds a shared pending-work view, revision-bound advisory assignments and recipient-scoped notifications in PostgreSQL. Go/sqlc atomically commits assignment, audit and notifications. Existing owner APIs continue to authorize approvals and execution; React polls for notices without a separate messaging service. See [contracts, source map and limits](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).
+
+## Retention and recovery — November 2026
+
+Go/sqlc uses migration052 for tenant policies, immutable row snapshots and a cross-domain candidate view. Retention mutations and audit are transactional; source domain rows are preserved. Notification cleanup locks and compares the exact saved copy. PostgreSQL/payload backup verification now includes retention snapshot hashes. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).

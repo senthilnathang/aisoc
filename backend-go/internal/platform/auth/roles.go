@@ -52,6 +52,9 @@ func requiredRole(r *http.Request) (string, error) {
 		return "", nil
 	}
 	p := r.URL.Path
+	if strings.HasPrefix(p, "/api/v1/build/retention/") {
+		return "proposer", nil
+	}
 	guidance := strings.HasPrefix(p, "/api/v1/skills") || strings.HasPrefix(p, "/api/v1/enterprise-insights")
 	learning := strings.HasPrefix(p, "/api/v1/investigations/") && strings.HasSuffix(p, "/learning")
 	sandbox := strings.HasSuffix(p, "/sandbox-responses") || strings.HasSuffix(p, "/sandbox-session")

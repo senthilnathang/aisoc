@@ -452,3 +452,7 @@ Migration 050 adds local batch manifests/items. `AISOC_BUILD_MAX_RETAINED_PROFIL
 ## Approval assignment development — November 2026
 
 Apply migration051 through the normal runner. Edit parameterized queries in the investigations query directory and regenerate sqlc. Operator targets derive from authenticated tenant configuration, never client roles. Keep assignment version/token checks, self-approval rules and atomic notification/audit persistence intact. Test with the disposable acceptance suite and credential-free browser script. See [contracts, source map and limits](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).
+
+## Retention development — November 2026
+
+Extend the candidate view and sqlc queries with explicit tenant scope. Keep policies disabled by default, preserve active source rows and audit, and require current digests/versions for changes. No domain cleanup endpoint should be added without a separate dependency/recovery design. Notification restore uses explicit columns, not a wildcard over jsonb_populate_record. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).

@@ -59,7 +59,7 @@ sequenceDiagram
 - `backend-go/internal/transport/httpapi/approval_assignment.go`: authenticated endpoints and strict contracts.
 - `frontend/src/ApprovalOwnership.jsx`, `NotificationCenter.jsx`, `approvalOwnership.js`: ownership controls, indicators, historical notices and local review links.
 
-The UI polls notifications every 30 seconds while visible and refreshes after local ownership mutations. This uses existing Go/PostgreSQL services; no push service, external notification connector or background expiry scheduler is added. Inbox/ownership refresh is explicit. Notification and assignment history currently remain retained; production retention, large-directory search and load testing are future work.
+The UI polls notifications every 30 seconds while visible and refreshes after local ownership mutations. This uses existing Go/PostgreSQL services; no push service, external notification connector or background expiry scheduler is added. Inbox/ownership refresh is explicit. Read-notification archival/cleanup and restoration are now available through [Build retention](RETENTION_RECOVERY.md); assignment and audit history remain retained. External notification delivery, large-directory search and production load testing are future work.
 
 ## Migration, rollback and validation
 

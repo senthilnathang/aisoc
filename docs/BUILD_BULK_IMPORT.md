@@ -186,3 +186,5 @@ Reports: `output/platform-acceptance/report.json` and
 `output/backend-framework/bulk-import-flow.json`; screenshots:
 `output/playwright/bulk-import-desktop.png` and `bulk-import-mobile.png`.
 No live provider, real model quality or production-scale retention was validated.
+
+Completed intake manifests can now be snapshotted through [Build retention](RETENTION_RECOVERY.md). This preserves per-case checkpoints and replay keys; it does not delete batches or release quota slots. Active/failed/invalid batches remain protected.

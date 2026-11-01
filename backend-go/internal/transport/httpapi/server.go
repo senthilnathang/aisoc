@@ -46,6 +46,7 @@ func buildWithStreams(ready func(context.Context) error, log *slog.Logger, secur
 		registerL1Review(mux, pool, scopes)
 		registerCaseSandbox(mux, pool, scopes)
 		registerApprovalInbox(mux, pool)
+		registerRetention(mux, pool)
 		registerApprovalAssignments(mux, pool, security)
 		registerQueue(mux, pool)
 		registerNavigation(mux, pool)

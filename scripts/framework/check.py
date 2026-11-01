@@ -564,6 +564,8 @@ def main():
                 assert response_op('execute')['replayed']
                 assert response_op('create_session')['revoked'] # Never resurrect an existing session.
                 response_op('policy',stopped=True)
+                from check_retention import check_retention
+                (report/"retention-recovery.json").write_text(json.dumps(check_retention(stream_http,sql),indent=2)+"\n")
                 from check_case_response import check_case_response
                 case_response_report=check_case_response(stream_http, sql, managed_case['investigation_id'])
                 (report/'case-response-flow.json').write_text(json.dumps(case_response_report,indent=2)+'\n')

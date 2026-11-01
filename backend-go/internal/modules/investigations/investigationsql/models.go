@@ -24,3 +24,38 @@ type ApprovalAssignment struct {
 	RequestHash string
 	UpdatedAt   pgtype.Timestamptz
 }
+
+type RetentionPolicy struct {
+	TenantID  string
+	Kind      string
+	Enabled   bool
+	AgeDays   int32
+	Version   int32
+	UpdatedBy string
+	UpdatedAt pgtype.Timestamptz
+}
+
+type RetentionRecord struct {
+	TenantID    string
+	Kind        string
+	ID          string
+	Title       string
+	Touched     pgtype.Timestamptz
+	Eligible    bool
+	RecipientID string
+	Document    []byte
+}
+
+type RetentionSnapshot struct {
+	TenantID    string
+	ID          string
+	Kind        string
+	ResourceID  string
+	RecipientID string
+	Title       string
+	Digest      string
+	Document    []byte
+	Actor       string
+	Reason      string
+	CreatedAt   pgtype.Timestamptz
+}

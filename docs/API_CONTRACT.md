@@ -507,3 +507,7 @@ See [full permissions, errors and rollback](INDEPENDENT_APPROVAL_ROLES.md).
 ## Approval assignment and notification endpoints — November 2026
 
 Added GET/POST `/api/v1/approvals/assignment`, GET `/api/v1/notifications`, and POST `/api/v1/notifications/:id/read`. Assignment requires a saved work identity, revision token, expected ownership version, request ID, reason and bounded TTL. Actor/tenant and eligible target roles derive from authentication; notifications are recipient-scoped. See [contracts, source map and limits](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).
+
+## Retention endpoints — November 2026
+
+Added GET `/api/v1/build/retention`, POST `/api/v1/build/retention/policy`, POST `/api/v1/build/retention/actions` and GET `/api/v1/build/retention/archives/:id`. Mutations require proposer permission; notification records additionally require the authenticated recipient. Policy/source revisions, confirmations and reasons gate archive and cleanup. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).

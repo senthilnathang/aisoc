@@ -36,3 +36,20 @@ def capture(query, destination, archive_root, verifier, environment, log):
         receipts.append({'original_path': record['file_path'], 'file': copied.name,
                          'bundle_sha256': expected, 'file_sha256': compressed_hash})
     return receipts
+
+
+def verify_snapshots(query):
+    """Check immutable retention record copies in the disposable restored DB."""
+    if query("SELECT to_regclass('public.retention_snapshots') IS NOT NULL") != 't':
+        return 0
+    # PostgreSQL jsonb text is also the byte representation hashed by the Go API.
+    # Bound each query; the restored DB is private and has no concurrent writers.
+    verified = 0
+    while True:
+        rows = json.loads(query("SELECT coalesce(json_agg(json_build_object('digest',digest,'document',document::text)),'[]'::json) FROM (SELECT digest,document FROM retention_snapshots ORDER BY tenant_id,id LIMIT 25 OFFSET " + str(verified) + ") saved"))
+        for row in rows:
+            if hashlib.sha256(row['document'].encode()).hexdigest() != row['digest']:
+                raise RuntimeError('Retention snapshot integrity verification failed')
+        verified += len(rows)
+        if len(rows) < 25:
+            return verified

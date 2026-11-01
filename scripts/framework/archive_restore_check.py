@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Rehearse archive-backed recovery in two disposable clones of the local demo."""
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -40,6 +41,15 @@ def main():
                 run([dev.PG/'pg_restore','--exit-on-error','--no-owner','--no-acl','--role','aisoc_app','-d',names[0],root/'source.dump'])
                 first={**dev.dev_env(config),'AISOC_GO_DATABASE_URL':urlunsplit(source._replace(path='/'+names[0]))}
                 run([root/'migrate'],first)
+                # Retention fixtures exist only in this disposable clone.
+                fixture_tenant='retention-recovery-fixture'
+                query("INSERT INTO tenants(id) VALUES('retention-recovery-fixture') ON CONFLICT DO NOTHING",names[0])
+                query("INSERT INTO retention_policies(tenant_id,kind,enabled,age_days,updated_by) VALUES('retention-recovery-fixture','notification',true,30,'recovery-operator')",names[0])
+                fixture_doc=query("SELECT '{\"id\":\"restored-notice\",\"tenant_id\":\"retention-recovery-fixture\",\"read_at\":\"2026-01-01T00:00:00Z\"}'::jsonb::text",names[0])
+                fixture_digest=hashlib.sha256(fixture_doc.encode()).hexdigest()
+                # All values below are fixed fixture values or a hexadecimal digest.
+                query("INSERT INTO retention_snapshots(tenant_id,id,kind,resource_id,recipient_id,title,digest,document,actor,reason) VALUES('retention-recovery-fixture','restore-snapshot','notification','restored-notice','recovery-operator','Recovery fixture','"+fixture_digest+"','"+fixture_doc+"','recovery-operator','Verify local backup recovery')",names[0])
+                query("INSERT INTO audit_events(tenant_id,id,resource,resource_id,action,created_at,updated_at) VALUES('retention-recovery-fixture','recovery-audit','retention','restore-snapshot','retention_archive',now(),now())",names[0])
                 # Age only disposable clone data, never the showcase database.
                 query("UPDATE stream_events SET created_at=now()-interval '10 days' WHERE connector_id='demo-showcase-01'; UPDATE stream_inbox SET processed_at=now()-interval '10 days' WHERE connector_id='demo-showcase-01'; UPDATE stream_consumer_work SET updated_at=now()-interval '10 days' WHERE connector_id='demo-showcase-01'",names[0])
                 result=subprocess.check_output([str(root/'verifier'),'--scope','demo-showcase-01','--directory',str(archives),'--min-age-days','7'],env=first,stderr=log,text=True,timeout=45)
@@ -51,13 +61,20 @@ def main():
                 manifests=helper.capture(query,saved,archives,root/'verifier',restored,log)
                 for path in archives.iterdir():path.unlink() # Owned temporary fixture only.
                 run([root/'verifier','--verify-database'],restored)
+                verified_snapshots=helper.verify_snapshots(query)
+                if query("SELECT count(*) FROM retention_policies WHERE tenant_id='retention-recovery-fixture' AND enabled AND age_days=30")!='1':raise RuntimeError('Retention policy not restored')
+                if query("SELECT count(*) FROM audit_events WHERE tenant_id='retention-recovery-fixture' AND action='retention_archive'")!='1':raise RuntimeError('Retention audit not restored')
+                query("UPDATE retention_snapshots SET document=document||'{\"tampered\":true}'::jsonb WHERE tenant_id='retention-recovery-fixture'")
+                try:helper.verify_snapshots(query)
+                except RuntimeError:pass
+                else:raise RuntimeError('Corrupt retention snapshot accepted')
                 # Corruption must be detected even after a previously good restore.
                 damaged=saved/manifests[0]['file'];damaged.write_bytes(b'corrupted fixture')
                 failed=subprocess.run([str(root/'verifier'),'--verify-database'],env=restored,stdout=log,stderr=log,timeout=45)
                 if failed.returncode==0:raise RuntimeError('Corrupted archive accepted')
                 report={'passed':True,'archived_events':receipt['events'],'copied_files':len(manifests),
                         'original_archives_removed_before_verification':True,'corruption_rejected':True,
-                        'source_database_modified':False,'scope':'local disposable restore; not off-host failover'}
+                        'retention_snapshots_verified':verified_snapshots,'retention_policy_and_audit_restored':True,'snapshot_corruption_rejected':True,'source_database_modified':False,'scope':'local disposable restore; not off-host failover'}
                 out.write_text(json.dumps(report,indent=2)+'\n')
                 print(json.dumps(report))
             finally:
