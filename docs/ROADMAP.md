@@ -265,8 +265,12 @@ Implemented Go role checks, independent saved-guidance approval, pending Memory,
 
 ## Unified approval inbox — November 2026
 
-Implemented local/mock pending reviews, saved revision/evidence previews, expiry indicators and role-aware handoffs across case-linked Respond actions, Skills and Memory. Assignment/notifications, external IAM/SSO, live providers and production-scale validation remain separate. See [scope](APPROVAL_INBOX.md).
+Implemented local/mock pending reviews, saved revision/evidence previews, expiry indicators and role-aware handoffs across case-linked Respond actions, Skills and Memory. External IAM/SSO, live providers and production-scale validation remain separate. See [scope](APPROVAL_INBOX.md).
 
 ## Build bulk imports — November 2026
 
 Implemented bounded local/mock multi-case manifests, per-case evidence previews, partial intake/recovery, explicit repairs, batch progress and configurable retained-record quotas. Production-scale lifecycle/archival, live provider ingestion, external identity and model-quality gates remain separate. See [scope](BUILD_BULK_IMPORT.md).
+
+## Approval assignment and notifications — November 2026
+
+Implemented local/mock claim, reassignment/release, revision-bound ownership and expiry, recipient-scoped in-app notices, and independent reviewer-to-executor handoffs. Self-approval restrictions remain enforced. External notification delivery, production identity provisioning, history retention and scale validation remain separate. See [scope and acceptance](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, AlertIcon, Box, Button, Flex, FormControl, FormLabel, Heading, Input, Stack, Text } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
+import NotificationCenter from "./NotificationCenter";
 
 export default function AuthGate({ children }) {
   const [session, setSession] = useState(null);
@@ -33,7 +34,7 @@ export default function AuthGate({ children }) {
   };
   if (loading) return <Box p="40px" role="status">Checking workspace session…</Box>;
   if (session?.authenticated) return <>
-    {<Flex px="18px" py="6px" bg="#e9edf3" align="center" gap="12px"><Text fontSize="11px">Workspace: <b>{session.tenant_id}</b> · {session.operator_id} · {(session.roles||[]).join(" / ") || "no approval-workflow roles"}</Text><Button ml="auto" size="xs" variant="ghost" isLoading={busy} onClick={session.mode === "local" ? () => setSession({mode:"token",authenticated:false}) : logout}>{session.mode === "local" ? "Sign in as operator" : "Sign out"}</Button></Flex>}
+    {<Flex px="18px" py="6px" bg="#e9edf3" align="center" gap="12px" wrap="wrap"><Text fontSize="11px">Workspace: <b>{session.tenant_id}</b> · {session.operator_id} · {(session.roles||[]).join(" / ") || "no approval-workflow roles"}</Text><Box ml="auto"><NotificationCenter operatorId={session.operator_id} tenantId={session.tenant_id}/></Box><Button size="xs" variant="ghost" isLoading={busy} onClick={session.mode === "local" ? () => setSession({mode:"token",authenticated:false}) : logout}>{session.mode === "local" ? "Sign in as operator" : "Sign out"}</Button></Flex>}
     {error && <Alert status="error"><AlertIcon />{error}</Alert>}
     {children}
   </>;

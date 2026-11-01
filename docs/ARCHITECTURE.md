@@ -422,8 +422,12 @@ Go Hunt applies existing exact-entity Memory eligibility at local search time an
 
 ## Unified approval read model — November 2026
 
-The approval inbox is a tenant-scoped PostgreSQL/sqlc read projection over existing response actions, Skills and Memory. All mutations remain in the original guarded owner APIs; there is no duplicate approval state or workflow engine. See [contract and data flow](APPROVAL_INBOX.md).
+The approval inbox is a tenant-scoped PostgreSQL/sqlc read projection over existing response actions, Skills and Memory. Approval and execution mutations remain in the original guarded owner APIs; advisory assignment and notification metadata use separate Go/sqlc endpoints. There is no duplicate approval state or workflow engine. See [contract and data flow](APPROVAL_INBOX.md).
 
 ## Build batch ingestion — November 2026
 
 Go/sqlc stores a durable batch manifest and leases per-case intake attempts. Each case reuses the existing isolated Build profile, event intake and Go/Redis/Python workers. No second orchestrator is added. See [identity, recovery and limits](BUILD_BULK_IMPORT.md).
+
+## Approval coordination — November 2026
+
+Migration051 adds a shared pending-work view, revision-bound advisory assignments and recipient-scoped notifications in PostgreSQL. Go/sqlc atomically commits assignment, audit and notifications. Existing owner APIs continue to authorize approvals and execution; React polls for notices without a separate messaging service. See [contracts, source map and limits](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).

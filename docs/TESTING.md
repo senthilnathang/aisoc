@@ -652,3 +652,7 @@ frontend test files and lint/build passed. Browser upload/partial import/repair,
 stale-confirmation rejection, replay and mobile checks passed with no page errors.
 A final NUL-input guard passed targeted Go tests after the full run. See
 [the detailed report](BUILD_BULK_IMPORT.md).
+
+## Approval ownership regression — November 2026
+
+The disposable suite now covers concurrent claims, stale revisions/versions, replay, expiry/reclaim, atomic audit failure rollback, recipient/tenant isolation and independent response handoffs. Frontend helpers cover expiry and composite links. `scripts/framework/approval-ownership-browser.js` covers assign/release, author claim denial, expired Memory repair claim, notification read/deep-link and desktop/mobile layouts using synthetic local data. See [contracts, source map and limits](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).

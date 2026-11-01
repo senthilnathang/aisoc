@@ -2,8 +2,9 @@
 
 The local/mock inbox at `/respond/inbox` projects pending work from Respond,
 Skills and Memory. It reuses the existing React 19/Chakra workspace and Go/sqlc
-stores. It adds no datastore, migration, provider integration, queue or independent
-approval state.
+stores. Ownership and in-app notification metadata are described in
+[approval assignment](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md); approval state remains
+in the existing workflows. No provider integration or independent approval engine is added.
 
 ## Analyst workflow
 
@@ -16,9 +17,9 @@ approval state.
 4. Review Memory or staged/source-change guidance through the existing lifecycle
    control in the preview. Publish a new Skill from its saved draft in Skills.
    Open the case for sandbox response approval, dry run and explicit execution.
-5. Hand off to a distinct configured operator using the existing sign-in control.
-   Refresh the inbox after completing work. A handoff is a navigation/identity
-   instruction: it sends no message, changes no assignment and grants no rights.
+5. Claim eligible work, assign an independent configured operator, or release
+   ownership with a reason. Affected owners receive in-app notifications. Refresh
+   after completing work; ownership never grants approval or execution rights.
 
 The first release covers editable draft/staged/source-stale Skills, pending or
 source-stale/expired Memory, and **case-linked mock session responses**. Executed
@@ -81,7 +82,7 @@ shift offset pagination between requests; this is not a durable work-claim queue
   empty/error state and responsive layout. No real credentials are transferred to
   browser automation; authenticated flows run in the local API acceptance suite.
 
-Large-catalog latency, production identity provisioning, notifications/assignment,
+Large-catalog latency, production identity provisioning, external notifications,
 real providers and real-model quality remain separate gates. This feature makes no
 production performance claim. Rollback removes the read-only route and UI entry;
 existing approval state and audit history remain owned by the original workflows.

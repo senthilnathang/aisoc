@@ -3,3 +3,24 @@
 //   sqlc v1.31.1
 
 package investigationsql
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type ApprovalAssignment struct {
+	TenantID    string
+	Kind        string
+	ResourceID  string
+	ConnectorID string
+	Source      string
+	WorkToken   string
+	OwnerID     string
+	AssignedBy  string
+	Version     int32
+	ExpiresAt   pgtype.Timestamptz
+	Reason      string
+	RequestID   string
+	RequestHash string
+	UpdatedAt   pgtype.Timestamptz
+}

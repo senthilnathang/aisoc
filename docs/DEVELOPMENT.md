@@ -448,3 +448,7 @@ The React workspace at `/respond/inbox` reads `GET /api/v1/approvals`. SQL lives
 ## Build bulk imports — November 2026
 
 Migration 050 adds local batch manifests/items. `AISOC_BUILD_MAX_RETAINED_PROFILES` and `AISOC_BUILD_MAX_RETAINED_BATCHES` default to 20 (range 1–200). Set them in the local launcher environment and restart the backend. Existing profiles and archived records count. See [developer/API contract](BUILD_BULK_IMPORT.md).
+
+## Approval assignment development — November 2026
+
+Apply migration051 through the normal runner. Edit parameterized queries in the investigations query directory and regenerate sqlc. Operator targets derive from authenticated tenant configuration, never client roles. Keep assignment version/token checks, self-approval rules and atomic notification/audit persistence intact. Test with the disposable acceptance suite and credential-free browser script. See [contracts, source map and limits](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).

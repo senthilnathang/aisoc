@@ -11,36 +11,14 @@ import (
 
 const approvalInbox = `-- name: ApprovalInbox :one
 WITH candidates AS (
- SELECT s.id,'skill'::text AS kind,coalesce(s.document->>'name',s.id) AS title,
- 'review'::text AS stage,s.updated_at,
- NULL::timestamptz AS expires_at,
- NOT aisoc_learning_current(s.tenant_id,s.document) AS source_changed,
- s.document - 'request_hash' AS document
- FROM skills s WHERE s.tenant_id=$1
- AND s.document->>'origin' IN ('user','environment_generated')
- AND coalesce(s.document->>'archived','false')<>'true' AND coalesce(s.document->>'learning_archived','false')<>'true'
- AND (s.document->>'state'='draft' OR s.document ? 'staged_edit' OR NOT aisoc_learning_current(s.tenant_id,s.document))
- UNION ALL
- SELECT e.id,'memory',coalesce(e.document->>'artifact',e.id),'review',e.updated_at,e.valid_until,
- NOT aisoc_learning_current(e.tenant_id,e.document - 'approval_state'),
- (e.document - 'request_hash') || jsonb_build_object('version',e.version,'valid_from',e.valid_from,'valid_until',e.valid_until)
- FROM enterprise_insights e WHERE e.tenant_id=$1 AND NOT e.archived
- AND coalesce(e.document->>'learning_archived','false')<>'true'
- AND (e.document->>'approval_state'='pending' OR NOT aisoc_learning_current(e.tenant_id,e.document) OR e.valid_until<=now())
- UNION ALL
- SELECT a.id,'respond',coalesce(l.document->>'principal_ref',a.session_id),
- CASE WHEN a.state='approved' AND a.approval_expires_at>now() THEN 'execution' ELSE 'review' END,
- a.created_at,a.approval_expires_at,false,
- l.document || jsonb_build_object('id',a.id,'created_by',a.proposed_by,'approved_by',a.approved_by,'state',a.state,'version',a.expected_version,'connector_id',a.connector_id,'source',a.source,'approval_expires_at',a.approval_expires_at,'stopped',p.stopped,'approval_comment',l.approval_comment)
- FROM sandbox_session_actions a
- JOIN case_sandbox_responses l USING(tenant_id,connector_id,source)
- JOIN sandbox_response_policy p USING(tenant_id,connector_id,source)
- WHERE a.tenant_id=$1 AND l.action_id=a.id AND a.state<>'executed'
+ SELECT w.tenant_id, w.id, w.kind, w.title, w.stage, w.updated_at, w.expires_at, w.source_changed, w.document,(SELECT i.updated_at::text FROM investigations i WHERE i.tenant_id=w.tenant_id AND i.id=w.document#>>'{learning_origin,source_case,id}') AS source_revision
+ FROM approval_work_items w WHERE w.tenant_id=$1
 ), filtered AS (
- SELECT id, kind, title, stage, updated_at, expires_at, source_changed, document FROM candidates WHERE ($2::text='all' OR kind=$2)
- AND ($3::text='all' OR stage=$3)
- AND ($4::text='' OR strpos(lower(title||' '||id),lower($4))>0)
-), page AS (SELECT id, kind, title, stage, updated_at, expires_at, source_changed, document FROM filtered ORDER BY updated_at DESC,kind,id,document->>'connector_id',document->>'source' LIMIT $6 OFFSET $5)
+ SELECT c.tenant_id, c.id, c.kind, c.title, c.stage, c.updated_at, c.expires_at, c.source_changed, c.document, c.source_revision,jsonb_build_object('version',coalesce(a.version,0),'owner_id',coalesce(a.owner_id,''),'work_token',coalesce(a.work_token,''),'expires_at',a.expires_at,'assigned_by',a.assigned_by,'reason',a.reason) AS assignment
+ FROM candidates c LEFT JOIN approval_assignments a ON a.tenant_id=c.tenant_id AND a.kind=c.kind AND a.resource_id=c.id AND a.connector_id=coalesce(c.document->>'connector_id','') AND a.source=coalesce(c.document->>'source','') WHERE ($2::text='all' OR c.kind=$2)
+ AND ($3::text='all' OR c.stage=$3)
+ AND ($4::text='' OR strpos(lower(c.title||' '||c.id),lower($4))>0)
+), page AS (SELECT tenant_id, id, kind, title, stage, updated_at, expires_at, source_changed, document, source_revision, assignment FROM filtered ORDER BY updated_at DESC,kind,id,document->>'connector_id',document->>'source' LIMIT $6 OFFSET $5)
 SELECT jsonb_build_object('items',coalesce((SELECT jsonb_agg(page ORDER BY updated_at DESC,kind,id,document->>'connector_id',document->>'source') FROM page),'[]'::jsonb),
  'total',(SELECT count(*) FROM filtered),'as_of',now(),
  'counts',jsonb_build_object('review',(SELECT count(*) FROM candidates WHERE stage='review'),'execution',(SELECT count(*) FROM candidates WHERE stage='execution')))

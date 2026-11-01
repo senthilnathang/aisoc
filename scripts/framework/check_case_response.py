@@ -1,6 +1,8 @@
 """Disposable HTTP/DB regression for case-linked mock revocation. No live providers."""
 import concurrent.futures
 import time
+import uuid
+from urllib.parse import urlencode
 
 
 def check_case_response(http, sql, case_id):
@@ -31,6 +33,21 @@ def check_case_response(http, sql, case_id):
         return result
     row=inbox('review')['items'][0]
     assert row['document']['evidence'] and row['document']['created_by']=='fixture-a'
+    assignment_key=dict(kind='respond',id=request['id'],connector_id=row['document']['connector_id'],source=row['document']['source'])
+    assignment_path='/approvals/assignment?'+urlencode(assignment_key)
+    detail=http(assignment_path,root='/api/v1',actor='c')
+    assert detail['can_claim'] and detail['work_token']==row['work_token']
+    claim={**assignment_key,'operation':'claim','owner_id':'','expected_version':0,'work_token':detail['work_token'],'request_id':str(uuid.uuid4()),'reason':'Independent response review ownership.','minutes':60}
+    http('/approvals/assignment',claim,root='/api/v1',actor='a',expected=403)
+    assigned=http('/approvals/assignment',claim,root='/api/v1',actor='c')
+    assert assigned['assignment']['owner_id']=='fixture-c'
+    assert http('/approvals/assignment',claim,root='/api/v1',actor='c')['replayed']
+    notifications=http('/notifications',root='/api/v1',actor='c')
+    notice=next(n for n in notifications['items'] if n['resource_id']==request['id'])
+    http('/notifications/'+notice['id']+'/read',{},root='/api/v1',actor='d',expected=404)
+    http('/notifications/'+notice['id']+'/read',{},root='/api/v1',actor='b',expected=404)
+    http('/notifications/'+notice['id']+'/read',{},root='/api/v1',actor='c')
+
     assert http('/approvals?kind=respond&search=case-response-test', root='/api/v1',actor='b')['total']==0
     http(path,{**request,'operation':'approve','confirm':True,'comment':'Self approval must be denied'},root=root,actor='a',expected=403)
     assert op('propose')['replayed']
@@ -41,6 +58,13 @@ def check_case_response(http, sql, case_id):
     op('approve',400,confirm=False,comment='Reviewed evidence and target')
     assert op('approve',confirm=True,comment='Reviewed evidence and target')['state']=='approved'
     assert inbox('execution')['items'][0]['document']['stopped'] is True
+    handoff=http(assignment_path,root='/api/v1',actor='c')
+    assert handoff['can_manage'] and not handoff['can_claim']
+    assert handoff['assignment']['state']=='revision_changed'
+    assert [op['id'] for op in handoff['eligible_operators']]==['fixture-d']
+    transfer={**claim,'operation':'reassign','owner_id':'fixture-d','expected_version':1,'work_token':handoff['work_token'],'request_id':str(uuid.uuid4()),'reason':'Approved; hand off to independent sandbox executor.'}
+    assert http('/approvals/assignment',transfer,root='/api/v1',actor='c')['assignment']['owner_id']=='fixture-d'
+
     inbox('review',0)
     op('execute',403,confirm=True)  # Kill switch remains stopped.
     # Legacy stream endpoint must not bypass case receipt/note transaction.
@@ -52,6 +76,7 @@ def check_case_response(http, sql, case_id):
     assert not op('dry_run')['would_execute']
     inbox('review')
     inbox('execution',0)
+    assert http(assignment_path,root='/api/v1',actor='d')['required_role']=='approver'
     assert op('approve',confirm=True,comment='Renewed explicit evidence review')['state']=='approved'
     # A changed source revision blocks the entire operation, without overwriting it.
     source = sql("SELECT c.version FROM mock_soar_cases c JOIN l1_escalations e USING(tenant_id,connector_id,external_id) WHERE e.tenant_id='auth-a' AND e.investigation_id='"+case_id+"'")
@@ -69,6 +94,7 @@ def check_case_response(http, sql, case_id):
     assert len({r['receipt']['note_id'] for r in receipts})==1
     row=http(path,root=root)['items'][0]
     inbox('all',0)
+    http(assignment_path,root='/api/v1',actor='d',expected=404)
     assert row['state']=='executed' and row['receipt']['external_calls']==0
     assert row['approval_comment']=='Renewed explicit evidence review'
     assert sql("SELECT version FROM sandbox_sessions WHERE tenant_id='auth-a' AND id='case-session-test'")=='2'

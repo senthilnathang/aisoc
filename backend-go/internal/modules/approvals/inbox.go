@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -24,6 +25,23 @@ func (s Store) Inbox(ctx context.Context, tenant, kind, stage, search string, li
 	var out map[string]any
 	if err = json.Unmarshal(raw, &out); err != nil {
 		return nil, err
+	}
+	now := time.Now()
+	for _, entry := range out["items"].([]any) {
+		item := entry.(map[string]any)
+		token := workToken(item)
+		item["work_token"] = token
+		a, _ := item["assignment"].(map[string]any)
+		state := "unassigned"
+		if text(a["owner_id"]) != "" {
+			state = "owned"
+			if a["work_token"] != token {
+				state = "revision_changed"
+			} else if !expiry(a["expires_at"]).After(now) {
+				state = "expired"
+			}
+		}
+		a["state"] = state
 	}
 	out["limit"] = limit
 	out["offset"] = offset

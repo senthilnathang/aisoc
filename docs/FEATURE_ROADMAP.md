@@ -300,3 +300,7 @@ Detect through Build now have recorded live desktop/mobile route checks and loca
 ## Investigate → Detect feedback status
 
 Local/mock end-to-end feedback is implemented: explicit source-alert review → existing recommendations → replay → confirmed disabled-rule application. No automatic verdict-to-label conversion or provider synchronization. See [details](INVESTIGATE_DETECT_FEEDBACK.md).
+
+## Approval assignment and notifications — November 2026
+
+Implemented local/mock claim, reassignment/release, revision-bound ownership and expiry, recipient-scoped in-app notices, and independent reviewer-to-executor handoffs. Self-approval restrictions remain enforced. External notification delivery, production identity provisioning, history retention and scale validation remain separate. See [scope and acceptance](APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).

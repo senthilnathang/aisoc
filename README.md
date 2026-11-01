@@ -347,3 +347,7 @@ Respond → Approval inbox (`/respond/inbox`) now combines pending Respond, Skil
 ## Build bulk JSON imports — November 2026
 
 Build → Bulk JSON imports supports up to 10 local/mock cases with per-case evidence validation, repair, idempotent intake/recovery, progress and configurable retained-profile/batch caps. See [workflow](docs/BUILD_BULK_IMPORT.md).
+
+## Approval ownership and notifications — November 2026
+
+Use **Respond → Approval inbox** to claim, reassign or release eligible work; use **Notifications** in the workspace bar for handoffs and read status. Ownership and expiry indicators preserve independent approval/execution checks. Local/mock only. See [contracts, source map and limits](docs/APPROVAL_ASSIGNMENT_NOTIFICATIONS.md).

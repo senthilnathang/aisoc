@@ -1,6 +1,8 @@
 """HTTP acceptance paths, invoked only inside check.py's disposable environment."""
 from datetime import datetime, timedelta, timezone
 import time
+import uuid
+from urllib.parse import urlencode
 
 
 def check_platform_acceptance(http, sql, case_id, record):
@@ -37,6 +39,16 @@ def check_platform_acceptance(http, sql, case_id, record):
         assert pending['total']==1 and pending['items'][0]['document']['version']==1
         assert pending['items'][0]['document']['learning_origin']
         assert api('/approvals?kind='+kind+'&search='+identity,actor='b')['total']==0
+        key=dict(kind=kind,id=identity,connector_id='',source='')
+        detail=api('/approvals/assignment?'+urlencode(key))
+        assert not detail['can_claim'] and detail['can_manage']
+        assert 'fixture-c' in [x['id'] for x in detail['eligible_operators']]
+        assert 'fixture-b' not in [x['id'] for x in detail['eligible_operators']]
+        assign={**key,'operation':'reassign','owner_id':'fixture-c','expected_version':0,'work_token':detail['work_token'],'request_id':str(uuid.uuid4()),'reason':'Request independent guidance review.','minutes':60}
+        api('/approvals/assignment',assign,actor='b',expected=404)
+        assert api('/approvals/assignment',assign)['assignment']['owner_id']=='fixture-c'
+        assert api('/approvals/assignment',assign)['replayed']
+
     api('/approvals?tenant_id=auth-b',expected=400)
     api('/skills/'+sid, actor='b', expected=404)
     assert api('/enterprise-insights/'+mid+'/uses', actor='b')['items'] == []
