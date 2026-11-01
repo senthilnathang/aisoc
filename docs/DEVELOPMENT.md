@@ -444,3 +444,7 @@ Memory-to-Hunt uses insights.HuntSnapshots, sqlc eligibility/usage queries, immu
 ## Approval inbox — November 2026
 
 The React workspace at `/respond/inbox` reads `GET /api/v1/approvals`. SQL lives in investigations/queries/approval_inbox.sql; regenerate with `make -C backend-go sqlc`. No migration or service is added. Existing lifecycle controls block revision-mismatched previews. See [implementation and tests](APPROVAL_INBOX.md).
+
+## Build bulk imports — November 2026
+
+Migration 050 adds local batch manifests/items. `AISOC_BUILD_MAX_RETAINED_PROFILES` and `AISOC_BUILD_MAX_RETAINED_BATCHES` default to 20 (range 1–200). Set them in the local launcher environment and restart the backend. Existing profiles and archived records count. See [developer/API contract](BUILD_BULK_IMPORT.md).

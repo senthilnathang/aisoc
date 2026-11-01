@@ -343,3 +343,7 @@ Local hunts now capture eligible enterprise Memory with provenance and validity 
 ## Unified approval inbox — November 2026
 
 Respond → Approval inbox (`/respond/inbox`) now combines pending Respond, Skills and Memory work with saved-revision/evidence previews, expiry indicators and independent operator handoffs. Integrations remain local/mock. See [workflow](docs/APPROVAL_INBOX.md).
+
+## Build bulk JSON imports — November 2026
+
+Build → Bulk JSON imports supports up to 10 local/mock cases with per-case evidence validation, repair, idempotent intake/recovery, progress and configurable retained-profile/batch caps. See [workflow](docs/BUILD_BULK_IMPORT.md).

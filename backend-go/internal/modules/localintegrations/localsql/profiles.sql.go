@@ -219,7 +219,7 @@ func (q *Queries) InsertProfile(ctx context.Context, arg InsertProfileParams) (L
 }
 
 const listProfiles = `-- name: ListProfiles :many
-SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name FROM local_integration_profiles WHERE tenant_id=$1 ORDER BY updated_at DESC,id LIMIT 20
+SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name FROM local_integration_profiles WHERE tenant_id=$1 ORDER BY updated_at DESC,id LIMIT 200
 `
 
 func (q *Queries) ListProfiles(ctx context.Context, tenantID string) ([]LocalIntegrationProfile, error) {

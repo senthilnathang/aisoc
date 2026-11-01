@@ -64,7 +64,7 @@ func buildWithStreams(ready func(context.Context) error, log *slog.Logger, secur
 		registerSkills(mux, pool)
 		registerInsights(mux, pool)
 		registerBuild(mux, pool)
-		registerLocalIntegrations(mux, pool, scopes)
+		registerLocalIntegrations(mux, pool, scopes, security.ConfigBuildLimits())
 		var key []byte
 		if len(connectorKey) > 0 {
 			key = append([]byte(nil), connectorKey[0]...)

@@ -57,8 +57,8 @@ revision within the mutation transaction. Sealing preserves the same revision;
 history records the state when that snapshot was first saved, while current state
 and audit record the seal. Existing profiles backfill only their current snapshot;
 older revisions are not fabricated. Detail returns metadata for the latest 50
-snapshots; older snapshots remain stored. The existing 20-retained-profile limit
-includes archived profiles; archive does not free storage quota.
+snapshots; older snapshots remain stored. The retained-profile limit defaults to 20 and is configurable (1–200); it
+includes archived profiles. Archive does not free quota. See [bulk import quotas](BUILD_BULK_IMPORT.md).
 
 ## JSON imports and evidence
 
@@ -79,8 +79,8 @@ suspicious-login finding. Multiple findings, mixed identities, duplicate IDs,
 foreign tenants, invalid timestamps, reference collisions and oversized tasks
 are rejected. Complete documents remain bounded to 64 KiB; combined evidence
 must fit the existing 16-item/16-KiB L1 task budget. Context files retain their
-32-KiB UI limit. Raw vendor payload translation and bulk multi-case imports remain
-outside this editor's contract.
+32-KiB UI limit. Raw vendor payload translation remains outside this editor's contract. Multi-case
+JSON is handled by the separate [bulk import workspace](BUILD_BULK_IMPORT.md).
 
 All accepted observations enter the existing durable intake. The unchanged
 correlator selects the final three failures plus success as the finding's four

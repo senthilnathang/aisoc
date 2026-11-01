@@ -499,3 +499,7 @@ See [full permissions, errors and rollback](INDEPENDENT_APPROVAL_ROLES.md).
 ## Approval inbox — November 2026
 
 `GET /api/v1/approvals` is a read-only tenant-scoped pending-work projection. Filters: kind, stage, search, limit (1–50), offset. Returns items, total, counts, as_of and local/mock mode. All approvals/executions continue through existing owner APIs. See [full contract](APPROVAL_INBOX.md).
+
+## Build bulk imports — November 2026
+
+`/api/v1/build/import-batches` exposes list/save, preview, detail, confirmed process/retry and expected-version case repair. Scope authorization applies to every route. Invalid individual cases remain repairable; accepted evidence cannot be edited. See [full contract](BUILD_BULK_IMPORT.md).

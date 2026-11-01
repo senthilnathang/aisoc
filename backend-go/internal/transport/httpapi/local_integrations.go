@@ -40,8 +40,13 @@ func profileScope(r *http.Request, pool *pgxpool.Pool, scopes []config.StreamSco
 	s.MaxHotEvents = 1000
 	return s, nil
 }
-func registerLocalIntegrations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []config.StreamScope) {
+func registerLocalIntegrations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []config.StreamScope, limits ...[2]int) {
 	store := localintegrations.Store{Pool: pool}
+	if len(limits) > 0 {
+		store.MaxProfiles = limits[0][0]
+		store.MaxBatches = limits[0][1]
+	}
+	registerImportBatches(mux, store, scopes)
 	mux.HandleFunc("GET /api/v1/build/integrations", streamRespond(func(r *http.Request) (any, int, error) {
 		a := auth.From(r.Context())
 		items, err := store.List(r.Context(), a.Tenant)
@@ -60,7 +65,7 @@ func registerLocalIntegrations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []
 				visible = append(visible, p)
 			}
 		}
-		return map[string]any{"items": visible, "scopes": grants, "mode": "local-json-mock-v1", "limit": 20}, 200, nil
+		return map[string]any{"items": visible, "scopes": grants, "mode": "local-json-mock-v1", "limit": store.ProfileLimit(), "batch_limit": store.BatchLimit()}, 200, nil
 	}))
 	mux.HandleFunc("GET /api/v1/build/integrations/example", streamRespond(func(r *http.Request) (any, int, error) {
 		a := auth.From(r.Context())

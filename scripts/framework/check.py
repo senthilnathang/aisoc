@@ -574,6 +574,9 @@ def main():
                         acceptance['stages'][name] = result
                         (report/'platform-acceptance.json').write_text(json.dumps(acceptance,indent=2)+'\n')
                     record_stage('build_response', dict(case_id=managed_case['investigation_id'],build_import_replay=True,build_lifecycle=json.loads((report/'build-integrations-flow.json').read_text()),response=case_response_report))
+                    from check_bulk_import import check_bulk_import
+                    bulk_result=check_bulk_import(stream_http,sql)
+                    (report/'bulk-import-flow.json').write_text(json.dumps(bulk_result,indent=2)+'\n')
                     check_platform_acceptance(stream_http, sql, managed_case['investigation_id'], record_stage)
                 sql("INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) SELECT 'auth-a','mock-qradar','qradar-siem','capacity-'||n,'demo-session',1,'TEST' FROM generate_series(1,98) n")
                 response_op('propose',409,id='capacity-overflow')

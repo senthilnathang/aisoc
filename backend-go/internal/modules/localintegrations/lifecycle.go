@@ -105,8 +105,8 @@ func (s Store) Clone(ctx context.Context, tenant, actor, source string, expected
 	if err != nil {
 		return Profile{}, err
 	}
-	if count >= 20 {
-		return Profile{}, Conflict()
+	if count >= int64(s.ProfileLimit()) {
+		return Profile{}, quota()
 	}
 	p, err := View(parent)
 	if err != nil {

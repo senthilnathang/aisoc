@@ -17,7 +17,7 @@ export const sections = [
   { label:'Threat Intel',items:[{view:'threatIntel',label:'Reports',path:'/threat-intel'}] },
   { label:'Skills',items:[{view:'skills',label:'Library',path:'/skills'},{view:'skillTemplates',label:'Starter templates',path:'/skills/templates'},{view:'skillSuggestions',label:'Environment suggestions',path:'/skills/suggestions'},{view:'skillOutcomes',label:'Outcomes',path:'/skills/outcomes'}] },
   { label:'Memory',items:[{view:'memory',label:'Enterprise Insights',path:'/memory'}] },
-  { label:'Build',items:[{view:'build',label:'Workspace',path:'/build'},{view:'localIntegrations',label:'Local integrations',path:'/build/integrations'},{view:'apiSources',label:'API sources',path:'/build/api-sources'},{view:'streamOperations',label:'Stream operations',path:'/build/stream-operations'},{view:'connector',label:'Connectors',path:'/build/connectors/cribl'}] },
+  { label:'Build',items:[{view:'build',label:'Workspace',path:'/build'},{view:'localIntegrations',label:'Local integrations',path:'/build/integrations'},{view:'buildBulkImport',label:'Bulk JSON imports',path:'/build/import-batches'},{view:'apiSources',label:'API sources',path:'/build/api-sources'},{view:'streamOperations',label:'Stream operations',path:'/build/stream-operations'},{view:'connector',label:'Connectors',path:'/build/connectors/cribl'}] },
 ];
 const parentView = { huntDetail:"hunt", investigationDetail:'investigations', detectionRuleDetail:'detect', threatIntelDetail:'threatIntel', skillCreate:'skills', skillDetail:'skills' };
 export const activeItem = view => parentView[view] || view;

@@ -8,6 +8,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type LocalImportBatch struct {
+	TenantID    string
+	ID          string
+	ScopeID     string
+	Name        string
+	RequestHash string
+	Actor       string
+	CreatedAt   pgtype.Timestamptz
+}
+
+type LocalImportBatchItem struct {
+	TenantID         string
+	BatchID          string
+	CaseKey          string
+	ProfileID        string
+	Name             string
+	Document         []byte
+	State            string
+	Version          int32
+	ErrorCode        string
+	Attempts         int32
+	ClaimToken       string
+	LeaseUntil       pgtype.Timestamptz
+	AcceptedInserted int32
+	UpdatedAt        pgtype.Timestamptz
+}
+
 type LocalIntegrationProfile struct {
 	TenantID      string
 	ID            string

@@ -309,3 +309,8 @@ func reply(w http.ResponseWriter, status int, body any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(body)
 }
+
+// ConfigBuildLimits exposes non-secret local retention configuration to HTTP stores.
+func (m *Manager) ConfigBuildLimits() [2]int {
+	return [2]int{m.config.BuildMaxProfiles, m.config.BuildMaxBatches}
+}

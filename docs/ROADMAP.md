@@ -253,7 +253,7 @@ Implemented staged Skill instructions/metadata/scopes/materials, committed sourc
 
 ## Build integration lifecycle — November 2026
 
-Build integration lifecycle: archive guards, safe draft clone/version history, bounded extended login JSON/bundle imports and clear processing/replay visibility are implemented for local/mock use. Live provider lifecycle, bulk multi-case import, configurable retained-profile quotas and production validation remain separate work. See [scope and gates](BUILD_INTEGRATION_LIFECYCLE.md).
+Build integration lifecycle: archive guards, safe draft clone/version history, bounded extended login JSON/bundle imports and clear processing/replay visibility are implemented for local/mock use. Bulk multi-case import and configurable retained-profile quotas are now implemented; see [bulk imports](BUILD_BULK_IMPORT.md). Live provider lifecycle and production validation remain separate work. See [scope and gates](BUILD_INTEGRATION_LIFECYCLE.md).
 
 ## Memory → Hunt — November 2026
 
@@ -266,3 +266,7 @@ Implemented Go role checks, independent saved-guidance approval, pending Memory,
 ## Unified approval inbox — November 2026
 
 Implemented local/mock pending reviews, saved revision/evidence previews, expiry indicators and role-aware handoffs across case-linked Respond actions, Skills and Memory. Assignment/notifications, external IAM/SSO, live providers and production-scale validation remain separate. See [scope](APPROVAL_INBOX.md).
+
+## Build bulk imports — November 2026
+
+Implemented bounded local/mock multi-case manifests, per-case evidence previews, partial intake/recovery, explicit repairs, batch progress and configurable retained-record quotas. Production-scale lifecycle/archival, live provider ingestion, external identity and model-quality gates remain separate. See [scope](BUILD_BULK_IMPORT.md).

@@ -19,7 +19,25 @@ var profileID = regexp.MustCompile(`^build-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[
 
 func ValidID(id string) bool { return profileID.MatchString(id) }
 
-type Store struct{ Pool *pgxpool.Pool }
+type Store struct {
+	Pool        *pgxpool.Pool
+	MaxProfiles int
+	MaxBatches  int
+}
+
+func (s Store) ProfileLimit() int {
+	if s.MaxProfiles > 0 {
+		return s.MaxProfiles
+	}
+	return 20
+}
+func (s Store) BatchLimit() int {
+	if s.MaxBatches > 0 {
+		return s.MaxBatches
+	}
+	return 20
+}
+
 type Profile struct {
 	ID            string    `json:"id"`
 	ScopeID       string    `json:"scope_id"`
@@ -99,8 +117,8 @@ func (s Store) Save(ctx context.Context, tenant, actor, id, scope, name string, 
 		if err != nil {
 			return Profile{}, err
 		}
-		if n >= 20 {
-			return Profile{}, Conflict()
+		if n >= int64(s.ProfileLimit()) {
+			return Profile{}, quota()
 		}
 		row, err = q.InsertProfile(ctx, localsql.InsertProfileParams{TenantID: tenant, ID: id, ScopeID: scope, Name: name, Document: raw, Actor: actor})
 		if err != nil {

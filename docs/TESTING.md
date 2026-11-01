@@ -641,3 +641,14 @@ frontend test files, lint/build and sqlc consistency passed. Credential-free bro
 smoke verified stale-revision denial, author restrictions, handoff navigation,
 filters, error recovery and mobile layout with no page errors. Existing Vite bundle
 size warning remains. See `scripts/framework/approval-inbox-browser.js`.
+
+## Build bulk imports — November 2026
+
+Go batch integration tests cover concurrent claims, quotas, partial failures, repair and replay after intake. `scripts/framework/check_bulk_import.py` extends the disposable Detect-to-Build suite with two case investigations, explicit mock-note approval and sync. Frontend envelope/progress tests and browser checks cover the new workspace. See [test scope](BUILD_BULK_IMPORT.md).
+
+Bulk import validation on 2026-11-01: full acceptance passed in 193.93s, including
+two synchronized mock notes and zero extra events after crash recovery. All 14
+frontend test files and lint/build passed. Browser upload/partial import/repair,
+stale-confirmation rejection, replay and mobile checks passed with no page errors.
+A final NUL-input guard passed targeted Go tests after the full run. See
+[the detailed report](BUILD_BULK_IMPORT.md).

@@ -24,10 +24,19 @@ type Auth struct {
 	SecureCookies       bool
 	SessionTTL          time.Duration
 	StreamOperations    []StreamScope
+	BuildMaxProfiles    int
+	BuildMaxBatches     int
 }
 
 func loadAuth() (Auth, error) {
 	a := Auth{Mode: value("AISOC_GO_AUTH_MODE", "local"), DefaultTenant: value("AISOC_GO_DEFAULT_TENANT", "demo"), Origins: strings.Split(value("AISOC_GO_APP_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080"), ","), SecureCookies: os.Getenv("AISOC_GO_ENV") == "production", SessionTTL: 8 * time.Hour}
+	for key, target := range map[string]*int{"AISOC_BUILD_MAX_RETAINED_PROFILES": &a.BuildMaxProfiles, "AISOC_BUILD_MAX_RETAINED_BATCHES": &a.BuildMaxBatches} {
+		n, err := strconv.Atoi(value(key, "20"))
+		if err != nil || n < 1 || n > 200 {
+			return a, errors.New(key + " must be 1..200")
+		}
+		*target = n
+	}
 	if path := os.Getenv("AISOC_GO_OPERATORS_FILE"); path != "" {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -63,6 +72,9 @@ func loadAuth() (Auth, error) {
 	return a, a.Validate(os.Getenv("AISOC_GO_ENV") == "production")
 }
 func (a Auth) Validate(production bool) error {
+	if a.BuildMaxProfiles < 0 || a.BuildMaxProfiles > 200 || a.BuildMaxBatches < 0 || a.BuildMaxBatches > 200 {
+		return errors.New("local retention limits must be 1..200, or omitted for defaults")
+	}
 	for _, scope := range a.StreamOperations {
 		if production && scope.AllowSandboxResponse {
 			return errors.New("sandbox responses are disabled in production")

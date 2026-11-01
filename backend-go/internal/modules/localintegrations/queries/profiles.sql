@@ -5,7 +5,7 @@ SELECT * FROM local_integration_profiles WHERE tenant_id=$1 AND id=$2;
 -- name: LockProfile :one
 SELECT * FROM local_integration_profiles WHERE tenant_id=$1 AND id=$2 FOR UPDATE;
 -- name: ListProfiles :many
-SELECT * FROM local_integration_profiles WHERE tenant_id=$1 ORDER BY updated_at DESC,id LIMIT 20;
+SELECT * FROM local_integration_profiles WHERE tenant_id=$1 ORDER BY updated_at DESC,id LIMIT 200;
 -- name: CountProfiles :one
 SELECT count(*) FROM local_integration_profiles WHERE tenant_id=$1;
 -- name: InsertProfile :one
