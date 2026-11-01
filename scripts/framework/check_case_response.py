@@ -25,6 +25,13 @@ def check_case_response(http, sql, case_id):
     op('propose', 403, scope_id='mock-review')
     op('propose', 400, evidence_refs=['fabricated'])
     assert op('propose')['state'] == 'proposed'
+    def inbox(stage, total=1):
+        result=http('/approvals?kind=respond&search=case-response-test&stage='+stage, root='/api/v1')
+        assert result['total']==total, result
+        return result
+    row=inbox('review')['items'][0]
+    assert row['document']['evidence'] and row['document']['created_by']=='fixture-a'
+    assert http('/approvals?kind=respond&search=case-response-test', root='/api/v1',actor='b')['total']==0
     http(path,{**request,'operation':'approve','confirm':True,'comment':'Self approval must be denied'},root=root,actor='a',expected=403)
     assert op('propose')['replayed']
     op('propose', 409, session_id='different-session')
@@ -33,6 +40,8 @@ def check_case_response(http, sql, case_id):
     op('execute',403,confirm=True)
     op('approve',400,confirm=False,comment='Reviewed evidence and target')
     assert op('approve',confirm=True,comment='Reviewed evidence and target')['state']=='approved'
+    assert inbox('execution')['items'][0]['document']['stopped'] is True
+    inbox('review',0)
     op('execute',403,confirm=True)  # Kill switch remains stopped.
     # Legacy stream endpoint must not bypass case receipt/note transaction.
     http('/mock-siem/sandbox-session', dict(operation='execute',id=request['id'],ticket=request['ticket']), expected=403)
@@ -41,6 +50,8 @@ def check_case_response(http, sql, case_id):
     sql("UPDATE sandbox_session_actions SET approval_expires_at=now()-interval '1 second' WHERE tenant_id='auth-a' AND id='case-response-test'")
     op('execute',403,confirm=True)
     assert not op('dry_run')['would_execute']
+    inbox('review')
+    inbox('execution',0)
     assert op('approve',confirm=True,comment='Renewed explicit evidence review')['state']=='approved'
     # A changed source revision blocks the entire operation, without overwriting it.
     source = sql("SELECT c.version FROM mock_soar_cases c JOIN l1_escalations e USING(tenant_id,connector_id,external_id) WHERE e.tenant_id='auth-a' AND e.investigation_id='"+case_id+"'")
@@ -57,6 +68,7 @@ def check_case_response(http, sql, case_id):
     assert sum(not r.get('replayed',False) for r in receipts)==1
     assert len({r['receipt']['note_id'] for r in receipts})==1
     row=http(path,root=root)['items'][0]
+    inbox('all',0)
     assert row['state']=='executed' and row['receipt']['external_calls']==0
     assert row['approval_comment']=='Renewed explicit evidence review'
     assert sql("SELECT version FROM sandbox_sessions WHERE tenant_id='auth-a' AND id='case-session-test'")=='2'

@@ -57,6 +57,7 @@ import LocalIntegrations from "./LocalIntegrations";
 import EnterpriseInsights from "./EnterpriseInsights";
 import { SkillsLibrary, SkillEditor, SkillsOutcomes } from "./Skills";
 import ResponsePlans from "./ResponsePlans";
+import ApprovalInbox from "./ApprovalInbox";
 import ResponseWorkspace from "./Response";
 import HuntWorkspace from "./HuntWorkspace";
 import ThreatIntelWorkspace from "./ThreatIntelWorkspace";
@@ -1537,6 +1538,7 @@ function App() {
     responseCases: <ResponseCases setView={setView} />,
     responsePolicies: <ResponsePolicies setView={setView} />,
     responseActions: <ResponseWorkspace key="responseActions" setView={setView} mode="responseActions" />,
+    responseInbox: <ApprovalInbox setView={setView} />,
     responseApprovals: <ResponseWorkspace key="responseApprovals" setView={setView} mode="responseApprovals" />,
     responseActivity: <ResponseWorkspace key="responseActivity" setView={setView} mode="responseActivity" />,
     responseWorkflows: <ResponsePlans key="responseWorkflows" kind="workflow" setView={setView} />,

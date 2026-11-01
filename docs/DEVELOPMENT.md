@@ -440,3 +440,7 @@ For Build lifecycle changes, regenerate sqlc (`cd backend-go && make sqlc`), app
 ## Memory → Hunt — November 2026
 
 Memory-to-Hunt uses insights.HuntSnapshots, sqlc eligibility/usage queries, immutable Hunt run JSON and shared React HuntMemory. No migration or new infrastructure. Run the disposable acceptance suite, frontend tests/lint/build and browser script. See [contracts and bounds](MEMORY_HUNT_FLOW.md).
+
+## Approval inbox — November 2026
+
+The React workspace at `/respond/inbox` reads `GET /api/v1/approvals`. SQL lives in investigations/queries/approval_inbox.sql; regenerate with `make -C backend-go sqlc`. No migration or service is added. Existing lifecycle controls block revision-mismatched previews. See [implementation and tests](APPROVAL_INBOX.md).

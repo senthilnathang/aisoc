@@ -32,6 +32,12 @@ def check_platform_acceptance(http, sql, case_id, record):
     assert api(case_path+'/learning', learning)['skill_id'] == receipt['skill_id']
     api(case_path+'/learning', {**learning, 'guidance':'Conflicting replay of approved guidance.'}, expected=409)
     sid, mid = receipt['skill_id'], receipt['insight_id']
+    for kind, identity in [('skill',sid),('memory',mid)]:
+        pending=api('/approvals?kind='+kind+'&search='+identity)
+        assert pending['total']==1 and pending['items'][0]['document']['version']==1
+        assert pending['items'][0]['document']['learning_origin']
+        assert api('/approvals?kind='+kind+'&search='+identity,actor='b')['total']==0
+    api('/approvals?tenant_id=auth-b',expected=400)
     api('/skills/'+sid, actor='b', expected=404)
     assert api('/enterprise-insights/'+mid+'/uses', actor='b')['items'] == []
     api('/skills/'+sid+'/publish',dict(expected_version=1),expected=403)
@@ -39,6 +45,8 @@ def check_platform_acceptance(http, sql, case_id, record):
     proposal=dict(operation='approve',expected_version=1,confirm=True,rationale='Independent review of the saved Memory context.')
     api('/enterprise-insights/'+mid+'/lifecycle',proposal,expected=403)
     api('/enterprise-insights/'+mid+'/lifecycle',proposal,actor='c')
+    for identity in (sid,mid):
+        assert api('/approvals?search='+identity)['total']==0
     follow = api('/investigations', dict(title='Acceptance follow-up', source=source['source'], category=source['category'], summary='Synthetic follow-up', severity='medium', status='open', determination='unknown', primary_entity='acceptance-user', insight_refs=[]), expected=201)
     assert follow['determination'] == 'unknown'
     foreign = api('/investigations', dict(title='Foreign acceptance case', source=source['source'], category=source['category'], summary='Synthetic tenant isolation fixture', severity='medium', status='open', determination='unknown', primary_entity='acceptance-user', insight_refs=[]), actor='b', expected=201)
@@ -65,6 +73,9 @@ def check_platform_acceptance(http, sql, case_id, record):
     staged=api('/skills/'+sid+'/workspace',dict(expected_version=2,content_markdown='New reviewed local lifecycle guidance.'),method='PATCH')
     assert staged['content_markdown']==original and staged['staged_edit']['content_markdown']!=original
     api(case_path,dict(determination='benign'),method='PATCH')
+    for identity in (sid,mid):
+        pending=api('/approvals?search='+identity)
+        assert pending['total']==1 and pending['items'][0]['source_changed']
     assert memory_search('stale-memory')['memory']==[]
     assert memory_search('approved-memory')['memory']==memory_run['memory']
     for kind,identity in [('skills',sid),('enterprise-insights',mid)]:

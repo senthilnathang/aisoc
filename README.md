@@ -339,3 +339,7 @@ Build → Local integrations now supports guarded archive, retry-safe draft clon
 ## Memory → Hunt — November 2026
 
 Local hunts now capture eligible enterprise Memory with provenance and validity checks, preserve it across replay/promotion, and expose hunt usage from Memory. See [Memory → Hunt](docs/MEMORY_HUNT_FLOW.md).
+
+## Unified approval inbox — November 2026
+
+Respond → Approval inbox (`/respond/inbox`) now combines pending Respond, Skills and Memory work with saved-revision/evidence previews, expiry indicators and independent operator handoffs. Integrations remain local/mock. See [workflow](docs/APPROVAL_INBOX.md).

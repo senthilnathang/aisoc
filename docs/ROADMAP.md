@@ -262,3 +262,7 @@ Memory → Hunt local flow implemented: approved context, validity/source-revisi
 ## Independent approval roles — 2026-11-01
 
 Implemented Go role checks, independent saved-guidance approval, pending Memory, three-operator sandbox responses, protected checklist acknowledgement and operator sign-in in local mode. See [roles, migration and validation](INDEPENDENT_APPROVAL_ROLES.md). External identity assurance and live-provider gates remain pending.
+
+## Unified approval inbox — November 2026
+
+Implemented local/mock pending reviews, saved revision/evidence previews, expiry indicators and role-aware handoffs across case-linked Respond actions, Skills and Memory. Assignment/notifications, external IAM/SSO, live providers and production-scale validation remain separate. See [scope](APPROVAL_INBOX.md).

@@ -631,3 +631,13 @@ versions, tenant isolation, source reapproval, denied legacy execution and repla
 The credential-free browser smoke (`scripts/framework/approval-browser.js`)
 passed on the refreshed local backend with no page errors. Authenticated role
 handoffs are verified through local API tests, not this browser smoke.
+
+## Unified approval inbox — November 2026
+
+Go projection/lifecycle and HTTP filter tests, full local response/guidance acceptance assertions and frontend expiry/handoff tests cover the inbox. See [scope and validation](APPROVAL_INBOX.md).
+
+Validation on 2026-11-01: full disposable acceptance passed in 189.87s; all 13
+frontend test files, lint/build and sqlc consistency passed. Credential-free browser
+smoke verified stale-revision denial, author restrictions, handoff navigation,
+filters, error recovery and mobile layout with no page errors. Existing Vite bundle
+size warning remains. See `scripts/framework/approval-inbox-browser.js`.

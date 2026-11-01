@@ -419,3 +419,7 @@ Build lifecycle remains Go-owned: authenticated grant → validated draft/CAS �
 ## Memory → Hunt — November 2026
 
 Go Hunt applies existing exact-entity Memory eligibility at local search time and stores immutable context inside existing run/promotion JSON. It does not change findings, invoke a model or authorize actions. See [Memory → Hunt architecture](MEMORY_HUNT_FLOW.md).
+
+## Unified approval read model — November 2026
+
+The approval inbox is a tenant-scoped PostgreSQL/sqlc read projection over existing response actions, Skills and Memory. All mutations remain in the original guarded owner APIs; there is no duplicate approval state or workflow engine. See [contract and data flow](APPROVAL_INBOX.md).

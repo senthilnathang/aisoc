@@ -495,3 +495,7 @@ response approval/execution requires distinct proposer/approver/executor identit
 and the existing binding grants; users use their own scope IDs for the same binding.
 
 See [full permissions, errors and rollback](INDEPENDENT_APPROVAL_ROLES.md).
+
+## Approval inbox — November 2026
+
+`GET /api/v1/approvals` is a read-only tenant-scoped pending-work projection. Filters: kind, stage, search, limit (1–50), offset. Returns items, total, counts, as_of and local/mock mode. All approvals/executions continue through existing owner APIs. See [full contract](APPROVAL_INBOX.md).
