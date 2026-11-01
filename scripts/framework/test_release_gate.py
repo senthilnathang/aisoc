@@ -35,6 +35,15 @@ class ReleaseGateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_stage('browser',dict(passed=True,mode='local/mock',run_id='fresh',stages=stages,route_checks=60,external_requests=[],page_errors=[],http_errors=[]),'fresh')
 
+    def test_identity_requires_all_boundaries(self):
+        checks={k:True for k in ('trusted_mapping','tenant_isolation','independent_approval','logout_all','role_change_revokes','disabled_identity_denied','mapping_failure_closed','browser_redirect')}
+        good=dict(passed=True,mode='local/mock',run_id='fresh',checks=checks,external_requests=[],page_errors=[])
+        validate_stage('identity',good,'fresh')
+        for key in checks:
+            with self.subTest(key=key),self.assertRaises(ValueError):validate_stage('identity',good|{'checks':checks|{key:False}},'fresh')
+        for change in ({'checks':{}},{'external_requests':['https://provider.invalid']},{'page_errors':['failure']}):
+            with self.subTest(change=change),self.assertRaises(ValueError):validate_stage('identity',good|change,'fresh')
+
     def test_backup_requires_files_snapshots_and_corruption_detection(self):
         good=dict(passed=True,mode='local/mock',run_id='fresh',table_fingerprints_match=True,archive_resolution_verified=True,corruption_rejected=True,snapshot_corruption_rejected=True,source_database_modified=False,archived_events=1,snapshots_verified=1)
         validate_stage('backup',good,'fresh')

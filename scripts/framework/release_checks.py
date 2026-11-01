@@ -60,5 +60,7 @@ def check_release(run_id,acceptance,http,sql,env,temp,log,spawn,port,wait_port,p
     browser=json.loads((out/'browser.json').read_text())
     browser['durable_effect_deltas']=effects
     (out/'browser.json').write_text(json.dumps(browser,indent=2)+'\n')
+    from release_identity import check_identity
+    check_identity(run_id,api,env,temp,log,port,wait_port,root,out)
     from release_backup import verify_backup
     verify_backup(run_id,env,temp,log,pg,root,out)

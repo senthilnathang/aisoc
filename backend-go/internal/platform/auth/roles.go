@@ -12,7 +12,11 @@ import (
 // Roles come exclusively from trusted operator configuration. A role is not
 // authority for another tenant and never overrides a resource's approval checks.
 func (m *Manager) roles(p Principal) []string {
-	for _, op := range m.config.Operators {
+	operators := m.config.Operators
+	if m.config.Mode == "oidc" {
+		operators = m.oidcOperators()
+	}
+	for _, op := range operators {
 		if op.ID == p.ID && op.TenantID == p.Tenant {
 			return append([]string{}, op.Roles...)
 		}
@@ -139,6 +143,10 @@ func requiredRole(r *http.Request) (string, error) {
 }
 func (m *Manager) sessionInfo(s session) map[string]any {
 	out := sessionBody(s)
+	if s.Subject != "" {
+		out["mode"] = "oidc"
+		out["sso_enabled"] = true
+	}
 	out["roles"] = m.roles(s.Principal)
 	return out
 }

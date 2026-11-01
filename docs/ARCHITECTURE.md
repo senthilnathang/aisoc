@@ -443,3 +443,7 @@ The release runner reuses the disposable API/Redis/PostgreSQL/worker lifecycle, 
 ## Critical workflow release evidence — November 2026
 
 The browser gate now spans ten named stages over the existing React → Go → PostgreSQL workflows. Response tests use a dedicated mock scope and three independent operator sessions; persisted effect counts guard replay. Outcome-derived Skill/Memory fixtures verify source freshness and immutable hunt snapshots. No service, schema or production privilege boundary changes are introduced. See [release gate](BROWSER_RELEASE_GATE.md).
+
+## OIDC identity boundary — November 2026
+
+Go optionally owns OIDC code/PKCE login and opaque application sessions. A private subject mapping supplies tenant/operator/roles; untrusted provider role and tenant claims are ignored. Mapping fingerprints invalidate sessions on change; existing authorization and scope checks remain authoritative. The mock IdP is development-only; session state is process-local. See [architecture and limitations](OIDC_SSO.md).

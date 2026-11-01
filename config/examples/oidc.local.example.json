@@ -1,0 +1,7 @@
+{
+  "issuer": "http://127.0.0.1:9100",
+  "client_id": "aisoc-local",
+  "redirect_url": "http://127.0.0.1:8080/api/v1/auth/oidc/callback",
+  "mappings_file": "/absolute/private/path/oidc-mappings.json",
+  "local_mock": true
+}

@@ -464,3 +464,7 @@ Install frontend development dependencies with `npm --prefix frontend ci`; provi
 ## Extending critical browser workflows — November 2026
 
 Use `scripts/release/workflows.mjs` for the four connected interaction stages and `scripts/framework/release_workflow_fixtures.py` for disposable setup. Keep actual mutations in rendered controls, use read-only API assertions, and declare evidence in `WORKFLOW_EVIDENCE` in `release_gate.py`. Exact execution-request replay is session-bound HTTP; it must return the same receipt. The harness checks one response note, one execution audit and one rule-apply audit delta. See [command and boundaries](BROWSER_RELEASE_GATE.md).
+
+## OIDC development — November 2026
+
+Use `AISOC_GO_AUTH_MODE=oidc` and a private `AISOC_GO_OIDC_FILE` for a directly launched local API, or explicitly configure the managed runtime. Examples are in `config/examples/oidc*.json`. The combined release gate provisions and cleans up its own mock provider and mapping files. See [setup, revocation semantics and tests](OIDC_SSO.md).

@@ -40,6 +40,9 @@ func buildWithStreams(ready func(context.Context) error, log *slog.Logger, secur
 	mux := http.NewServeMux()
 	if security != nil {
 		security.SourceAuthenticate = (intake.Store{Pool: pool}).Authenticate
+		security.SessionEvent = func(p auth.Principal, event string) {
+			log.Info("auth_session_event", "event", event, "operator_id", p.ID, "tenant_id", p.Tenant)
+		}
 		security.Register(mux)
 		registerPlans(mux, response.Store{Pool: pool})
 		registerCases(mux, pool)

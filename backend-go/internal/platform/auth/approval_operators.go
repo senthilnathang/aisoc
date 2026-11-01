@@ -14,7 +14,11 @@ type ApprovalOperator struct {
 
 func (m *Manager) ApprovalOperators(tenant string) []ApprovalOperator {
 	out := []ApprovalOperator{}
-	for _, op := range m.config.Operators {
+	operators := m.config.Operators
+	if m.config.Mode == "oidc" {
+		operators = m.oidcOperators()
+	}
+	for _, op := range operators {
 		if op.TenantID == tenant {
 			out = append(out, ApprovalOperator{ID: op.ID, Roles: append([]string{}, op.Roles...)})
 		}

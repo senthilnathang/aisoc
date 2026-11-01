@@ -1,0 +1,5 @@
+[
+  {"subject":"alice","operator_id":"demo-proposer","tenant_id":"demo","roles":["proposer"],"generation":1,"disabled":false},
+  {"subject":"reviewer","operator_id":"demo-reviewer","tenant_id":"demo","roles":["approver"],"generation":1,"disabled":false},
+  {"subject":"executor","operator_id":"demo-executor","tenant_id":"demo","roles":["executor"],"generation":1,"disabled":false}
+]

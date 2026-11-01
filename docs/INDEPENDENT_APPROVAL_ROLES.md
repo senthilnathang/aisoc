@@ -153,3 +153,7 @@ sequenceDiagram
     G->>D: Check three identities, grant, expiry and kill switch
     G->>D: Atomic mock revocation, receipt, note and audit
 ```
+
+## OIDC identity integration — November 2026
+
+Independent approval controls also apply to mapped OIDC operators. Browser/API tests use synthetic identities to verify author denial, independent publication and approval loss after role downgrade. Active mappings feed handoff candidates; role or tenant claims from the IdP grant no application privilege. See [local OIDC configuration and limits](OIDC_SSO.md).

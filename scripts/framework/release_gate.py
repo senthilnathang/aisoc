@@ -13,7 +13,7 @@ import time
 import uuid
 
 ROOT=Path(__file__).resolve().parents[2]
-STAGES={'frontend','api','browser','backup'}
+STAGES={'frontend','api','browser','backup','identity'}
 WORKFLOW_EVIDENCE={
     'respond_replay':('independent_approval','kill_switch','explicit_execution','same_receipt_replay','external_calls_zero'),
     'skills_lifecycle':('published_unchanged_while_staged','source_change_blocked','independent_reapproval','staged_publication','archived'),
@@ -44,6 +44,10 @@ def validate_stage(name,report,run_id):
         routes={(e.get('path'),e.get('width')) for e in entries if isinstance(e,dict) and e.get('passed') is True}
         expected={(p,w) for p in ('/','/investigations','/respond','/hunt/threat-hunting','/threat-intel','/skills','/memory','/build','/respond/inbox','/build/retention') for w in (1440,390)}
         if not expected.issubset(routes) or len(routes)<60 or report.get('route_checks')!=len(routes):raise ValueError('Incomplete responsive route sweep')
+    if name=='identity':
+        required={'trusted_mapping','tenant_isolation','independent_approval','logout_all','role_change_revokes','disabled_identity_denied','mapping_failure_closed','browser_redirect'}
+        checks=report.get('checks')
+        if not isinstance(checks,dict) or set(checks)!=required or any(v is not True for v in checks.values()) or report.get('external_requests') or report.get('page_errors'):raise ValueError('Incomplete identity evidence')
     if name=='backup':
         for key in ('table_fingerprints_match','archive_resolution_verified','corruption_rejected','snapshot_corruption_rejected','source_database_modified'):
             expected=key!='source_database_modified'

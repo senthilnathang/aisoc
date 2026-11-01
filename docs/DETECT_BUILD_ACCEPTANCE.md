@@ -79,3 +79,7 @@ The skills_memory stage now includes memory_hunt: approved source context, sourc
 ## Critical browser extensions — November 2026
 
 The combined browser gate requires four additional workflow stages and explicit evidence flags. Its database assertions require exactly one response note/execution audit and one local rule-apply audit despite replay. Missing stages, duplicate effects or unexpected browser/API errors fail the report. See [full browser scope](BROWSER_RELEASE_GATE.md).
+
+## Local identity release gate — November 2026
+
+A fifth combined stage verifies OIDC browser redirects, subject mapping, tenant isolation, approval permission changes and session revocation against disposable services. Missing identity evidence fails the release. See [OIDC coverage](OIDC_SSO.md).

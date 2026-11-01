@@ -18,6 +18,8 @@ type Operator struct {
 	Roles     []string `json:"roles"`
 }
 type Auth struct {
+	OIDC *OIDC
+
 	Mode, DefaultTenant string
 	Operators           []Operator
 	Origins             []string
@@ -69,6 +71,29 @@ func loadAuth() (Auth, error) {
 		}
 		a.SessionTTL = time.Duration(ms) * time.Millisecond
 	}
+	if path := os.Getenv("AISOC_GO_OIDC_FILE"); path != "" {
+		a.OIDC = &OIDC{}
+		if err := ReadPrivateJSON(path, a.OIDC); err != nil {
+			return a, err
+		}
+		if a.OIDC.ClientSecretFile != "" {
+			raw, err := os.ReadFile(a.OIDC.ClientSecretFile)
+			if err != nil || len(raw) > 4096 {
+				return a, errors.New("cannot read bounded OIDC client secret")
+			}
+			a.OIDC.ClientSecret = strings.TrimSpace(string(raw))
+		}
+		if a.Mode == "oidc" {
+			mappings, err := a.OIDC.Mappings()
+			if err != nil {
+				return a, err
+			}
+			a.Operators = nil
+			for _, m := range mappings {
+				a.Operators = append(a.Operators, Operator{ID: m.OperatorID, TenantID: m.TenantID, Roles: m.Roles})
+			}
+		}
+	}
 	return a, a.Validate(os.Getenv("AISOC_GO_ENV") == "production")
 }
 func (a Auth) Validate(production bool) error {
@@ -86,8 +111,8 @@ func (a Auth) Validate(production bool) error {
 	if err := validateStreamScopes(a); err != nil {
 		return err
 	}
-	if a.Mode != "local" && a.Mode != "token" {
-		return errors.New("auth mode must be local or token")
+	if a.Mode != "local" && a.Mode != "token" && a.Mode != "oidc" {
+		return errors.New("auth mode must be local, token or oidc")
 	}
 	if strings.TrimSpace(a.DefaultTenant) == "" || len(a.DefaultTenant) > 120 {
 		return errors.New("invalid default tenant")
@@ -101,7 +126,7 @@ func (a Auth) Validate(production bool) error {
 	ids, hashes := map[string]bool{}, map[string]bool{}
 	pattern := regexp.MustCompile(`^[a-f0-9]{64}$`)
 	for _, op := range a.Operators {
-		if strings.TrimSpace(op.ID) == "" || op.ID == "local-development" || strings.TrimSpace(op.TenantID) == "" || len(op.TenantID) > 120 || !pattern.MatchString(op.TokenHash) || ids[op.ID] || hashes[op.TokenHash] {
+		if strings.TrimSpace(op.ID) == "" || op.ID == "local-development" || strings.TrimSpace(op.TenantID) == "" || len(op.TenantID) > 120 || (a.Mode != "oidc" && (!pattern.MatchString(op.TokenHash) || hashes[op.TokenHash])) || ids[op.ID] {
 			return errors.New("invalid or duplicate operator credentials")
 		}
 		seenRoles := map[string]bool{}
@@ -121,6 +146,14 @@ func (a Auth) Validate(production bool) error {
 		}
 		if production && u.Scheme != "https" {
 			return errors.New("production requires HTTPS origins")
+		}
+	}
+	if a.Mode == "oidc" {
+		if a.OIDC == nil {
+			return errors.New("OIDC configuration is required")
+		}
+		if err := a.OIDC.Validate(a.Origins); err != nil {
+			return err
 		}
 	}
 	if production && (a.Mode != "token" || !a.SecureCookies) {

@@ -2,7 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { compilerPlugins } from "./compiler.config.js";
 import { readFileSync } from "node:fs";
-import { extname, resolve } from "node:path";
+import { resolve } from "node:path";
+import { isSPADocument } from "./preview-routing.mjs";
 
 // Each launcher selects its own backend; the active release uses Go on 3002.
 const apiTarget = process.env.AISOC_API_PROXY_TARGET || "http://localhost:3002";
@@ -16,9 +17,7 @@ const previewSpaFallback = {
   configurePreviewServer(server) {
     server.middlewares.use((request, response, next) => {
       const pathname = new URL(request.url, "http://localhost").pathname;
-      const wantsHtml =
-        request.method === "GET" && request.headers.accept?.includes("text/html");
-      if (!wantsHtml || extname(pathname)) return next();
+      if (!isSPADocument(request.method, request.headers.accept, pathname)) return next();
       response.statusCode = 200;
       response.setHeader("Content-Type", "text/html; charset=utf-8");
       response.end(

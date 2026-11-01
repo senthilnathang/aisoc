@@ -23,13 +23,16 @@ type principalKey struct{}
 func From(ctx context.Context) Principal { p, _ := ctx.Value(principalKey{}).(Principal); return p }
 
 type session struct {
-	Principal Principal
-	CSRF      string
-	Expires   time.Time
+	Principal            Principal
+	CSRF                 string
+	Expires              time.Time
+	Subject, MappingHash string
 }
 type Manager struct {
 	SourceAuthenticate func(context.Context, string, string) (string, error)
+	SessionEvent       func(Principal, string)
 	config             config.Auth
+	oidc               oidcRuntime
 	mu                 sync.Mutex
 	sessions           map[string]session
 }
@@ -37,8 +40,10 @@ type Manager struct {
 var bearerPattern = regexp.MustCompile(`^Bearer [A-Za-z0-9_-]{32,256}$`)
 var cookiePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{40,100}$`)
 
-func New(c config.Auth) *Manager { return &Manager{config: c, sessions: map[string]session{}} }
-func hash(s string) string       { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:]) }
+func New(c config.Auth) *Manager {
+	return &Manager{config: c, sessions: map[string]session{}, oidc: oidcRuntime{attempts: map[string]oidcAttempt{}}}
+}
+func hash(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:]) }
 func token(r *http.Request) (string, bool) {
 	values := r.Header.Values("Authorization")
 	if len(values) == 0 {
@@ -68,14 +73,17 @@ func (m *Manager) get(r *http.Request) (session, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s, ok := m.sessions[key]
-	if ok && !s.Expires.After(time.Now()) {
+	if ok && (!s.Expires.After(time.Now()) || !m.sessionMappingCurrent(s)) {
 		delete(m.sessions, key)
+		if m.SessionEvent != nil {
+			m.SessionEvent(s.Principal, "session_invalidated")
+		}
 		return session{}, false
 	}
 	return s, ok
 }
 func (m *Manager) operator(value string) (Principal, bool) {
-	if value == "" {
+	if value == "" || m.config.Mode == "oidc" {
 		return Principal{}, false
 	}
 	digest := hash(value)
@@ -125,8 +133,8 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 			deny(w, 403, "ORIGIN_DENIED", "This browser origin is not allowed.")
 			return
 		}
-		// Only operational endpoints and the two public auth handlers bypass auth.
-		public := r.URL.Path == "/health" || r.URL.Path == "/ready" || r.URL.Path == "/metrics" || r.URL.Path == "/api/v1/auth/login" || r.URL.Path == "/api/v1/auth/session"
+		// Only operational endpoints and explicit login/session handlers bypass auth.
+		public := r.URL.Path == "/health" || r.URL.Path == "/ready" || r.URL.Path == "/metrics" || r.URL.Path == "/api/v1/auth/login" || r.URL.Path == "/api/v1/auth/session" || r.URL.Path == "/api/v1/auth/oidc/start" || r.URL.Path == "/api/v1/auth/oidc/callback"
 		if r.Header.Get("Origin") != "" && m.origin(r) {
 			w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -224,6 +232,7 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 	})
 }
 func (m *Manager) Register(mux *http.ServeMux) {
+	m.registerOIDC(mux)
 	mux.HandleFunc("GET /api/v1/auth/session", func(w http.ResponseWriter, r *http.Request) {
 		if m.config.Mode == "local" && cookie(r) == "" {
 			reply(w, 200, map[string]any{"mode": "local", "authenticated": true, "tenant_id": m.config.DefaultTenant, "operator_id": "local-development", "roles": []string{"proposer"}})
@@ -232,7 +241,7 @@ func (m *Manager) Register(mux *http.ServeMux) {
 		if s, ok := m.get(r); ok {
 			reply(w, 200, m.sessionInfo(s))
 		} else {
-			reply(w, 200, map[string]any{"mode": "token", "authenticated": false})
+			reply(w, 200, map[string]any{"mode": m.config.Mode, "authenticated": false, "sso_enabled": m.config.Mode == "oidc"})
 		}
 	})
 	mux.HandleFunc("POST /api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +269,7 @@ func (m *Manager) Register(mux *http.ServeMux) {
 			return
 		}
 		now := time.Now()
-		s := session{p, csrf, now.Add(m.config.SessionTTL)}
+		s := session{Principal: p, CSRF: csrf, Expires: now.Add(m.config.SessionTTL)}
 		m.mu.Lock()
 		for key, item := range m.sessions {
 			if !item.Expires.After(now) {
@@ -313,4 +322,12 @@ func reply(w http.ResponseWriter, status int, body any) {
 // ConfigBuildLimits exposes non-secret local retention configuration to HTTP stores.
 func (m *Manager) ConfigBuildLimits() [2]int {
 	return [2]int{m.config.BuildMaxProfiles, m.config.BuildMaxBatches}
+}
+
+func (m *Manager) sessionMappingCurrent(s session) bool {
+	if s.Subject == "" {
+		return m.config.Mode != "oidc"
+	}
+	b, ok := m.mapping(s.Subject)
+	return ok && mappingHash(b) == s.MappingHash && b.OperatorID == s.Principal.ID && b.TenantID == s.Principal.Tenant
 }

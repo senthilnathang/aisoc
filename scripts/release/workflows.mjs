@@ -18,7 +18,10 @@ export async function criticalWorkflows({main,reviewer,login,fixture,origin,step
  const lifecycle=async(p,action)=>{
   await button(p,action).click();await p.getByLabel('Review rationale',{exact:true}).fill('Independent review of synthetic evidence and the saved revision.');
   const submit=button(p,'Confirm '+action.toLowerCase());assert(await submit.isDisabled(),'Lifecycle confirmation missing');
-  await check(p,'I reviewed this guidance and explicitly approve this operation.');await submit.click();await submit.waitFor({state:'hidden'});await p.waitForLoadState('networkidle');
+  await check(p,'I reviewed this guidance and explicitly approve this operation.');
+  const operation={'Approve Memory proposal':'approve','Reapprove guidance':'reapprove','Publish saved staged edits':'publish-staged','Archive guidance':'archive'}[action];
+  const completed=p.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname.endsWith('/lifecycle')&&r.request().postDataJSON().operation===operation);
+  await submit.click();const response=await completed;assert.equal(response.status(),200,'Lifecycle operation failed');await response.json();await submit.waitFor({state:'hidden'});
  };
  const changeSource=async(id)=>{
   await goto(main,'/investigations/'+id);await main.getByLabel('Analyst determination',{exact:true}).selectOption('benign');

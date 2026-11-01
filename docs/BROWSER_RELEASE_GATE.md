@@ -11,13 +11,14 @@ Use the path to an installed Chrome/Chromium on your host. Playwright is pinned 
 
 ## Single combined result
 
-Each invocation retains `runner.log`, `framework.log`, stage JSON and `output/release-gate/<run-id>/report.json`; `output/release-gate/latest.json` points to the latest attempted run. Success requires all four stages:
+Each invocation retains `runner.log`, `framework.log`, stage JSON and `output/release-gate/<run-id>/report.json`; `output/release-gate/latest.json` points to the latest attempted run. Success requires all five stages:
 
 | Stage | Evidence |
 |---|---|
 | Frontend | Browser launch preflight, lint, production build and frontend regression tests |
 | API | Existing full disposable Detect-to-Build acceptance, Go race/vet, auth/tenant checks, Python/Rust, gRPC, Redis/replay and workflow tests |
 | Browser | Real JSON upload/import, case navigation, independent Memory ownership/approval, notification read/link, retention archive/cleanup/restore, authenticated foreign-tenant denial, four critical workflow stages and desktop/mobile route sweep |
+| Identity | Separate mock OIDC provider and API, trusted mapping, independent approval, tenant isolation, logout-all, downgrade/disablement and malformed mapping denial |
 | Backup | Two database clones, matching table fingerprints, restored archive payload resolution after original temporary files are removed, retained snapshot verification and corruption rejection |
 
 Reports must explicitly pass in `local/mock` mode and carry the same run ID. Browser completion requires every named workflow stage, all core area routes at both widths, at least 60 distinct route/width checks, and no unexpected page/API errors or external application requests. A missing/stale report, nonzero subprocess result or incomplete backup proof fails the gate. Existing reports cannot satisfy a new run.
@@ -101,3 +102,11 @@ Run `710cb82ef8d04b6c8701677f65332263` passed in 258.79 seconds using Chrome 145
 The browser used independent fixture-a/fixture-c/fixture-d proposer, approver and executor sessions. Replaying the exact successful execution request returned the same receipt. SQL verified deltas of exactly one response note, one execution audit and one rule application audit. Recovery matched 76 public tables, verified one copied archive and two retention snapshots, and rejected archive/snapshot corruption. The active demo was not used.
 
 Earlier expansion attempts failed on optional learning-fixture fields, reading a rule version from a create response, and an ambiguous Memory locator. Setup now omits inactive fields, fetches the rule before a version-checked update, and uses API snapshot assertions alongside a scoped text wait. No application authorization or validation was weakened. The six-stage reports above describe the previous gate and cannot satisfy the expanded report contract.
+
+## OIDC extension
+
+The gate also requires `identity.json` from a separate disposable OIDC API, browser and loopback provider. Token-mode workflows still run unchanged. See [identity architecture, setup and test boundaries](OIDC_SSO.md). Prior four-stage reports do not satisfy this expanded gate.
+
+Verified run `cebf76ec2d154dec9548d7e177d167f7` passed all five release stages in 490.11 seconds (2026-11-01/02 local run). It passed 34 frontend tests plus lint/build, full Go race/vet and API/framework acceptance, ten browser workflows and 72 desktop/mobile route checks, and all eight identity checks plus self-approval denial with an approver role. Browser reports recorded no page errors or external requests. Recovery matched 76 table fingerprints, verified one copied archive and two retention snapshots, and rejected archive/snapshot corruption. Six release-report and two acceptance-report unit tests also passed.
+
+Generated evidence is in `output/release-gate/cebf76ec2d154dec9548d7e177d167f7/`; reports record the working tree as dirty. This validates local/mock behavior, not a live identity provider or production deployment. Earlier failed runs remain failed; the successful run includes the OIDC proxy fix and Skill lifecycle response wait.

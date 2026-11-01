@@ -286,3 +286,7 @@ Added a single local/mock gate generating fresh JSON fixtures and combining fron
 ## Critical workflow browser gate — November 2026
 
 Extended local/mock browser coverage to Respond independent approvals/replay, Skills staged edits/source reapproval/archive, Memory → Hunt → Investigate and Investigate → Detect feedback. Live connectors, actual-model quality, external identity and production operations remain separate gates. See [coverage and verification](BROWSER_RELEASE_GATE.md).
+
+## Local OIDC foundation — November 2026
+
+Implemented configurable OIDC with a loopback mock IdP, trusted tenant/role mappings, process-local session revocation and approval-permission checks. Live IdP/MFA verification, SCIM, provider logout, distributed session/revocation storage and production rollout remain pending. See [scope](OIDC_SSO.md).

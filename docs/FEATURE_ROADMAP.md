@@ -316,3 +316,7 @@ Detect-to-Build browser routes and selected connected UI workflows now have a fr
 ## Connected browser workflow coverage — November 2026
 
 The repeatable gate now includes real UI mutations across Respond, Skills, Memory/Hunt promotion and case-to-rule feedback, in addition to its route sweep and API/backup stages. This extends local/mock operator coverage; it does not activate providers or production containment. See [release evidence](BROWSER_RELEASE_GATE.md).
+
+## SSO operator identity — November 2026
+
+The local identity foundation uses OIDC/PKCE and explicit subject mappings while preserving proposer/approver/executor separation. It adds no live IdP or production response authorization. See [implementation and remaining gates](OIDC_SSO.md).

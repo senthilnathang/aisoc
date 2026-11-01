@@ -363,3 +363,7 @@ Run `python3 scripts/framework/release_gate.py --chromium-executable /path/to/ch
 ## Critical workflow browser coverage — November 2026
 
 The local release gate also exercises independent Respond approval/execution/replay, staged Skill reapproval/archive, Memory-backed hunt promotion and explicit investigation-to-detection feedback. It uses disposable JSON fixtures and real UI writes; integrations remain local/mock. See [coverage and evidence](docs/BROWSER_RELEASE_GATE.md).
+
+## Local OIDC/SSO — November 2026
+
+Opt-in OIDC now supports trusted subject-to-tenant/role mappings, application session revocation and existing independent approval controls. A disposable mock IdP and browser/API release checks keep validation local. See [configuration, limits and tests](docs/OIDC_SSO.md).
