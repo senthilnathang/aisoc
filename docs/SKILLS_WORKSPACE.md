@@ -1,5 +1,7 @@
 # Skills workspace
 
+The [outcome learning extension](SKILLS_MEMORY_OUTCOMES.md) creates analyst-approved disabled drafts from reviewed cases. Existing publication, entity/scope matching, snapshots and feedback are reused; the editor and application transcript show source provenance.
+
 ## Reference and implemented screens
 
 Reviewed the three public screenshots on [7AI Skills](https://7ai.com/platform/skills) on 2026-11-01:

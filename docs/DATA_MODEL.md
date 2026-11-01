@@ -1,5 +1,7 @@
 # Data Model
 
+Migration 045 adds `case_learning` receipts keyed by tenant, case and source revision. Destination documents retain `learning_origin`; Skill and Memory application snapshots preserve it. See [atomicity and retention](SKILLS_MEMORY_OUTCOMES.md#atomic-approval-and-replay).
+
 Migration 044 adds tenant-scoped `threat_json_imports` and `hunt_promotions` receipts. Their target IDs intentionally have no foreign key so deletion cannot defeat replay protection; immutable promotion documents retain evidence provenance. See [lifecycle and rollback](INTEL_HUNT_INVESTIGATE.md#architecture-and-atomicity).
 
 PostgreSQL is the active datastore; current foundation schema status is 2026-10-31. The authoritative physical

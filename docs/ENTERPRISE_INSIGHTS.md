@@ -1,5 +1,7 @@
 # Memory — Enterprise Insights
 
+The [outcome learning extension](SKILLS_MEMORY_OUTCOMES.md) creates explicitly approved, expiring advisory context for the source case entity. Existing application snapshots, archive and usage screens are reused and retain source provenance.
+
 ## Public reference and screens
 
 Reviewed [7AI Enterprise Insights](https://7ai.com/platform/enterprise-insights) on 2026-11-01. The three public screenshots show the same browser URL, `app.sevenai.com/insight/enterprise-insights`:

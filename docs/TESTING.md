@@ -1,5 +1,7 @@
 # Testing and verification
 
+[Outcome learning verification](SKILLS_MEMORY_OUTCOMES.md#tests-and-local-showcase) covers approval/replay/rollback, stale and foreign evidence, draft/publication gating, later-case matching and immutable snapshots, plus real local UI feedback/usage and intercepted error/mobile tests.
+
 The [intel/hunt/investigation test guide](INTEL_HUNT_INVESTIGATE.md#verification-and-demo) covers the real local browser flow, mobile layout, invalid imports, concurrent retries, tenant isolation, fabricated findings, audit rollback and deletion tombstones. New browser scripts retain clearly labeled demo data or intercept mutations as documented.
 
 The [multi-tenant threat model](MULTITENANT_STREAMING_THREAT_MODEL.md) defines

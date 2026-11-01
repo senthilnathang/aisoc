@@ -1,5 +1,7 @@
 # Delivery roadmap
 
+Completed 2026-11-01: [Skills and Memory end to end](SKILLS_MEMORY_OUTCOMES.md): reviewed-case approval, disabled draft Skill, active expiring Memory, source/evidence provenance, later-case snapshots, Helpful feedback and usage navigation. Model reasoning, automatic source-change invalidation and independent approver roles remain pending.
+
 Completed 2026-11-01: [Threat Intel → Hunt → Investigate](INTEL_HUNT_INVESTIGATE.md), including JSON import, normalized within-report IOC deduplication, idempotent import/promotion, local evidence search and explicit analyst promotion. Live feed validation, broader telemetry search and cross-run case correlation remain follow-up work.
 
 Updated 2026-10-30. The local backend migration is complete. Operational follow-up

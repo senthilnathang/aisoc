@@ -91,6 +91,28 @@ func record(r insightsql.EnterpriseInsight) (map[string]any, error) {
 var idPattern = regexp.MustCompile(`^EI-[A-Za-z0-9-]{8,80}$`)
 
 func (s Store) Save(ctx context.Context, tenant, actor, id string, in Input, archive bool) (map[string]any, error) {
+	if !archive {
+		if _, _, err := validate(in); err != nil {
+			return nil, err
+		}
+	}
+	if (id == "" && !idPattern.MatchString(in.ID)) || (id != "" && in.ExpectedVersion < 1) {
+		return nil, invalid()
+	}
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+	result, err := SaveTx(ctx, tx, tenant, actor, id, in, archive)
+	if err != nil {
+		return nil, err
+	}
+	return result, tx.Commit(ctx)
+}
+
+// SaveTx preserves validation, revisions and audit under a caller-owned transaction.
+func SaveTx(ctx context.Context, tx pgx.Tx, tenant, actor, id string, in Input, archive bool) (map[string]any, error) {
 	create := id == ""
 	var start, end pgtype.Timestamptz
 	var err error
@@ -108,11 +130,6 @@ func (s Store) Save(ctx context.Context, tenant, actor, id string, in Input, arc
 	} else if in.ExpectedVersion < 1 {
 		return nil, invalid()
 	}
-	tx, err := s.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
 	q := insightsql.New(tx)
 	if err = q.EnsureTenant(ctx, tenant); err != nil {
 		return nil, err
@@ -217,7 +234,7 @@ func (s Store) Save(ctx context.Context, tenant, actor, id string, in Input, arc
 	if err != nil {
 		return nil, err
 	}
-	return result, tx.Commit(ctx)
+	return result, nil
 }
 func (s Store) Workspace(ctx context.Context, tenant, tab, search string, limit, offset int) (map[string]any, error) {
 	if limit < 1 || limit > 100 || offset < 0 || offset > 1000000 || utf8.RuneCountInString(search) > 200 || strings.ContainsRune(search, 0) {

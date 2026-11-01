@@ -1,5 +1,7 @@
 # AISOC
 
+[Skills and Memory outcome learning](docs/SKILLS_MEMORY_OUTCOMES.md) now connects reviewed investigations to explicitly approved draft guidance and expiring entity context, reusing existing matching, snapshots and analyst feedback.
+
 Threat Intel now supports [JSON import → evidence hunt → reviewed investigation](docs/INTEL_HUNT_INVESTIGATE.md), with IOC validation, replay-safe deduplication and retained provenance. Integrations remain local/mock.
 
 Local security-operations application: React frontend, Go API and investigation

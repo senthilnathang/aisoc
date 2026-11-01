@@ -1,5 +1,7 @@
 # Developer guide
 
+For [case outcome → Skills/Memory](SKILLS_MEMORY_OUTCOMES.md), reuse `skills.MutateTx`/`insights.SaveTx` under the approval transaction. Preserve case revision checks, tenant-owned evidence and explicit approval; never publish generated guidance or override verdicts implicitly.
+
 For [JSON intelligence import and hunt promotion](INTEL_HUNT_INVESTIGATE.md), use the example JSON, module sqlc queries and migration 044. Extend canonical validation before adding IOC types. Promotion must read a server-stored tenant finding and use the existing case-creation transaction; never accept an evidence snapshot or tenant from the browser.
 
 Current backend: Go/PostgreSQL. The retained TypeScript/SQLite implementation is

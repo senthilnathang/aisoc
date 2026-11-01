@@ -76,6 +76,19 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation, actor string, 
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
+	result, err := MutateTx(ctx, tx, tenant, id, operation, actor, input)
+	if err != nil {
+		return nil, err
+	}
+	return result, tx.Commit(ctx)
+}
+
+// MutateTx reuses skill validation, revisions and audit in an owning transaction.
+func MutateTx(ctx context.Context, tx pgx.Tx, tenant, id, operation, actor string, input map[string]any) (map[string]any, error) {
+	if err := validateMutation(operation, input); err != nil {
+		return nil, err
+	}
+	var err error
 	var r map[string]any
 	action := operation
 	details := map[string]any{}
@@ -163,7 +176,7 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation, actor string, 
 			if _, err = tx.Exec(ctx, `DELETE FROM skills WHERE tenant_id=$1 AND id=$2`, tenant, id); err != nil {
 				return nil, err
 			}
-			return r, tx.Commit(ctx)
+			return r, nil
 		default:
 			return nil, fault.New(400, "INVALID_SKILL", "Invalid skill operation.")
 		}
@@ -179,7 +192,7 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation, actor string, 
 	if err = audit(ctx, tx, tenant, id, action, actor, details); err != nil {
 		return nil, err
 	}
-	return r, tx.Commit(ctx)
+	return r, nil
 }
 
 type Options struct {

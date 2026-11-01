@@ -1,5 +1,7 @@
 # HTTP API Contract
 
+[Case learning APIs](SKILLS_MEMORY_OUTCOMES.md#api-contracts-and-limits) add tenant-scoped GET/POST `/investigations/{id}/learning`; approval requires a reviewed outcome, current revision, selected stored evidence and explicit confirmation.
+
 [Intelligence JSON import and hunt promotion contracts](INTEL_HUNT_INVESTIGATE.md#api-and-implementation) add strict preview/import endpoints, explicit saved-finding promotion and investigation provenance. Existing report/hunt workspace responses gain additive provenance fields.
 
 The Go/PostgreSQL backend implements this contract after the 2026-10-29 cutover.

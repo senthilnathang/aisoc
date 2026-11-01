@@ -1,5 +1,7 @@
 # Application architecture
 
+[Outcome learning](SKILLS_MEMORY_OUTCOMES.md) adds a Go-owned approval transaction across existing Skills and Memory stores. Migration 045 retains immutable evidence/outcome receipts; existing application matching and snapshots remain the only runtime path.
+
 The [Threat Intel → Hunt → Investigate flow](INTEL_HUNT_INVESTIGATE.md) uses Go validation and sqlc/pgx transactions. Migration 044 adds import and promotion receipts. Saved hunt findings become open/unknown cases with an evidence artifact and audit atomically; Redis, Python and Rust are not involved in this bounded local path.
 
 Current as of 2026-10-31. Go/PostgreSQL is active; Node is retained for comparison
