@@ -45,7 +45,7 @@ func TestWorkspaceRevisionAndLibrary(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, e := s.Mutate(ctx, tenant, id, "save-publish", "analyst", map[string]any{"expected_version": float64(1), "description": "Reviewed"})
+			_, e := s.Mutate(ctx, tenant, id, "publish", "reviewer", map[string]any{"expected_version": float64(1)})
 			results <- e
 		}()
 	}
@@ -61,7 +61,7 @@ func TestWorkspaceRevisionAndLibrary(t *testing.T) {
 		t.Fatalf("concurrent save success=%d", success)
 	}
 	a, err = s.Get(ctx, tenant, id)
-	if err != nil || a["version"] != float64(2) || a["state"] != "published" || a["description"] != "Reviewed" {
+	if err != nil || a["version"] != float64(2) || a["state"] != "published" {
 		t.Fatal(a, err)
 	}
 	if _, err = s.Mutate(ctx, tenant+"other", id, "set-enabled", "other", map[string]any{"expected_version": float64(2), "enabled": false}); err == nil {

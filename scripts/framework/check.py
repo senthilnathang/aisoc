@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import re
 import socket
 import subprocess
 import tempfile
@@ -158,6 +159,17 @@ def main():
                 AISOC_PYTHON_HTTP_ADDR=f'127.0.0.1:{pythonhttpport}',
                 AISOC_RUST_ADDR=f'127.0.0.1:{rustport}',AISOC_WORKER_TOKEN=secrets.token_hex(32))
             env.update(AISOC_GO_CONNECTOR_KEY=secrets.token_hex(32),AISOC_GO_AUTH_MODE='local',AISOC_GO_OPERATORS_FILE='',AISOC_GO_ENV='development',AISOC_GO_SECURE_COOKIES='false',AISOC_GO_SESSION_TTL_MS='28800000')
+            # Disposable parity fixtures retain their original assertions with independent reviewers.
+            parity_tenants=['approval-case-runbooks','approval-errors','validation-fixture','approval-skills','approval-edits']
+            for script in ('run.mjs','extended.mjs'):
+                parity_tenants += ['approval-parity-'+name for name in re.findall(r"scenario\([\"']([^\"']+)", (ROOT/'tests/backend-parity'/script).read_text())]
+            parity_tenants += [t+'-foreign' for t in list(parity_tenants)]
+            parity_credentials={t:dict(id='reviewer-'+str(i),token=secrets.token_urlsafe(32)) for i,t in enumerate(dict.fromkeys(parity_tenants))}
+            parity_file=temp/'parity-roles.json';parity_file.write_text(json.dumps(parity_credentials));parity_file.chmod(0o600)
+            parity_operators=temp/'parity-operators.json'
+            parity_operators.write_text(json.dumps([dict(id=v['id'],tenant_id=t,token_hash=hashlib.sha256(v['token'].encode()).hexdigest(),roles=['approver','executor']) for t,v in parity_credentials.items()]))
+            parity_operators.chmod(0o600)
+            env.update(AISOC_PARITY_ROLES_FILE=str(parity_file),AISOC_GO_OPERATORS_FILE=str(parity_operators))
             for name in ('api','migrate','worker','plugin-probe','integration-probe','investigation-worker','stream-worker','stream-archive'):
                 run(['go','build','-o','bin/'+name,'./cmd/'+name], ROOT/'backend-go')
             run(['cargo','test','--locked','--manifest-path','services/wasm-worker/Cargo.toml'])
@@ -304,7 +316,8 @@ def main():
             for investigator in investigators: investigator.terminate();investigator.wait(timeout=10)
             api.terminate();api.wait(timeout=10)
             operators=temp/'operators.json'
-            operators.write_text(json.dumps([{'id':'fixture-'+key,'tenant_id':'auth-'+key,'token_hash':hashlib.sha256(('parity_fixture_'+key*40).encode()).hexdigest()} for key in ('a','b')]))
+            operators.write_text(json.dumps([{'id':'fixture-'+key,'tenant_id':'auth-'+key,'token_hash':hashlib.sha256(('parity_fixture_'+key*40).encode()).hexdigest(),'roles':['proposer','approver','executor']} for key in ('a','b')]))
+            operators.write_text(json.dumps(json.loads(operators.read_text()) + [dict(id='fixture-'+key,tenant_id='auth-a',roles=[role],token_hash=hashlib.sha256(('parity_fixture_'+key*40).encode()).hexdigest()) for key,role in [('c','approver'),('d','executor')]]))
             operators.chmod(0o600)
             env.update(AISOC_GO_AUTH_MODE='token',AISOC_GO_OPERATORS_FILE=str(operators))
             api=spawn([ROOT/'backend-go/bin/api']);wait_port(apiport)
@@ -344,6 +357,8 @@ def main():
                     grant={**scenario['scope'],'tenant_id':'auth-a','operator_id':'fixture-a','mock_login_context':bundle}
                     grants.append(grant)
                     context_scenarios.append((scenario,grant))
+                for key in ('c','d'):
+                    grants.extend([{**g,'id':g['id']+'-'+key,'operator_id':'fixture-'+key,'allow_mock_import':False,'allow_retry':False} for g in list(grants) if g['operator_id']=='fixture-a' and g.get('allow_sandbox_response')])
                 scopes.write_text(json.dumps(grants))
                 env.update(AISOC_GO_STREAM_OPERATIONS_FILE=str(scopes),AISOC_STREAM_REDIS_ADDR=env['AISOC_TEST_REDIS_ADDR'],AISOC_STREAM_REDIS_PUBLISHER_PASSWORD=env['AISOC_TEST_REDIS_PUBLISHER_PASSWORD'],AISOC_STREAM_REDIS_CONSUMER_PASSWORD=env['AISOC_TEST_REDIS_CONSUMER_PASSWORD'])
                 api.terminate();api.wait(timeout=10)
@@ -525,7 +540,9 @@ def main():
                 (report/'build-integrations-flow.json').write_text(json.dumps({'passed':True,'preview':True,'create_replay':True,'tenant_isolation':True,'revision_conflict':True,'sealed_edit_denied':True,'managed_worker':'verified','approval':'explicit simulated','sync':'one mock note','replay_inserted':0,'accepted_events':managed['intake']['accepted_events'],'processed_events':managed['intake']['processed_events'],'lifecycle':{'clone_replay':True,'archive_guards':True,'revision_history':True,'extended_json':True,'tenant_isolation':True}},indent=2)+'\n')
                 action={'id':'demo-revoke','session_id':'demo-session','principal_ref':'demo-user','expected_version':1,'ticket':'TEST-REVIEW'}
                 def response_op(operation, expected=200, **extra):
-                    return stream_http('/mock-siem/sandbox-session',{**action,'operation':operation,**extra},expected=expected)
+                    actor='c' if operation in ('approve','policy') else 'd' if operation in ('execute','dry_run') else 'a'
+                    scope='mock-siem'+('-'+actor if actor in ('c','d') else '')
+                    return stream_http('/'+scope+'/sandbox-session',{**action,'operation':operation,**extra},expected=expected,actor=actor)
                 stream_http('/mock-siem/sandbox-session',{**action,'operation':'create_session'},actor='b',expected=403)
                 assert response_op('create_session')['version']==1
                 assert response_op('propose')['state']=='proposed'

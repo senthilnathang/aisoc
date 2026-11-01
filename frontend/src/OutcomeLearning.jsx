@@ -39,7 +39,7 @@ export function LearningProvenance({ value, setView }) {
   if (!value?.source_case) return null;
   return (
     <Box mt="14px" p="14px" bg={ui.soft} rounded="6px" overflowWrap="anywhere">
-      <Badge>Analyst-approved outcome</Badge>
+      <Badge>{value.approved_by ? (value.proposed_by && value.approved_by !== value.proposed_by ? "Independently approved outcome" : "Legacy reviewed outcome") : "Proposed outcome guidance"}</Badge>
       <Text mt="8px">
         {value.source_case.title} · {value.source_case.determination}
       </Text>
@@ -47,12 +47,12 @@ export function LearningProvenance({ value, setView }) {
         {value.rationale}
       </Text>
       <Text mt="6px" fontSize="xs" color={ui.muted}>
-        {value.approved_by} · {new Date(value.approved_at).toLocaleString()} ·{" "}
+        {value.approved_by || value.proposed_by} · {new Date(value.approved_at || value.proposed_at).toLocaleString()} ·{" "}
         {value.evidence?.length || 0} evidence snapshots
       </Text>
       <Box as="details" mt="10px" fontSize="sm">
         <Box as="summary" cursor="pointer">
-          Approved evidence and guidance snapshot
+          Saved evidence and guidance snapshot
         </Box>
         <Stack mt="10px" spacing="10px">
           {value.evidence?.map((a) => (
@@ -68,13 +68,13 @@ export function LearningProvenance({ value, setView }) {
           ))}
           {value.guidance && (
             <Box>
-              <Text fontWeight="600">Original approved guidance</Text>
+              <Text fontWeight="600">Original saved guidance</Text>
               <Text whiteSpace="pre-wrap">{value.guidance}</Text>
             </Box>
           )}
           {value.context && (
             <Box>
-              <Text fontWeight="600">Original approved context</Text>
+              <Text fontWeight="600">Original saved context</Text>
               <Text whiteSpace="pre-wrap">{value.context}</Text>
               <Text fontSize="xs">Approved expiry: {value.valid_until}</Text>
             </Box>
@@ -151,7 +151,7 @@ function ApprovalForm({ data, onClose, onSaved }) {
     <Modal isOpen onClose={onClose} size="3xl" scrollBehavior="inside">
       <ModalOverlay />
       <ModalContent mx="12px" my="24px" maxH="calc(100dvh - 48px)">
-        <ModalHeader>Approve learning from this outcome</ModalHeader>
+        <ModalHeader>Propose learning from this outcome</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing="18px">
@@ -238,7 +238,7 @@ function ApprovalForm({ data, onClose, onSaved }) {
               isDisabled={busy}
               onChange={(e) => set("create_memory", e.target.checked)}
             >
-              Activate approved Memory context
+              Propose Memory context
             </Checkbox>
             {form.create_memory && (
               <Stack pl="12px" borderLeft="2px solid" borderColor={ui.line}>
@@ -260,7 +260,7 @@ function ApprovalForm({ data, onClose, onSaved }) {
                   </Select>
                 </FormControl>
                 <FormControl isRequired>
-                  <FormLabel>Approved context</FormLabel>
+                  <FormLabel>Proposed context</FormLabel>
                   <Textarea
                     value={form.context}
                     maxLength={8000}
@@ -296,7 +296,7 @@ function ApprovalForm({ data, onClose, onSaved }) {
               isDisabled={busy}
               onChange={(e) => set("confirm", e.target.checked)}
             >
-              I reviewed the outcome, evidence and reuse scope and approve these
+              I reviewed the outcome, evidence and reuse scope and propose these
               outputs.
             </Checkbox>
             {error && (
@@ -316,7 +316,7 @@ function ApprovalForm({ data, onClose, onSaved }) {
             isDisabled={!ready || busy}
             isLoading={busy}
           >
-            Approve learning
+            Save learning proposals
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -389,7 +389,7 @@ export default function OutcomeLearning({ caseID, revision, setView }) {
         <>
           <Text my="14px" fontSize="sm" color={ui.muted}>
             {captured
-              ? "Learning is already approved for this case revision. The original receipt is retained."
+              ? "Learning proposals already exist for this case revision. Review and approve them independently in Skills and Memory."
               : eligible
                 ? "Select supporting artifacts, write guidance and review exactly what will become reusable."
                 : "Resolve or close this investigation with a reviewed determination, a primary entity and at least one stored artifact before capturing learning."}

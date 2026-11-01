@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fork } from "node:child_process";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -50,10 +51,21 @@ export async function target(options={}) {
     return {...info,close,owned:true};
   } catch(error) {await close();throw error;}
 }
+const roleFixtures=process.env.AISOC_PARITY_ROLES_FILE?JSON.parse(readFileSync(process.env.AISOC_PARITY_ROLES_FILE,'utf8')):null;
+export function roleHeaders(method,path,tenant){
+ const protectedWrite=(method==='PATCH'&&path.includes('/runbooks/'))||(/\/skills\/[^/]+\/(publish|toggle)$/.test(path))||path.endsWith('/execute');
+ if(!protectedWrite||!roleFixtures?.[tenant])return {};
+ return {authorization:'Bearer '+roleFixtures[tenant].token};
+}
+export function reviewerID(tenant){return roleFixtures?.[tenant]?.id||'local-development';}
 export function client(url,tenant,events=[]) {
   return async(method,path,body,expected=200,headers={})=>{
+    if(roleFixtures && path.endsWith('/publish') && body===undefined){
+      const current=await fetch(url+path.slice(0,-8),{headers:{'x-tenant-id':headers['x-tenant-id']||tenant}});
+      const record=await current.json();body={expected_version:record.version||1};
+    }
     const response=await fetch(url+path,{
-      method,headers:{"x-tenant-id":tenant,...(body===undefined?{}:{"content-type":"application/json"}),...headers},
+      method,headers:{"x-tenant-id":tenant,...roleHeaders(method,path,headers["x-tenant-id"]||tenant),...(body===undefined?{}:{"content-type":"application/json"}),...headers},
       ...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(15000),
     });
     const raw=await response.text();

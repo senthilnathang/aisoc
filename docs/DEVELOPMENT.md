@@ -1,5 +1,7 @@
 # Developer guide
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 For [case outcome → Skills/Memory](SKILLS_MEMORY_OUTCOMES.md), reuse `skills.MutateTx`/`insights.SaveTx` under the approval transaction. Preserve case revision checks, tenant-owned evidence and explicit approval; never publish generated guidance or override verdicts implicitly.
 
 For [JSON intelligence import and hunt promotion](INTEL_HUNT_INVESTIGATE.md), use the example JSON, module sqlc queries and migration 044. Extend canonical validation before adding IOC types. Promotion must read a server-stored tenant finding and use the existing case-creation transaction; never accept an evidence snapshot or tenant from the browser.
@@ -38,7 +40,7 @@ does not access application records or measure end-to-end throughput.
 
 Initialize with `AISOC_RUNTIME_PROFILE=foundation ./run.sh start both`. The selected
 installation serves the frontend on 8080 and the Go foundation API on 3003, with
-independent Python HTTP 8001/gRPC 50051 and Redis 16379. Foundation schema is 030;
+independent Python HTTP 8001/gRPC 50051 and Redis 16379. Foundation schema is 049;
 the preserved release database remains separate.
 
 ```bash

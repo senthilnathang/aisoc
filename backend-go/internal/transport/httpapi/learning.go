@@ -19,7 +19,7 @@ func registerLearning(mux *http.ServeMux, pool *pgxpool.Pool) {
 			return nil, 0, streamError(e)
 		}
 		p := auth.From(r.Context())
-		v, e := s.Approve(r.Context(), p.Tenant, r.PathValue("id"), p.ID, in)
+		v, e := s.Propose(r.Context(), p.Tenant, r.PathValue("id"), p.ID, in)
 		return v, 200, e
 	}))
 }

@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"aisoc/backend/internal/platform/auth"
 	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
 	"context"
@@ -88,6 +89,9 @@ func MutateTx(ctx context.Context, tx pgx.Tx, tenant, id, operation, actor strin
 	if err := validateMutation(operation, input); err != nil {
 		return nil, err
 	}
+	if operation == "save-publish" {
+		return nil, fault.New(409, "INDEPENDENT_APPROVAL_REQUIRED", "Save a draft first; another operator must publish it.")
+	}
 	var err error
 	var r map[string]any
 	action := operation
@@ -128,6 +132,11 @@ func MutateTx(ctx context.Context, tx pgx.Tx, tenant, id, operation, actor strin
 		}
 		if r["learning_archived"] == true && operation != "delete" {
 			return nil, fault.New(409, "SKILL_ARCHIVED", "Archived skills cannot be changed or enabled.")
+		}
+		if operation == "publish" || operation == "toggle" || (operation == "set-enabled" && input["enabled"] == true) {
+			if e := auth.Independent(r, actor); e != nil {
+				return nil, e
+			}
 		}
 		switch operation {
 		case "patch", "save-publish":
@@ -202,6 +211,17 @@ func MutateTx(ctx context.Context, tx pgx.Tx, tenant, id, operation, actor strin
 			r["published_version"] = r["version"]
 		}
 		r["updated_at"] = stamp()
+	}
+	if operation == "create" || operation == "patch" {
+		auth.RecordProposer(r, actor)
+	}
+	if action == "published" {
+		r["approval"] = map[string]any{"approved_by": actor, "approved_at": stamp(), "version": r["version"], "created_by": r["created_by"], "proposal_authors": r["proposal_authors"]}
+		if origin, ok := r["learning_origin"].(map[string]any); ok && origin["approved_by"] == nil {
+			origin["approved_by"] = actor
+			origin["approved_at"] = stamp()
+		}
+		delete(r, "proposal_authors")
 	}
 	if err = save(ctx, tx, r, operation == "create"); err != nil {
 		return nil, err

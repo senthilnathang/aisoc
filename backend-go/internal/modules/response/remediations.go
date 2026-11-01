@@ -15,6 +15,12 @@ import (
 
 func remediationMissing() error { return fault.New(404, "NOT_FOUND", "remediation not found") }
 func remediationFields(fields map[string]json.RawMessage) (map[string]any, error) {
+	if _, ok := fields["status"]; ok {
+		return nil, fault.New(409, "APPROVAL_WORKFLOW_REQUIRED", "Response status is managed by the approved sandbox workflow.")
+	}
+	if _, ok := fields["executed_at"]; ok {
+		return nil, fault.New(409, "APPROVAL_WORKFLOW_REQUIRED", "Execution timestamps cannot be set manually.")
+	}
 	result := map[string]any{}
 	for _, key := range []string{"investigation_id", "action_type", "title", "description", "connector", "status", "executed_at"} {
 		if raw, ok := fields[key]; ok {
@@ -84,6 +90,7 @@ func (s Store) CreateRemediation(ctx context.Context, tenant string, fields map[
 // Case locks precede remediation locks, matching case deletion. If a concurrent
 // reassignment changed the parent, retry with the current ordered parent locks.
 func (s Store) MutateRemediation(ctx context.Context, tenant, id, operation string, fields map[string]json.RawMessage, keys []string) (map[string]any, error) {
+
 	values, err := remediationFields(fields)
 	if err != nil {
 		return nil, err
@@ -92,6 +99,9 @@ func (s Store) MutateRemediation(ctx context.Context, tenant, id, operation stri
 		before, err := s.Remediation(ctx, tenant, id)
 		if err != nil {
 			return nil, err
+		}
+		if operation == "execute" {
+			return nil, fault.New(409, "APPROVAL_WORKFLOW_REQUIRED", "Use the case-linked sandbox response workflow with independent approval and execution.")
 		}
 		original := before["investigation_id"].(string)
 		parents := []string{original}

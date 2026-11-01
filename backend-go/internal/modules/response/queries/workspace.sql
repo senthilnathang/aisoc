@@ -13,3 +13,6 @@ SELECT document FROM response_workflow_previews WHERE tenant_id=$1 AND plan_id=$
 SELECT id,title,severity,source FROM investigations WHERE tenant_id=$1 AND id=$2 FOR SHARE;
 -- name: WorkflowPolicies :many
 SELECT plan_id,document FROM response_workflow_policies WHERE tenant_id=$1 ORDER BY plan_id;
+
+-- name: PlanVersionAuthor :one
+SELECT actor FROM response_plan_versions WHERE tenant_id=$1 AND plan_id=$2 AND version=$3;

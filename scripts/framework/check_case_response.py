@@ -18,11 +18,14 @@ def check_case_response(http, sql, case_id):
     http(path, root=root, actor='b', expected=404)
     request = dict(operation='propose', id='case-response-test', scope_id='mock-siem', session_id='case-session-test', principal_ref='json-user', ticket='REVIEW-RESPONSE-1', reason='Analyst reviewed local login evidence; sandbox response only.', evidence_refs=[review['evidence'][0]['reference']])
     def op(operation, expected=200, **extra):
-        return http(path, {**request, 'operation': operation, **extra}, root=root, expected=expected)
+        actor='c' if operation in ('approve','policy') else 'd' if operation in ('execute','dry_run') else 'a'
+        scope=request['scope_id']+('-'+actor if actor in ('c','d') else '')
+        return http(path, {**request, 'operation': operation, 'scope_id':scope, **extra}, root=root, expected=expected,actor=actor)
     http(path, request, root=root, actor='b', expected=403)
     op('propose', 403, scope_id='mock-review')
     op('propose', 400, evidence_refs=['fabricated'])
     assert op('propose')['state'] == 'proposed'
+    http(path,{**request,'operation':'approve','confirm':True,'comment':'Self approval must be denied'},root=root,actor='a',expected=403)
     assert op('propose')['replayed']
     op('propose', 409, session_id='different-session')
     assert len(http(path, root=root)['items']) == 1

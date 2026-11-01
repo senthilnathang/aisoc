@@ -29,7 +29,7 @@ func registerCaseSandbox(mux *http.ServeMux, pool *pgxpool.Pool, scopes []config
 		}
 		grants := []map[string]string{}
 		for _, s := range allowed(r) {
-			grants = append(grants, map[string]string{"id": s.ID, "connector_id": s.ConnectorID})
+			grants = append(grants, map[string]string{"id": s.ID, "connector_id": s.ConnectorID, "source": s.Source})
 		}
 		return map[string]any{"items": items, "scopes": grants, "mode": "sandbox", "external_calls": 0, "limit": 100}, 200, nil
 	}

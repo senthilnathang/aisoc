@@ -180,7 +180,7 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 			if !bind(w, r, p) {
 				return
 			}
-		} else if m.config.Mode == "local" {
+		} else if m.config.Mode == "local" && cookie(r) == "" {
 			// Reject repeated and proxy-coalesced selectors rather than silently
 			// choosing a tenant based on header ordering.
 			if values := r.Header.Values("X-Tenant-Id"); len(values) > 1 || (len(values) == 1 && strings.Contains(values[0], ",")) {
@@ -217,17 +217,20 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 				}
 			}
 		}
+		if !m.permit(w, r, p) {
+			return
+		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), principalKey{}, p)))
 	})
 }
 func (m *Manager) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/auth/session", func(w http.ResponseWriter, r *http.Request) {
-		if m.config.Mode == "local" {
-			reply(w, 200, map[string]any{"mode": "local", "authenticated": true, "tenant_id": m.config.DefaultTenant})
+		if m.config.Mode == "local" && cookie(r) == "" {
+			reply(w, 200, map[string]any{"mode": "local", "authenticated": true, "tenant_id": m.config.DefaultTenant, "operator_id": "local-development", "roles": []string{"proposer"}})
 			return
 		}
 		if s, ok := m.get(r); ok {
-			reply(w, 200, sessionBody(s))
+			reply(w, 200, m.sessionInfo(s))
 		} else {
 			reply(w, 200, map[string]any{"mode": "token", "authenticated": false})
 		}
@@ -275,7 +278,7 @@ func (m *Manager) Register(mux *http.ServeMux) {
 		m.sessions[hash(value)] = s
 		m.mu.Unlock()
 		w.Header().Set("Set-Cookie", m.cookie(value, int(m.config.SessionTTL/time.Second)))
-		reply(w, 200, sessionBody(s))
+		reply(w, 200, m.sessionInfo(s))
 	})
 	mux.HandleFunc("POST /api/v1/auth/logout", func(w http.ResponseWriter, r *http.Request) {
 		m.mu.Lock()

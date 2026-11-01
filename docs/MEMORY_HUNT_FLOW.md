@@ -1,5 +1,7 @@
 # Memory → Hunt → Investigate (local/mock)
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 Hunt local search now records approved enterprise context alongside immutable
 stored evidence. This extends existing Memory eligibility and Hunt run/promotion
 contracts; it does not add a service, datastore, model call or migration.
@@ -62,7 +64,7 @@ Validity is evaluated in the search transaction using the existing PostgreSQL
 validity semantics. The snapshot records eligibility at capture, not a promise
 about future approval or real-world truth. Editing/archiving Memory does not
 retroactively invalidate historical evidence records. This is single-operator
-local approval; independent approver-role separation remains future work.
+independent local approval; external identity provisioning remains future work.
 
 At most 20 snapshots and 64 KiB of encoded context are captured per run. The
 `memory_truncated` flag explicitly reports a limit; findings are not altered by

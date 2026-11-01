@@ -33,7 +33,7 @@ export default function AuthGate({ children }) {
   };
   if (loading) return <Box p="40px" role="status">Checking workspace session…</Box>;
   if (session?.authenticated) return <>
-    {session.mode === "token" && <Flex px="18px" py="6px" bg="#e9edf3" align="center" gap="12px"><Text fontSize="11px">Workspace: <b>{session.tenant_id}</b> · {session.operator_id}</Text><Button ml="auto" size="xs" variant="ghost" isLoading={busy} onClick={logout}>Sign out</Button></Flex>}
+    {<Flex px="18px" py="6px" bg="#e9edf3" align="center" gap="12px"><Text fontSize="11px">Workspace: <b>{session.tenant_id}</b> · {session.operator_id} · {(session.roles||[]).join(" / ") || "no approval-workflow roles"}</Text><Button ml="auto" size="xs" variant="ghost" isLoading={busy} onClick={session.mode === "local" ? () => setSession({mode:"token",authenticated:false}) : logout}>{session.mode === "local" ? "Sign in as operator" : "Sign out"}</Button></Flex>}
     {error && <Alert status="error"><AlertIcon />{error}</Alert>}
     {children}
   </>;

@@ -57,7 +57,7 @@ func TestRunbookAuditRollbackAndCascade(t *testing.T) {
 		t.Fatal(err)
 	}
 	update := StepInput{ExpectedVersion: 1, StepIndex: 0, Completed: true, Note: "Approved", ApprovalConfirmed: true}
-	if _, err = store.Step(ctx, tenant, record.ID, assignment.ID, update, "test"); err == nil {
+	if _, err = store.Step(ctx, tenant, record.ID, assignment.ID, update, "reviewer"); err == nil {
 		t.Fatal("expected case-audit failure")
 	}
 	list, err := store.Assignments(ctx, tenant, record.ID)
@@ -74,7 +74,10 @@ func TestRunbookAuditRollbackAndCascade(t *testing.T) {
 	if _, err = pool.Exec(ctx, `DROP TRIGGER `+quoted+` ON audit_events`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = store.Step(ctx, tenant, record.ID, assignment.ID, update, "test"); err != nil {
+	if _, err = store.Step(ctx, tenant, record.ID, assignment.ID, update, "test"); err == nil {
+		t.Fatal("runbook self approval")
+	}
+	if _, err = store.Step(ctx, tenant, record.ID, assignment.ID, update, "reviewer"); err != nil {
 		t.Fatal(err)
 	}
 	// Foreign keys independently reject an assignment to a case in another tenant.

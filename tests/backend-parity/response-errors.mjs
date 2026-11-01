@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {argumentsFor,target,client,output} from './harness.mjs';
 const options=argumentsFor(),server=await target(options),events=[];
-const req=client(server.url,'response-errors-'+randomUUID(),events);
+const req=client(server.url,(process.env.AISOC_PARITY_ROLES_FILE?'approval-errors':'response-errors-'+randomUUID()),events);
 const input={kind:'runbook',title:'Error contracts',description:'',domain:'Identity',trigger:'Test',steps:[{title:'Approve',instructions:'Review',approval_required:true}]};
 const conflict=[409,'VERSION_CONFLICT','This record changed. Reload it before saving your changes.'];
 async function error(method,path,body,[status,code,message]){

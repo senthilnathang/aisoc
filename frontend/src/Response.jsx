@@ -22,7 +22,6 @@ import {
   Spinner,
   Stack,
   Text,
-  useToast,
 } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
@@ -92,9 +91,7 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
   const [query, setQuery] = useState(""),
     [filter, setFilter] = useState("all"),
     [selected, setSelected] = useState(null);
-  const [running, setRunning] = useState(false),
-    [reload, setReload] = useState(0);
-  const toast = useToast();
+  const [reload, setReload] = useState(0);
   const [summary, setSummary] = useState({});
   const [offset, setOffset] = useState(0);
   const effectiveFilter = mode === "respond" || mode === "responseApprovals" ? "pending" : mode === "responseActivity" ? "completed" : filter;
@@ -135,31 +132,6 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
   );
   const visibleCases = cases;
   const visible = items;
-  const execute = async () => {
-    setRunning(true);
-    try {
-      const updated = await api.executeRemediation(selected.id);
-      setItems((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      );
-      setSelected(updated);
-      setReload(value=>value+1);
-      toast({
-        title: "Simulation recorded",
-        description: "The record was updated. No provider action was sent.",
-        status: "success",
-        duration: 4000,
-      });
-    } catch (err) {
-      toast({
-        title: "Unable to record simulation",
-        description: err.message,
-        status: "error",
-      });
-    } finally {
-      setRunning(false);
-    }
-  };
   const empty = (
     <Box textAlign="center" py="48px">
       <Heading size="sm">
@@ -702,14 +674,12 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
         placement="right"
         size="md"
         onClose={() => {
-          if (!running) setSelected(null);
+          setSelected(null);
         }}
-        closeOnOverlayClick={!running}
-        closeOnEsc={!running}
       >
         <DrawerOverlay />
         <DrawerContent>
-          <DrawerCloseButton isDisabled={running} />
+          <DrawerCloseButton />
           <DrawerHeader
             borderBottom="1px solid"
             borderColor={ui.line}
@@ -787,14 +757,13 @@ export default function ResponseWorkspace({ mode = "respond", setView }) {
           <DrawerFooter borderTop="1px solid" borderColor={ui.line} gap="10px">
             <Button
               variant="outline"
-              isDisabled={running}
               onClick={() => setSelected(null)}
             >
               Close
             </Button>
             {selected?.status === "pending" && (
-              <Button isLoading={running} onClick={execute}>
-                Approve & record simulation
+              <Button onClick={() => {setView("investigationDetail",selected.investigation_id);setSelected(null);}}>
+                Review response in investigation
               </Button>
             )}
           </DrawerFooter>

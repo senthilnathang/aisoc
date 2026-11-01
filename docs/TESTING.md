@@ -1,5 +1,7 @@
 # Testing and verification
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 [Outcome learning verification](SKILLS_MEMORY_OUTCOMES.md#tests-and-local-showcase) covers approval/replay/rollback, stale and foreign evidence, draft/publication gating, later-case matching and immutable snapshots, plus real local UI feedback/usage and intercepted error/mobile tests.
 
 The [intel/hunt/investigation test guide](INTEL_HUNT_INVESTIGATE.md#verification-and-demo) covers the real local browser flow, mobile layout, invalid imports, concurrent retries, tenant isolation, fabricated findings, audit rollback and deletion tombstones. New browser scripts retain clearly labeled demo data or intercept mutations as documented.
@@ -618,3 +620,14 @@ uncertain-import recovery without changing database state.
 ## Memory → Hunt — November 2026
 
 Memory-to-Hunt regression: hunts/memory_integration_test.go verifies freshness/exclusion, historical replay/promotion, caps, tenant isolation and audit rollback. check_platform_acceptance.py covers learned-source reapproval/archive; tests/frontend/hunt-memory.test.mjs checks date labels. See [workflow](MEMORY_HUNT_FLOW.md).
+
+## Independent approval roles — November 2026
+
+See [role contracts and validation](INDEPENDENT_APPROVAL_ROLES.md) for Respond,
+Skills and Memory. The 2026-11-01 disposable acceptance run passed in 249.96s;
+frontend lint/build and all 12 frontend test files passed. Coverage includes
+distinct proposer/approver/executor identities, pending contributors, stale
+versions, tenant isolation, source reapproval, denied legacy execution and replay.
+The credential-free browser smoke (`scripts/framework/approval-browser.js`)
+passed on the refreshed local backend with no page errors. Authenticated role
+handoffs are verified through local API tests, not this browser smoke.

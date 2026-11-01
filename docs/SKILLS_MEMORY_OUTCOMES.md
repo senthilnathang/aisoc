@@ -1,5 +1,7 @@
 # Investigation outcomes → Skills and Memory
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 Implemented and locally verified on 2026-11-01. The Go control plane reuses existing
 Skills and Enterprise Insights stores, matching and immutable application snapshots.
 No model, external provider, new service or response authorization is introduced.
@@ -13,10 +15,10 @@ No model, external provider, new service or response authorization is introduced
    - **Draft Skill:** name and reusable guidance. Initially disabled and scoped to
      investigations for the source case's primary entity. Publish through the
      existing Skills editor after reviewing its content and scope.
-   - **Approved Memory:** analyst-written context, entity kind and expiry. Explicit
+   - **Pending Memory:** analyst-written context, entity kind and expiry. A different operator’s explicit
      approval activates advisory context for the exact case entity. No benign/
      malicious hint is copied from the historical outcome; the hint is `none`.
-4. Confirm the outcome, evidence and reuse scope, then **Approve learning**.
+4. Confirm the outcome, evidence and reuse scope, then **Save learning proposals**.
 5. Follow the receipt to Skills or Memory. Both show source-case provenance; the
    expandable snapshot retains the original evidence, guidance/context and rationale.
 6. Subsequent matching investigations record existing versioned application snapshots.
@@ -31,7 +33,7 @@ context and guidance; it does not change a determination or execute an action.
 ## Reuse and boundaries
 
 - `skills.MutateTx` and `insights.SaveTx` reuse validation, revision handling and
-  audit within the owning approval transaction. Ordinary store methods preserve
+  audit within the owning proposal transaction. Ordinary store methods preserve
   their existing public contracts and own their transactions.
 - `skills.Apply` continues to call `insights.Apply` for investigations. Memory
   matches the case's actual primary entity, ignoring case/surrounding spaces;
@@ -42,8 +44,8 @@ context and guidance; it does not change a determination or execute an action.
 - New outcome-derived Skills are scoped to `investigations`, not automatically to
   hunts. Existing hunt Skill matching is unchanged. Memory/hunt application and
   model-assisted reasoning remain separate work.
-- Approval is an authenticated analyst action, not a separate approver-role system.
-  Production RBAC and separation of duties remain acceptance gates.
+- Approval now requires a separate configured approver and denies authors.
+  Production identity provisioning remains an acceptance gate.
 
 ## Atomic approval and replay
 
@@ -53,13 +55,13 @@ sequenceDiagram
     participant Go as Go learning module
     participant DB as PostgreSQL
     participant Match as Existing Skills/Memory matcher
-    UI->>Go: Case revision + artifact IDs + authored text + explicit approval
+    UI->>Go: Case revision + artifact IDs + authored text + explicit proposal
     Go->>DB: Lock tenant case; check immutable receipt
     Go->>DB: Verify reviewed outcome, current revision and case-owned evidence
-    Go->>DB: Create disabled draft Skill and/or active expiring Memory
+    Go->>DB: Create disabled draft Skill and/or pending expiring Memory
     Go->>DB: Attach provenance + receipt + audit in the same transaction
     Go-->>UI: Saved receipt and output links
-    UI->>Go: Publish Skill through existing editor
+    UI->>Go: Independent operator publishes Skill / approves Memory
     Note over Go,Match: Later investigation creation/intake uses existing application path
     Match->>DB: Match entity/scope and record versioned snapshots
     Match-->>UI: Guidance/context and existing feedback/usage views

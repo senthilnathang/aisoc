@@ -2,6 +2,7 @@ package response
 
 import (
 	"aisoc/backend/internal/modules/investigations"
+	"aisoc/backend/internal/modules/response/responsesql"
 	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
 	"context"
@@ -25,6 +26,8 @@ type Assignment struct {
 	Version         int         `json:"version"`
 	Steps           []StepState `json:"steps"`
 	CreatedAt       string      `json:"created_at"`
+	ProposedBy      string      `json:"proposed_by"`
+	PlanAuthor      string      `json:"plan_author"`
 }
 type AssignmentView struct {
 	Assignment
@@ -118,7 +121,11 @@ func (s Store) Attach(ctx context.Context, tenant, caseID, planID string, versio
 	if exists {
 		return Assignment{}, fault.New(409, "ALREADY_ATTACHED", "This runbook is already attached to the case.")
 	}
-	a := Assignment{ID: jobs.ID(), InvestigationID: caseID, PlanID: planID, Snapshot: plan, Version: 1, Steps: make([]StepState, len(plan.Steps)), CreatedAt: stamp()}
+	planAuthor, err := responsesql.New(tx).PlanVersionAuthor(ctx, responsesql.PlanVersionAuthorParams{TenantID: tenant, PlanID: planID, Version: int32(version)})
+	if err != nil {
+		return Assignment{}, err
+	}
+	a := Assignment{ProposedBy: actor, PlanAuthor: planAuthor, ID: jobs.ID(), InvestigationID: caseID, PlanID: planID, Snapshot: plan, Version: 1, Steps: make([]StepState, len(plan.Steps)), CreatedAt: stamp()}
 	raw, err := json.Marshal(a)
 	if err != nil {
 		return Assignment{}, err
@@ -164,6 +171,14 @@ func (s Store) Step(ctx context.Context, tenant, caseID, id string, in StepInput
 	step := a.Snapshot.Steps[in.StepIndex]
 	if in.Completed && step.ApprovalRequired && !in.ApprovalConfirmed {
 		return Assignment{}, fault.New(400, "APPROVAL_REQUIRED", "Confirm analyst approval for this step.")
+	}
+	if in.Completed && step.ApprovalRequired {
+		if a.ProposedBy == "" || a.PlanAuthor == "" {
+			return Assignment{}, fault.New(409, "PROPOSER_REQUIRED", "Attach a current runbook revision with recorded authorship.")
+		}
+		if actor == a.ProposedBy || actor == a.PlanAuthor {
+			return Assignment{}, fault.New(403, "SELF_APPROVAL_DENIED", "The requester and runbook author cannot approve this step.")
+		}
 	}
 	now := stamp()
 	a.Steps[in.StepIndex] = StepState{in.Completed, in.Note, &actor, &now}

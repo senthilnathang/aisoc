@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {argumentsFor,target,client,output} from './harness.mjs';
 const options=argumentsFor(),server=await target(options),events=[];
-const tenant='edits-'+randomUUID(),req=client(server.url,tenant,events);
+const tenant=(process.env.AISOC_PARITY_ROLES_FILE?'approval-edits':'edits-'+randomUUID()),req=client(server.url,tenant,events);
 const createCase=title=>req('POST','/api/v1/investigations',{title,source:'Fixture',severity:'high'},201);
 try{
  const record=await createCase('Edit case'),path='/api/v1/investigations/'+record.id;
@@ -30,9 +30,15 @@ try{
  assert.deepEqual((await req('GET','/api/v1/remediations?status=completed')).items,[]);
  const updated=await req('PATCH',rp,{description:'Simulation only',connector:'test',title:'Updated action'});assert.equal(updated.description,'Simulation only');
  assert.deepEqual(await req('PATCH',rp,{unknown:true}),updated);
+ if(process.env.AISOC_PARITY_ROLES_FILE){
+   await req('POST',rp+'/execute',undefined,409);
+   await req('PATCH',rp,{status:'completed',executed_at:new Date().toISOString()},409);
+   assert.equal((await req('GET',rp)).status,'pending');
+ }else{
  const executed=await req('POST',rp+'/execute');assert.equal(executed.status,'completed');assert.ok(Number.isFinite(Date.parse(executed.executed_at)));
  assert.equal((await req('POST',rp+'/execute')).status,'completed');
  const reset=await req('PATCH',rp,{status:'pending',executed_at:null});assert.equal(reset.executed_at,null);
+ }
  const other=await createCase('Other parent'),otherPath='/api/v1/investigations/'+other.id;
  const moved=await req('PATCH',rp,{investigation_id:other.id});assert.equal(moved.investigation_id,other.id);
  assert.deepEqual((await req('GET',path)).remediations,[]);assert.deepEqual((await req('GET',otherPath)).remediations,[moved]);
@@ -47,7 +53,7 @@ try{
  await req('DELETE',otherPath,undefined,204);await req('GET',rp,undefined,404);
  const saved=await createCase('Persistent simulation');
  const action=await req('POST','/api/v1/remediations',{...base,investigation_id:saved.id},201);
- await req('POST','/api/v1/remediations/'+action.id+'/execute');
+ await req('POST','/api/v1/remediations/'+action.id+'/execute',undefined,process.env.AISOC_PARITY_ROLES_FILE?409:200);
  const deleted=await req('POST','/api/v1/remediations',{...base,investigation_id:saved.id},201);
  await req('DELETE','/api/v1/remediations/'+deleted.id,undefined,204);await req('GET','/api/v1/remediations/'+deleted.id,undefined,404);
  await output(options.output||'output/backend-parity/case-edits.json',{passed:true,backend:options.label||(server.owned?'node':'external'),request_count:events.length,persistence_fixture:{tenant,case_id:saved.id,remediation_id:action.id},checks:['case editing and ordered audit fields','unknown and empty patch semantics','remediation CRUD and filters','simulation and repeated execution','parent reassignment and cascade','tenant isolation']});

@@ -147,7 +147,7 @@ func (s Store) CaseSandbox(ctx context.Context, actor auth.Principal, caseID str
 			// Stable request identity allows recovery after an uncertain network response.
 			a, _ := json.Marshal(in.EvidenceRefs)
 			c, _ := json.Marshal(doc.EvidenceRefs)
-			if in.SessionID != doc.SessionID || in.PrincipalRef != doc.PrincipalRef || in.Ticket != doc.Ticket || in.Reason != doc.Reason || string(a) != string(c) || in.ScopeID != doc.ScopeID {
+			if actor.ID != doc.RequestedBy || in.SessionID != doc.SessionID || in.PrincipalRef != doc.PrincipalRef || in.Ticket != doc.Ticket || in.Reason != doc.Reason || string(a) != string(c) || in.ScopeID != doc.ScopeID {
 				return nil, eventstate.ErrConflict
 			}
 			return map[string]any{"id": in.ID, "replayed": true, "mode": "sandbox", "external_calls": 0}, tx.Commit(ctx)

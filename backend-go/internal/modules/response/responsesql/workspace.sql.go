@@ -55,6 +55,23 @@ func (q *Queries) InsertWorkflowPreview(ctx context.Context, arg InsertWorkflowP
 	return err
 }
 
+const planVersionAuthor = `-- name: PlanVersionAuthor :one
+SELECT actor FROM response_plan_versions WHERE tenant_id=$1 AND plan_id=$2 AND version=$3
+`
+
+type PlanVersionAuthorParams struct {
+	TenantID string
+	PlanID   string
+	Version  int32
+}
+
+func (q *Queries) PlanVersionAuthor(ctx context.Context, arg PlanVersionAuthorParams) (string, error) {
+	row := q.db.QueryRow(ctx, planVersionAuthor, arg.TenantID, arg.PlanID, arg.Version)
+	var actor string
+	err := row.Scan(&actor)
+	return actor, err
+}
+
 const saveWorkflowPolicy = `-- name: SaveWorkflowPolicy :exec
 INSERT INTO response_workflow_policies(tenant_id,plan_id,version,document) VALUES($1,$2,$3,$4)
 ON CONFLICT(tenant_id,plan_id) DO UPDATE SET version=excluded.version,document=excluded.document,updated_at=now()

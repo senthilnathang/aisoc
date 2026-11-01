@@ -5,6 +5,7 @@ import (
 	"aisoc/backend/internal/modules/telemetry"
 	"aisoc/backend/internal/platform/auth"
 	"aisoc/backend/internal/platform/eventstate"
+	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
 	"context"
 	"encoding/json"
@@ -130,7 +131,7 @@ func (s Store) sandboxSessionTx(ctx context.Context, tx pgx.Tx, actor auth.Princ
 		if full {
 			return nil, eventstate.ErrCapacity
 		}
-		_, err = tx.Exec(ctx, `INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING`, b.TenantID, b.ConnectorID, b.Source, in.ID, in.SessionID, in.ExpectedVersion, in.Ticket)
+		_, err = tx.Exec(ctx, `INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket,proposed_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`, b.TenantID, b.ConnectorID, b.Source, in.ID, in.SessionID, in.ExpectedVersion, in.Ticket, actor.ID)
 		if err == nil {
 			var same bool
 			var state string
@@ -144,15 +145,23 @@ func (s Store) sandboxSessionTx(ctx context.Context, tx pgx.Tx, actor auth.Princ
 		if !id.MatchString(in.ID) {
 			return nil, eventstate.ErrInvalid
 		}
-		var state, session string
+		var state, session, proposer, approver string
 		var expected int64
 		var fresh bool
-		err = tx.QueryRow(ctx, `SELECT state,session_id,expected_version,COALESCE(approval_expires_at>clock_timestamp(),false) FROM sandbox_session_actions WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND id=$4 FOR UPDATE`, b.TenantID, b.ConnectorID, b.Source, in.ID).Scan(&state, &session, &expected, &fresh)
+		err = tx.QueryRow(ctx, `SELECT state,session_id,expected_version,COALESCE(approval_expires_at>clock_timestamp(),false),proposed_by,COALESCE(approved_by,'') FROM sandbox_session_actions WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND id=$4 FOR UPDATE`, b.TenantID, b.ConnectorID, b.Source, in.ID).Scan(&state, &session, &expected, &fresh, &proposer, &approver)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, eventstate.ErrNotFound
 		}
 		if err != nil {
 			return nil, err
+		}
+		if in.Operation == "approve" || in.Operation == "execute" {
+			if proposer == "" {
+				return nil, fault.New(409, "PROPOSER_REQUIRED", "Legacy actions require a new proposal with known authorship.")
+			}
+			if actor.ID == proposer || (in.Operation == "execute" && actor.ID == approver) {
+				return nil, fault.New(403, "INDEPENDENT_OPERATOR_REQUIRED", "Proposer, approver and executor must be different operators.")
+			}
 		}
 		if state == "executed" {
 			result["state"] = "executed"
@@ -175,7 +184,7 @@ func (s Store) sandboxSessionTx(ctx context.Context, tx pgx.Tx, actor auth.Princ
 			_, err = tx.Exec(ctx, `UPDATE sandbox_session_actions SET state='approved',approved_by=$5,approval_expires_at=now()+interval '5 minutes' WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND id=$4`, b.TenantID, b.ConnectorID, b.Source, in.ID, actor.ID)
 			result["state"] = "approved"
 		case "dry_run":
-			result["would_execute"] = !stopped && state == "approved" && fresh
+			result["would_execute"] = !stopped && state == "approved" && fresh && proposer != "" && actor.ID != proposer && actor.ID != approver
 			result["stopped"] = stopped
 			result["state"] = state
 		case "execute":
@@ -190,7 +199,7 @@ func (s Store) sandboxSessionTx(ctx context.Context, tx pgx.Tx, actor auth.Princ
 				return nil, eventstate.ErrCapacity
 			}
 			if _, err = tx.Exec(ctx, `UPDATE sandbox_sessions SET revoked=true,version=version+1 WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND id=$4`, b.TenantID, b.ConnectorID, b.Source, session); err == nil {
-				_, err = tx.Exec(ctx, `UPDATE sandbox_session_actions SET state='executed',executed_at=now() WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND id=$4`, b.TenantID, b.ConnectorID, b.Source, in.ID)
+				_, err = tx.Exec(ctx, `UPDATE sandbox_session_actions SET state='executed',executed_at=now(),executed_by=$5 WHERE tenant_id=$1 AND connector_id=$2 AND source=$3 AND id=$4`, b.TenantID, b.ConnectorID, b.Source, in.ID, actor.ID)
 			}
 			result["state"] = "executed"
 		}

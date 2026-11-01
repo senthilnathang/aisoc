@@ -3,6 +3,7 @@ package insights_test
 import (
 	"aisoc/backend/internal/modules/insights"
 	"aisoc/backend/internal/modules/investigations"
+	"aisoc/backend/internal/modules/learning"
 	"aisoc/backend/internal/modules/skills"
 	"aisoc/backend/internal/platform/database"
 	"aisoc/backend/internal/platform/jobs"
@@ -63,6 +64,13 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 		}
 		return c
 	}
+	approve := func(id string) {
+		t.Helper()
+		if _, e := (learning.Store{Pool: pool}).ReviewLifecycle(ctx, tenant, "reviewer", "enterprise-insights", id, learning.LifecycleInput{Operation: "approve", ExpectedVersion: 1, Confirm: true, Rationale: "Independent fixture approval."}); e != nil {
+			t.Fatal(e)
+		}
+	}
+	approve(id)
 	c := makeCase(" executive@example.test ")
 	if c.Determination != "malicious" {
 		t.Fatal("hint changed verdict")
@@ -89,7 +97,7 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 	if err != nil || foreign["total"] != float64(0) {
 		t.Fatal("tenant projection", foreign, err)
 	}
-	in.ExpectedVersion = 1
+	in.ExpectedVersion = 2
 	in.Content = "Updated context"
 	results := make(chan error, 2)
 	var wg sync.WaitGroup
@@ -116,7 +124,7 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 	if _, err = s.Save(ctx, tenant+"-foreign", "other", id, in, false); err == nil {
 		t.Fatal("foreign mutation")
 	}
-	if _, err = s.Save(ctx, tenant, "analyst", id, insights.Input{ExpectedVersion: 2}, true); err != nil {
+	if _, err = s.Save(ctx, tenant, "analyst", id, insights.Input{ExpectedVersion: 3}, true); err != nil {
 		t.Fatal(err)
 	}
 	makeCase("Executive@example.test")
@@ -160,6 +168,7 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 	if _, err = s.Save(ctx, tenant, "analyst", "", generic, false); err != nil {
 		t.Fatal(err)
 	}
+	approve(generic.ID)
 	tx, e := pool.Begin(ctx)
 	if e != nil {
 		t.Fatal(e)
@@ -192,6 +201,7 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 	if _, err = s.Save(ctx, tenant, "analyst", "", concurrent, false); err != nil {
 		t.Fatal(err)
 	}
+	approve(concurrent.ID)
 	tx, e = pool.Begin(ctx)
 	if e != nil {
 		t.Fatal(e)
@@ -201,7 +211,7 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 		t.Fatal(e)
 	}
 	waitCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-	_, e = s.Save(waitCtx, tenant, "analyst", concurrent.ID, insights.Input{ExpectedVersion: 1}, true)
+	_, e = s.Save(waitCtx, tenant, "analyst", concurrent.ID, insights.Input{ExpectedVersion: 2}, true)
 	cancel()
 	if !errors.Is(e, context.DeadlineExceeded) {
 		tx.Rollback(ctx)
@@ -210,7 +220,7 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 	if e = tx.Commit(ctx); e != nil {
 		t.Fatal(e)
 	}
-	if _, err = s.Save(ctx, tenant, "analyst", concurrent.ID, insights.Input{ExpectedVersion: 1}, true); err != nil {
+	if _, err = s.Save(ctx, tenant, "analyst", concurrent.ID, insights.Input{ExpectedVersion: 2}, true); err != nil {
 		t.Fatal(err)
 	}
 	uses, err = s.Uses(ctx, tenant, concurrent.ID)
@@ -226,14 +236,14 @@ func TestInsightLifecycleAndApplications(t *testing.T) {
 	if _, err = pool.Exec(ctx, `CREATE TRIGGER `+fn+` BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION `+fn+`() `); err != nil {
 		t.Fatal(err)
 	}
-	generic.ExpectedVersion = 1
+	generic.ExpectedVersion = 2
 	generic.Content = "Must roll back"
 	if _, err = s.Save(ctx, tenant, "analyst", generic.ID, generic, false); err == nil {
 		t.Fatal("authoring escaped audit failure")
 	}
 	var version int
 	var content string
-	if err = pool.QueryRow(ctx, `SELECT version,document->>'content' FROM enterprise_insights WHERE tenant_id=$1 AND id=$2`, tenant, generic.ID).Scan(&version, &content); err != nil || version != 1 || content == "Must roll back" {
+	if err = pool.QueryRow(ctx, `SELECT version,document->>'content' FROM enterprise_insights WHERE tenant_id=$1 AND id=$2`, tenant, generic.ID).Scan(&version, &content); err != nil || version != 2 || content == "Must roll back" {
 		t.Fatal("authoring rollback", err, version, content)
 	}
 	var before, after int

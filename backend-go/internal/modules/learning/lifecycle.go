@@ -4,6 +4,7 @@ import (
 	"aisoc/backend/internal/modules/investigations"
 	"aisoc/backend/internal/modules/investigations/investigationsql"
 	"aisoc/backend/internal/modules/skills"
+	"aisoc/backend/internal/platform/auth"
 	"aisoc/backend/internal/platform/fault"
 	"context"
 	"encoding/json"
@@ -70,7 +71,7 @@ func (s Store) Lifecycle(ctx context.Context, tenant, kind, id string) (map[stri
 	if e != nil {
 		return nil, e
 	}
-	out := map[string]any{"version": doc["version"], "current": current, "archived": doc["archived"] == true || doc["learning_archived"] == true, "source": nil, "approved_source": originSource(doc), "review": doc["learning_review"], "staged_edit": doc["staged_edit"], "materials_staged": doc["materials_staged"]}
+	out := map[string]any{"version": doc["version"], "current": current, "archived": doc["archived"] == true || doc["learning_archived"] == true, "source": nil, "approved_source": originSource(doc), "review": doc["learning_review"], "staged_edit": doc["staged_edit"], "materials_staged": doc["materials_staged"], "approval_state": doc["approval_state"], "approval": doc["approval"], "created_by": doc["created_by"], "proposal_authors": doc["proposal_authors"]}
 	if src := originSource(doc); src != nil {
 		row, err := q.LearningCase(ctx, investigationsql.LearningCaseParams{TenantID: tenant, ID: src["id"].(string)})
 		if err == nil {
@@ -87,7 +88,7 @@ func (s Store) ReviewLifecycle(ctx context.Context, tenant, actor, kind, id stri
 		return nil, invalid()
 	}
 	switch in.Operation {
-	case "reapprove", "archive", "publish-staged", "discard-staged":
+	case "approve", "reapprove", "archive", "publish-staged", "discard-staged":
 	default:
 		return nil, invalid()
 	}
@@ -132,7 +133,36 @@ func (s Store) ReviewLifecycle(ctx context.Context, tenant, actor, kind, id stri
 	if e != nil {
 		return nil, e
 	}
+	if in.Operation == "approve" || in.Operation == "reapprove" || in.Operation == "publish-staged" {
+		if e := auth.Independent(doc, actor); e != nil {
+			return nil, e
+		}
+	}
 	switch in.Operation {
+	case "approve":
+		if kind != "enterprise-insights" || doc["approval_state"] != "pending" {
+			return nil, fault.New(409, "NO_PENDING_PROPOSAL", "No pending Memory proposal to approve.")
+		}
+		if origin := originSource(doc); origin != nil {
+			reviewedVersion := origin["updated_at"]
+			if review, ok := doc["learning_review"].(map[string]any); ok {
+				reviewedVersion = review["source_version"]
+			}
+			if src == nil || src["updated_at"] != reviewedVersion {
+				return nil, fault.New(409, "SOURCE_CHANGED", "Refresh and review the current source before approving.")
+			}
+		}
+		if until, ok := doc["valid_until"].(string); ok {
+			t, _ := time.Parse(time.RFC3339Nano, until)
+			if !t.After(time.Now()) {
+				return nil, fault.New(409, "MEMORY_EXPIRED", "Update expired Memory before approval.")
+			}
+		}
+		doc["approval_state"] = "approved"
+		if origin, ok := doc["learning_origin"].(map[string]any); ok {
+			origin["approved_by"] = actor
+			origin["approved_at"] = time.Now().UTC().Format(time.RFC3339Nano)
+		}
 	case "reapprove":
 		origin := originSource(doc)
 		if src == nil || origin == nil || src["updated_at"] != in.ExpectedSourceVersion {
@@ -181,6 +211,10 @@ func (s Store) ReviewLifecycle(ctx context.Context, tenant, actor, kind, id stri
 			}
 			delete(doc, "materials_staged")
 		}
+	}
+	if in.Operation == "approve" || in.Operation == "publish-staged" {
+		doc["approval"] = map[string]any{"approved_by": actor, "approved_at": time.Now().UTC().Format(time.RFC3339Nano), "rationale": in.Rationale, "version": in.ExpectedVersion + 1, "created_by": doc["created_by"], "proposal_authors": doc["proposal_authors"]}
+		delete(doc, "proposal_authors")
 	}
 	doc["version"] = float64(in.ExpectedVersion + 1)
 	doc["updated_at"] = investigations.Timestamp(time.Now())

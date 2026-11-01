@@ -12,9 +12,10 @@ import (
 )
 
 type Operator struct {
-	ID        string `json:"id"`
-	TenantID  string `json:"tenant_id"`
-	TokenHash string `json:"token_hash"`
+	ID        string   `json:"id"`
+	TenantID  string   `json:"tenant_id"`
+	TokenHash string   `json:"token_hash"`
+	Roles     []string `json:"roles"`
 }
 type Auth struct {
 	Mode, DefaultTenant string
@@ -88,8 +89,15 @@ func (a Auth) Validate(production bool) error {
 	ids, hashes := map[string]bool{}, map[string]bool{}
 	pattern := regexp.MustCompile(`^[a-f0-9]{64}$`)
 	for _, op := range a.Operators {
-		if strings.TrimSpace(op.ID) == "" || strings.TrimSpace(op.TenantID) == "" || len(op.TenantID) > 120 || !pattern.MatchString(op.TokenHash) || ids[op.ID] || hashes[op.TokenHash] {
+		if strings.TrimSpace(op.ID) == "" || op.ID == "local-development" || strings.TrimSpace(op.TenantID) == "" || len(op.TenantID) > 120 || !pattern.MatchString(op.TokenHash) || ids[op.ID] || hashes[op.TokenHash] {
 			return errors.New("invalid or duplicate operator credentials")
+		}
+		seenRoles := map[string]bool{}
+		for _, role := range op.Roles {
+			if (role != "proposer" && role != "approver" && role != "executor") || seenRoles[role] {
+				return errors.New("invalid or duplicate operator role")
+			}
+			seenRoles[role] = true
 		}
 		ids[op.ID] = true
 		hashes[op.TokenHash] = true

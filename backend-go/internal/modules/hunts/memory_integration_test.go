@@ -3,6 +3,7 @@ package hunts
 import (
 	"aisoc/backend/internal/modules/insights"
 	"aisoc/backend/internal/modules/investigations"
+	"aisoc/backend/internal/modules/learning"
 	"aisoc/backend/internal/platform/database"
 	"aisoc/backend/internal/platform/jobs"
 	"context"
@@ -52,6 +53,9 @@ func TestMemorySnapshotsFreshnessReplayAndPromotion(t *testing.T) {
 	input := insights.Input{ID: "EI-" + jobs.ID(), Artifact: " MEMORY-USER ", Kind: "user", Content: "Review current MFA; this context is advisory.", Hint: "benign", ValidUntil: now.Add(time.Hour).Format(time.RFC3339)}
 	saved, err := memory.Save(ctx, tenant, "analyst", "", input, false)
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = (learning.Store{Pool: pool}).ReviewLifecycle(ctx, tenant, "reviewer", "enterprise-insights", input.ID, learning.LifecycleInput{Operation: "approve", ExpectedVersion: 1, Confirm: true, Rationale: "Independent Memory fixture review."}); err != nil {
 		t.Fatal(err)
 	}
 	for _, kind := range []string{"expired", "future", "archived", "unapproved", "source-stale"} {
@@ -106,7 +110,7 @@ func TestMemorySnapshotsFreshnessReplayAndPromotion(t *testing.T) {
 		t.Fatal("failed run retained", workspace, err)
 	}
 	before, _ := json.Marshal(run.Memory)
-	input.ExpectedVersion = 1
+	input.ExpectedVersion = 2
 	input.Content = "Changed current context"
 	input.ValidUntil = now.Add(-time.Minute).Format(time.RFC3339)
 	if _, err = memory.Save(ctx, tenant, "analyst", input.ID, input, false); err != nil {
@@ -150,6 +154,9 @@ func TestMemorySnapshotsFreshnessReplayAndPromotion(t *testing.T) {
 		bounded.ExpectedVersion = 0
 		bounded.ValidUntil = now.Add(time.Hour).Format(time.RFC3339)
 		if _, err = memory.Save(ctx, tenant, "analyst", "", bounded, false); err != nil {
+			t.Fatal(err)
+		}
+		if _, err = (learning.Store{Pool: pool}).ReviewLifecycle(ctx, tenant, "reviewer", "enterprise-insights", bounded.ID, learning.LifecycleInput{Operation: "approve", ExpectedVersion: 1, Confirm: true, Rationale: "Independent bounded context review."}); err != nil {
 			t.Fatal(err)
 		}
 	}

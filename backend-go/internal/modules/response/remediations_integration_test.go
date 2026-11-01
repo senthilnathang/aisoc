@@ -92,7 +92,7 @@ func TestRemediationAtomicityAndParentConcurrency(t *testing.T) {
 	if _, err = s.CreateRemediation(ctx, tenant+"-foreign", fields); err == nil {
 		t.Fatal("foreign parent accepted")
 	}
-	// Reassign and execute concurrently: neither may overwrite the other's fields.
+	// Reassignment remains atomic while the legacy execution alias is denied.
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 	wg.Add(2)
@@ -108,13 +108,17 @@ func TestRemediationAtomicityAndParentConcurrency(t *testing.T) {
 	}()
 	wg.Wait()
 	close(errs)
+	denied := 0
 	for err := range errs {
 		if err != nil {
-			t.Fatal(err)
+			denied++
 		}
 	}
+	if denied != 1 {
+		t.Fatalf("expected one denied legacy execution, got %d", denied)
+	}
 	after, err = s.Remediation(ctx, tenant, id)
-	if err != nil || after["status"] != "completed" || after["investigation_id"] != second {
+	if err != nil || after["status"] != "pending" || after["investigation_id"] != second {
 		t.Fatal("lost concurrent update", after, err)
 	}
 	if err = cases.Delete(ctx, tenant, first); err != nil {
@@ -135,7 +139,7 @@ func TestRemediationAtomicityAndParentConcurrency(t *testing.T) {
 	if err = pool.QueryRow(ctx, `SELECT count(*) FROM remediations WHERE tenant_id=$1`, tenant).Scan(&n); err != nil || n != 0 {
 		t.Fatal("cascade failed", n, err)
 	}
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND resource='remediations'`, tenant).Scan(&n); err != nil || n < 3 {
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND resource='remediations'`, tenant).Scan(&n); err != nil || n < 2 {
 		t.Fatal("audit retention failed", n, err)
 	}
 }

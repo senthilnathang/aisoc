@@ -1,5 +1,7 @@
 # Skills workspace
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 The [outcome learning extension](SKILLS_MEMORY_OUTCOMES.md) creates analyst-approved disabled drafts from reviewed cases. Existing publication, entity/scope matching, snapshots and feedback are reused; the editor and application transcript show source provenance.
 
 ## Reference and implemented screens

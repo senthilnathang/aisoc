@@ -148,6 +148,13 @@ func registerSkills(mux *http.ServeMux, pool *pgxpool.Pool) {
 					return nil, 0, err
 				}
 			}
+
+			if op.operation == "publish" {
+				input, err = strictSkillBody(r, objectRule(responseField{"expected_version", &responseRule{kind: "integer", min: 1, max: 2147483647, bounded: true}}))
+				if err != nil {
+					return nil, 0, err
+				}
+			}
 			p := auth.From(r.Context())
 			v, err := store.Mutate(r.Context(), p.Tenant, r.PathValue("id"), op.operation, p.ID, input)
 			return v, op.status, err
@@ -174,6 +181,13 @@ func registerSkills(mux *http.ServeMux, pool *pgxpool.Pool) {
 			var err error
 			if op.operation != "delete" {
 				input, err = schemaInput(r, skillSchema(true))
+				if err != nil {
+					return nil, 0, err
+				}
+			}
+
+			if op.operation == "publish" {
+				input, err = strictSkillBody(r, objectRule(responseField{"expected_version", &responseRule{kind: "integer", min: 1, max: 2147483647, bounded: true}}))
 				if err != nil {
 					return nil, 0, err
 				}

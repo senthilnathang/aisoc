@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {argumentsFor,target,client,output} from './harness.mjs';
+import {argumentsFor,target,client,output,roleHeaders,reviewerID} from './harness.mjs';
 
 const options=argumentsFor(),server=await target(options),events=[];
-const tenant='case-runbooks-'+randomUUID(),req=client(server.url,tenant,events);
+const tenant=(process.env.AISOC_PARITY_ROLES_FILE?'approval-case-runbooks':'case-runbooks-'+randomUUID()),req=client(server.url,tenant,events);
 const definition={kind:'runbook',title:'Recover identity',description:'Contain and recover',domain:'Identity',trigger:'Confirmed compromise',steps:[{title:'Review evidence',instructions:'Verify scope',approval_required:false},{title:'Revoke sessions',instructions:'Confirm target',approval_required:true}]};
 try{
  const record=await req('POST','/api/v1/investigations',{title:'Runbook case',source:'Fixture',severity:'high',primary_entity:'host-1',insight_refs:['context-1']},201);
@@ -23,7 +23,7 @@ try{
  const patch={expected_version:1,step_index:1,completed:true,note:'Approved by analyst',approval_confirmed:false};
  assert.equal((await req('PATCH',path+'/'+attached.id,patch,400)).error.code,'APPROVAL_REQUIRED');
  assert.equal((await req('GET',path)).items[0].version,1);
- const complete=await req('PATCH',path+'/'+attached.id,{...patch,approval_confirmed:true});assert.equal(complete.steps[1].completed,true);assert.equal(complete.steps[1].updated_by,'local-development');
+ const complete=await req('PATCH',path+'/'+attached.id,{...patch,approval_confirmed:true});assert.equal(complete.steps[1].completed,true);assert.equal(complete.steps[1].updated_by,reviewerID(tenant));
  assert.equal((await req('PATCH',path+'/'+attached.id,{...patch,approval_confirmed:true},409)).error.code,'VERSION_CONFLICT');
  assert.equal((await req('PATCH',path+'/'+attached.id,{...patch,expected_version:2,step_index:10},400)).error.code,'INVALID_STEP');
  await req('PATCH',path+'/'+attached.id,{...patch,expected_version:2,completed:false,note:'Rechecking target'});
@@ -31,7 +31,7 @@ try{
  const reopened=(await req('GET',path)).items[0];assert.equal(reopened.version,4);assert.equal(reopened.steps[1].completed,false);assert.equal(reopened.steps[1].note,'Note-only change');assert.equal(reopened.history.length,4);assert.equal(reopened.history[2].approval_confirmed,true);assert.equal(reopened.history[0].approval_confirmed,false);
  const audit=(await req('GET',casePath+'/history')).items;
  assert.deepEqual(audit.map(e=>e.action),['runbook_step_updated','runbook_step_updated','runbook_step_completed','runbook_attached','created']);
- assert.equal(audit[0].details.record_id,attached.id);assert.equal(audit[0].details.actor,'local-development');
+ assert.equal(audit[0].details.record_id,attached.id);assert.equal(audit[0].details.actor,reviewerID(tenant));
  const detail=await req('GET',casePath);assert.deepEqual(detail.history,audit);assert.deepEqual(detail.alerts,[]);assert.deepEqual(detail.jobs,[]);
  const other=await req('POST','/api/v1/investigations',{title:'Other case',source:'Fixture',severity:'low'},201);
  await req('PATCH','/api/v1/investigations/'+other.id+'/runbooks/'+attached.id,{...patch,expected_version:4},404);
@@ -46,7 +46,7 @@ try{
  assert.equal((await req('POST',path,{plan_id:archived.id,expected_version:1},409)).error.code,'VERSION_CONFLICT');
  assert.equal((await req('POST',path,{plan_id:archived.id,expected_version:2},400)).error.code,'INVALID_RUNBOOK');
  const racePlan=await req('POST','/api/v1/response-plans',definition,201);
- async function race(method,url,body){const response=await fetch(server.url+url,{method,headers:{'content-type':'application/json','x-tenant-id':tenant},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});return {status:response.status,body:await response.json()};}
+ async function race(method,url,body){const response=await fetch(server.url+url,{method,headers:{'content-type':'application/json','x-tenant-id':tenant,...roleHeaders(method,url,tenant)},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});return {status:response.status,body:await response.json()};}
  const attachments=await Promise.all([race('POST',path,{plan_id:racePlan.id,expected_version:1}),race('POST',path,{plan_id:racePlan.id,expected_version:1})]);assert.deepEqual(attachments.map(r=>r.status).sort(),[201,409]);
  const raceID=attachments.find(r=>r.status===201).body.id;
  const updates=await Promise.all(['First','Second'].map(note=>race('PATCH',path+'/'+raceID,{...patch,step_index:0,approval_confirmed:false,note})));assert.deepEqual(updates.map(r=>r.status).sort(),[200,409]);

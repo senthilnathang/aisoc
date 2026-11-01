@@ -75,16 +75,16 @@ func TestApprovedOutcomeApplicationAndReplay(t *testing.T) {
 			id = r.ID
 			bad.ExpectedUpdatedAt = r.UpdatedAt
 		}
-		if _, e = store.Approve(ctx, scope, id, "analyst", bad); e == nil {
+		if _, e = store.Propose(ctx, scope, id, "analyst", bad); e == nil {
 			t.Fatal("accepted", variant)
 		}
 	}
 	// A failure at the final audit must roll back both owning stores and the receipt.
-	_, e = pool.Exec(ctx, `CREATE FUNCTION learning_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='learning_approved' THEN RAISE EXCEPTION 'audit unavailable'; END IF; RETURN NEW; END $$; CREATE TRIGGER learning_fail BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION learning_fail()`)
+	_, e = pool.Exec(ctx, `CREATE FUNCTION learning_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='learning_proposed' THEN RAISE EXCEPTION 'audit unavailable'; END IF; RETURN NEW; END $$; CREATE TRIGGER learning_fail BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION learning_fail()`)
 	if e != nil {
 		t.Fatal(e)
 	}
-	_, failed := store.Approve(ctx, tenant, source.ID, "analyst", in)
+	_, failed := store.Propose(ctx, tenant, source.ID, "analyst", in)
 	if _, e = pool.Exec(ctx, `DROP TRIGGER learning_fail ON audit_events; DROP FUNCTION learning_fail()`); e != nil {
 		t.Fatal(e)
 	}
@@ -104,7 +104,7 @@ func TestApprovedOutcomeApplicationAndReplay(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			r, e := store.Approve(ctx, tenant, source.ID, "analyst", in)
+			r, e := store.Propose(ctx, tenant, source.ID, "analyst", in)
 			results <- r
 			errs <- e
 		}()
@@ -128,7 +128,7 @@ func TestApprovedOutcomeApplicationAndReplay(t *testing.T) {
 	mid := receipt["insight_id"].(string)
 	bad := in
 	bad.Guidance = "Different guidance after uncertain delivery."
-	if _, e = store.Approve(ctx, tenant, source.ID, "analyst", bad); e == nil {
+	if _, e = store.Propose(ctx, tenant, source.ID, "analyst", bad); e == nil {
 		t.Fatal("conflicting replay")
 	}
 	draft, e := sk.Get(ctx, tenant, sid)
@@ -141,7 +141,10 @@ func TestApprovedOutcomeApplicationAndReplay(t *testing.T) {
 	if n != 0 {
 		t.Fatal("draft applied")
 	}
-	if _, e = sk.Mutate(ctx, tenant, sid, "save-publish", "analyst", map[string]any{"expected_version": float64(1)}); e != nil {
+	if _, e = sk.Mutate(ctx, tenant, sid, "publish", "reviewer", map[string]any{"expected_version": float64(1)}); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = store.ReviewLifecycle(ctx, tenant, "reviewer", "enterprise-insights", mid, LifecycleInput{Operation: "approve", ExpectedVersion: 1, Confirm: true, Rationale: "Independent review of saved Memory."}); e != nil {
 		t.Fatal(e)
 	}
 	after := create("open", "unknown", "review-user")
@@ -176,7 +179,7 @@ func TestApprovedOutcomeApplicationAndReplay(t *testing.T) {
 	if _, e = sk.Mutate(ctx, tenant, sid, "patch", "analyst", map[string]any{"expected_version": float64(2), "content_markdown": "Revised future guidance only."}); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = memory.Save(ctx, tenant, "analyst", mid, insights.Input{ExpectedVersion: 1}, true); e != nil {
+	if _, e = memory.Save(ctx, tenant, "analyst", mid, insights.Input{ExpectedVersion: 2}, true); e != nil {
 		t.Fatal(e)
 	}
 	later := create("open", "unknown", "review-user")
@@ -192,7 +195,7 @@ func TestApprovedOutcomeApplicationAndReplay(t *testing.T) {
 	if _, e = sk.Mutate(ctx, tenant, sid, "delete", "analyst", nil); e != nil {
 		t.Fatal(e)
 	}
-	replay, e := store.Approve(ctx, tenant, source.ID, "analyst", in)
+	replay, e := store.Propose(ctx, tenant, source.ID, "analyst", in)
 	if e != nil || replay["skill_id"] != sid {
 		t.Fatal("receipt lost after delete", e)
 	}

@@ -2,6 +2,7 @@ package insights
 
 import (
 	"aisoc/backend/internal/modules/insights/insightsql"
+	"aisoc/backend/internal/platform/auth"
 	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
 	"context"
@@ -208,6 +209,11 @@ func SaveTx(ctx context.Context, tx pgx.Tx, tenant, actor, id string, in Input, 
 		if in.Hint == "" {
 			doc["hint"] = "none"
 		}
+	}
+	if !archive {
+		doc["approval_state"] = "pending"
+		delete(doc, "approval")
+		auth.RecordProposer(doc, actor)
 	}
 	encoded, err := json.Marshal(doc)
 	if err != nil {

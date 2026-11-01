@@ -1,6 +1,6 @@
 # Delivery roadmap
 
-Completed 2026-11-01: [Skills and Memory end to end](SKILLS_MEMORY_OUTCOMES.md): reviewed-case approval, disabled draft Skill, active expiring Memory, source/evidence provenance, later-case snapshots, Helpful feedback and usage navigation. Model reasoning, automatic source-change invalidation and independent approver roles remain pending.
+Completed 2026-11-01: [Skills and Memory end to end](SKILLS_MEMORY_OUTCOMES.md): reviewed-case proposals, independently published Skills and independently approved expiring Memory, source/evidence provenance, later-case snapshots, Helpful feedback and usage navigation. Source-change invalidation and independent local roles are implemented; model reasoning and external identity provisioning remain pending.
 
 Completed 2026-11-01: [Threat Intel → Hunt → Investigate](INTEL_HUNT_INVESTIGATE.md), including JSON import, normalized within-report IOC deduplication, idempotent import/promotion, local evidence search and explicit analyst promotion. Live feed validation, broader telemetry search and cross-run case correlation remain follow-up work.
 
@@ -235,7 +235,7 @@ See [scope and verification](UI_UX_SYSTEM.md). Backend/provider release gates ar
 - [x] Explicit expiring approval, preview, kill switch and idempotent execution.
 - [x] Atomic receipt, mock SOAR response note and audit; Respond links back to case.
 - [x] Disposable failure/replay tests and retained local browser showcase.
-- [ ] Real IAM execution, independent approver roles and production validation.
+- [ ] Real IAM execution, external IAM/SSO and production validation.
 
 See [local response scope and test results](INVESTIGATE_RESPOND_SANDBOX.md).
 
@@ -249,7 +249,7 @@ Added a two-run disposable Detect-to-Build gate with stage reports, replay and a
 
 ## Skills/Memory lifecycle hardening
 
-Implemented staged Skill instructions/metadata/scopes/materials, committed source-revision change detection, explicit reapproval and terminal archive. Independent approver roles, entity resolution and production/model validation remain separate. Memory for local hunts is now implemented; see [Memory → Hunt](MEMORY_HUNT_FLOW.md). See [scope](SKILLS_MEMORY_LIFECYCLE.md).
+Implemented staged Skill instructions/metadata/scopes/materials, committed source-revision change detection, explicit reapproval and terminal archive. External identity provisioning, entity resolution and production/model validation remain separate. Memory for local hunts is now implemented; see [Memory → Hunt](MEMORY_HUNT_FLOW.md). See [scope](SKILLS_MEMORY_LIFECYCLE.md).
 
 ## Build integration lifecycle — November 2026
 
@@ -257,4 +257,8 @@ Build integration lifecycle: archive guards, safe draft clone/version history, b
 
 ## Memory → Hunt — November 2026
 
-Memory → Hunt local flow implemented: approved context, validity/source-revision checks, immutable run and promotion snapshots, and Memory usage navigation. Independent approval roles, entity resolution beyond exact matches and live provider/model/production gates remain pending. See [scope](MEMORY_HUNT_FLOW.md).
+Memory → Hunt local flow implemented: approved context, validity/source-revision checks, immutable run and promotion snapshots, and Memory usage navigation. External identity provisioning, entity resolution beyond exact matches and live provider/model/production gates remain pending. See [scope](MEMORY_HUNT_FLOW.md).
+
+## Independent approval roles — 2026-11-01
+
+Implemented Go role checks, independent saved-guidance approval, pending Memory, three-operator sandbox responses, protected checklist acknowledgement and operator sign-in in local mode. See [roles, migration and validation](INDEPENDENT_APPROVAL_ROLES.md). External identity assurance and live-provider gates remain pending.

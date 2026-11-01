@@ -2,6 +2,7 @@
 """Manage only AISOC's isolated local Go/PostgreSQL development processes."""
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -45,9 +46,34 @@ def api_pid(config, name='api'):
     return None
 
 
+def prepare_operators():
+    credentials=STATE/'operators-local.json'
+    if not credentials.exists():
+        values=[dict(id='local-'+role,tenant_id='demo',roles=[role],token=secrets.token_urlsafe(32)) for role in ('proposer','approver','executor')]
+        fd=os.open(credentials,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+        with os.fdopen(fd,'w') as f: json.dump(values,f,indent=2)
+    values=json.loads(credentials.read_text())
+    operators=STATE/'operators.json'
+    operators.write_text(json.dumps([{k:v for k,v in x.items() if k!='token'}|{'token_hash':hashlib.sha256(x['token'].encode()).hexdigest()} for x in values],indent=2))
+    operators.chmod(0o600)
+    scopes=STATE/'stream-scopes.json'
+    if scopes.exists():
+        grants=json.loads(scopes.read_text())
+        existing={x['id'] for x in grants}
+        for source in list(grants):
+            if source['operator_id']!='local-development' or not source.get('allow_sandbox_response'):continue
+            for role in ('proposer','approver','executor'):
+                scope_id=source['id']+'-'+role
+                if scope_id not in existing:
+                    grants.append({**{k:v for k,v in source.items() if k!='mock_login_context'},'id':scope_id,'operator_id':'local-'+role,'allow_mock_import':False,'allow_retry':False})
+        scopes.write_text(json.dumps(grants,indent=2));scopes.chmod(0o600)
+    return str(operators)
+
+
 def dev_env(config):
+    operators=prepare_operators()
     return {**os.environ,'AISOC_GO_ADDR':'127.0.0.1:3003','AISOC_GO_DATABASE_URL':config['url'],
-            'AISOC_GO_CONNECTOR_KEY':config.get('connector_key',''),'AISOC_GO_AUTH_MODE':'local','AISOC_GO_OPERATORS_FILE':'','AISOC_GO_DEFAULT_TENANT':'demo',
+            'AISOC_GO_CONNECTOR_KEY':config.get('connector_key',''),'AISOC_GO_AUTH_MODE':'local','AISOC_GO_OPERATORS_FILE':operators,'AISOC_GO_DEFAULT_TENANT':'demo',
             'AISOC_GO_ENV':'development','AISOC_GO_SECURE_COOKIES':'false','AISOC_GO_SESSION_TTL_MS':'28800000',
             'AISOC_PYTHON_ADDR':'127.0.0.1:50051' if config.get('python_worker_enabled') else '',
             'AISOC_RUST_ADDR':'','AISOC_WORKER_TOKEN':config.get('worker_token','') if config.get('python_worker_enabled') else '',

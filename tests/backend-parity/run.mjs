@@ -8,7 +8,7 @@ import { probeCoverage } from "./coverage.mjs";
 import { extendedScenarios } from "./extended.mjs";
 
 const options=argumentsFor(), server=await target(options), events=[], results=[];
-const prefix="parity-"+randomUUID();
+const prefix=(process.env.AISOC_PARITY_ROLES_FILE?"approval-parity":"parity-"+randomUUID());
 async function scenario(name,work) {
   const start=performance.now();
   try { const startIndex=events.length; await work(client(server.url,prefix+"-"+name,events)); for(const event of events.slice(startIndex))event.scenario=name; results.push({name,passed:true,duration_ms:performance.now()-start}); console.log("PASS "+name); }
@@ -36,7 +36,7 @@ try {
     assert.equal(detail.feedback.length,1); assert.equal(detail.artifacts.length,1); assert.equal(detail.determination,"malicious");
     assert.ok((await req("GET","/api/v1/investigations/"+record.id+"/history")).items.length>=4);
     const action=await req("POST","/api/v1/remediations",{investigation_id:record.id,action_type:"isolate_device",title:"Local containment",connector:"Parity"},201);
-    assert.equal((await req("POST","/api/v1/remediations/"+action.id+"/execute")).status,"completed");
+    if(process.env.AISOC_PARITY_ROLES_FILE)await req("POST","/api/v1/remediations/"+action.id+"/execute",undefined,409);else assert.equal((await req("POST","/api/v1/remediations/"+action.id+"/execute")).status,"completed");
     await req("DELETE","/api/v1/investigations/"+record.id,undefined,204);
     await req("GET","/api/v1/remediations/"+action.id,undefined,404);
   });

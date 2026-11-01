@@ -1,5 +1,7 @@
 # Skills and Memory lifecycle
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 Local/mock lifecycle controls extend the existing owners and matching paths. No provider, model, queue or response executor is added.
 
 ## Staged Skill revisions
@@ -53,7 +55,7 @@ Mutation locking follows source-case → owning-resource order, consistent with 
 
 Deploy Go/frontend together; normal local startup applies additive migration 046. No table rewrite or historical snapshot migration is needed. The first material edit lazily captures the current release. Keep the function and document fields on rollback. Older binaries do not enforce source validity or staged-release semantics: pause derived guidance and disable affected published Skills before reverting to them; do not drop histories or approval receipts.
 
-Remaining production work includes independent approver roles, external identity integration, real model/RAG evaluation and workload-scale profiling. These controls record analyst decisions and deterministic matching eligibility; they do not assert model-quality gains.
+Remaining production work includes external identity integration, real model/RAG evaluation and workload-scale profiling. These controls record analyst decisions and deterministic matching eligibility; they do not assert model-quality gains.
 
 ## Recorded local validation — 2026-11-01
 

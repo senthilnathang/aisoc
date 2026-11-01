@@ -5,7 +5,7 @@ SELECT EXISTS(SELECT 1 FROM sandbox_session_actions WHERE tenant_id=$1 AND conne
 -- name: InsertCaseSandboxLink :exec
 INSERT INTO case_sandbox_responses(tenant_id,investigation_id,connector_id,source,action_id,document) VALUES($1,$2,$3,$4,$5,$6);
 -- name: CaseSandboxActions :many
-SELECT (l.document || jsonb_build_object('state',a.state,'approved_by',a.approved_by,'approval_expires_at',a.approval_expires_at,'approval_fresh',COALESCE(a.approval_expires_at>clock_timestamp(),false),'approval_comment',l.approval_comment,'executed_at',a.executed_at,'receipt',l.receipt,'stopped',p.stopped))::jsonb AS document
+SELECT (l.document || jsonb_build_object('connector_id',a.connector_id,'source',a.source,'state',a.state,'approved_by',a.approved_by,'approval_expires_at',a.approval_expires_at,'approval_fresh',COALESCE(a.approval_expires_at>clock_timestamp(),false),'approval_comment',l.approval_comment,'executed_at',a.executed_at,'receipt',l.receipt,'stopped',p.stopped))::jsonb AS document
 FROM case_sandbox_responses l JOIN sandbox_session_actions a ON (a.tenant_id,a.connector_id,a.source,a.id)=(l.tenant_id,l.connector_id,l.source,l.action_id)
 JOIN sandbox_response_policy p ON (p.tenant_id,p.connector_id,p.source)=(a.tenant_id,a.connector_id,a.source)
 WHERE l.tenant_id=$1 AND (sqlc.arg(case_id)::text='' OR l.investigation_id=sqlc.arg(case_id))

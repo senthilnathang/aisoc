@@ -1,5 +1,7 @@
 # HTTP API Contract
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 [Case learning APIs](SKILLS_MEMORY_OUTCOMES.md#api-contracts-and-limits) add tenant-scoped GET/POST `/investigations/{id}/learning`; approval requires a reviewed outcome, current revision, selected stored evidence and explicit confirmation.
 
 [Intelligence JSON import and hunt promotion contracts](INTEL_HUNT_INVESTIGATE.md#api-and-implementation) add strict preview/import endpoints, explicit saved-finding promotion and investigation provenance. Existing report/hunt workspace responses gain additive provenance fields.
@@ -477,3 +479,19 @@ Build adds `POST /api/v1/build/integrations/{id}/clone` (`id`, `name`, `expected
 ## Memory → Hunt — November 2026
 
 Hunt search/workspace runs add memory, memory_policy and memory_truncated. Promotion provenance carries the original run fields. Enterprise Insight uses adds hunt_items; no client-supplied Memory approval fields are accepted. See [Memory → Hunt contract](MEMORY_HUNT_FLOW.md).
+
+## Independent approval contracts — November 2026
+
+Operator configuration and `/auth/session` now include `roles` (`proposer`,
+`approver`, `executor`). Local cookie sessions preserve operator identity and
+require CSRF for mutations. Missing roles deny mutations within Respond/Skills/Memory.
+
+`POST /skills/{id}/publish` requires `{ "expected_version": 1 }`, author-independent
+approver permission, and saved content. Combined save/publish is rejected.
+`POST /enterprise-insights/{id}/lifecycle` adds `approve` with current version,
+confirmation and rationale. Memory create/edit is pending, not immediately active.
+Case-learning POST creates proposals and returns proposed-by provenance. Sandbox
+response approval/execution requires distinct proposer/approver/executor identities
+and the existing binding grants; users use their own scope IDs for the same binding.
+
+See [full permissions, errors and rollback](INDEPENDENT_APPROVAL_ROLES.md).

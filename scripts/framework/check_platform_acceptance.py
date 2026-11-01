@@ -34,7 +34,11 @@ def check_platform_acceptance(http, sql, case_id, record):
     sid, mid = receipt['skill_id'], receipt['insight_id']
     api('/skills/'+sid, actor='b', expected=404)
     assert api('/enterprise-insights/'+mid+'/uses', actor='b')['items'] == []
-    api('/skills/'+sid+'/workspace', dict(expected_version=1, publish=True), method='PATCH')
+    api('/skills/'+sid+'/publish',dict(expected_version=1),expected=403)
+    api('/skills/'+sid+'/publish',dict(expected_version=1),actor='c')
+    proposal=dict(operation='approve',expected_version=1,confirm=True,rationale='Independent review of the saved Memory context.')
+    api('/enterprise-insights/'+mid+'/lifecycle',proposal,expected=403)
+    api('/enterprise-insights/'+mid+'/lifecycle',proposal,actor='c')
     follow = api('/investigations', dict(title='Acceptance follow-up', source=source['source'], category=source['category'], summary='Synthetic follow-up', severity='medium', status='open', determination='unknown', primary_entity='acceptance-user', insight_refs=[]), expected=201)
     assert follow['determination'] == 'unknown'
     foreign = api('/investigations', dict(title='Foreign acceptance case', source=source['source'], category=source['category'], summary='Synthetic tenant isolation fixture', severity='medium', status='open', determination='unknown', primary_entity='acceptance-user', insight_refs=[]), actor='b', expected=201)
@@ -69,12 +73,12 @@ def check_platform_acceptance(http, sql, case_id, record):
         request=dict(operation='reapprove',expected_version=state['version'],expected_source_version=state['source']['updated_at'],confirm=True,rationale='Reviewed changed source outcome and scoped reuse.')
         api('/'+kind+'/'+identity+'/lifecycle',request,actor='b',expected=404)
         api('/'+kind+'/'+identity+'/lifecycle',{**request,'confirm':False},expected=400)
-        api('/'+kind+'/'+identity+'/lifecycle',request)
-        api('/'+kind+'/'+identity+'/lifecycle',request,expected=409)
+        api('/'+kind+'/'+identity+'/lifecycle',request,actor='c')
+        api('/'+kind+'/'+identity+'/lifecycle',request,actor='c',expected=409)
     reapproved_memory=memory_search('reapproved-memory')['memory']
     assert len(reapproved_memory)==1 and reapproved_memory[0]['version']>memory_run['memory'][0]['version']
     state=api('/skills/'+sid+'/lifecycle')
-    api('/skills/'+sid+'/lifecycle',dict(operation='publish-staged',expected_version=state['version'],confirm=True,rationale='Explicitly approve saved staged instructions.'))
+    api('/skills/'+sid+'/lifecycle',dict(operation='publish-staged',expected_version=state['version'],confirm=True,rationale='Explicitly approve saved staged instructions.'),actor='c')
     assert api('/skills/'+sid)['content_markdown']=='New reviewed local lifecycle guidance.'
     for kind,identity in [('skills',sid),('enterprise-insights',mid)]:
         state=api('/'+kind+'/'+identity+'/lifecycle')

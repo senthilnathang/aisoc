@@ -1102,6 +1102,7 @@ export function CaseRunbooks({ caseId, onChange }) {
                         Approval required
                       </Badge>
                     )}
+                    {step.approval_required && <Text fontSize="xs" mt="8px" color={ui.muted}>Independent review required. Requester: {item.proposed_by||"unknown"}; plan author: {item.plan_author||"unknown"}. Checklist approval does not execute a provider action.</Text>}
                     {progress.note && !editing && (
                       <Text whiteSpace="pre-wrap" mt="10px">
                         {progress.note}
@@ -1147,14 +1148,15 @@ export function CaseRunbooks({ caseId, onChange }) {
                               })
                             }
                           >
-                            I confirm analyst approval for this step
+                            I independently reviewed and approve this saved runbook step
                           </Checkbox>
                         )}
                         <Flex gap="8px">
                           <Button
                             isLoading={busy}
                             isDisabled={
-                              busy ||
+                              busy || !api.can("approver") ||
+                              (step.approval_required && draft.completed && (!item.proposed_by || !item.plan_author || [item.proposed_by,item.plan_author].includes(api.session?.operator_id))) ||
                               (step.approval_required &&
                                 draft.completed &&
                                 !draft.approval_confirmed)
@@ -1184,7 +1186,7 @@ export function CaseRunbooks({ caseId, onChange }) {
                       <Button
                         mt="12px"
                         variant="outline"
-                        isDisabled={busy || Boolean(draft)}
+                        isDisabled={busy || Boolean(draft) || !api.can("approver")}
                         onClick={() =>
                           setDraft({
                             assignmentId: item.id,

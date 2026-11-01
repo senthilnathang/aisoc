@@ -42,7 +42,7 @@ func textOK(s string, min, max int) bool {
 	return n >= min && n <= max && !strings.ContainsRune(s, 0)
 }
 func invalid() error {
-	return fault.New(400, "INVALID_LEARNING", "Confirm reviewed evidence, provide a rationale, and select bounded skill guidance and/or expiring Memory context.")
+	return fault.New(400, "INVALID_LEARNING", "Confirm reviewed evidence and save bounded guidance for independent approval.")
 }
 func validate(in Input) error {
 	if !in.Confirm || !textOK(in.Rationale, 10, 2000) || (!in.CreateSkill && !in.CreateMemory) || len(in.EvidenceIDs) < 1 || len(in.EvidenceIDs) > 10 {
@@ -137,7 +137,7 @@ func (s Store) Workspace(ctx context.Context, tenant, id string) (map[string]any
 	}
 	return map[string]any{"case": source(r), "eligible": eligible(r), "artifacts": artifacts, "receipts": receipts}, nil
 }
-func (s Store) Approve(ctx context.Context, tenant, id, actor string, in Input) (map[string]any, error) {
+func (s Store) Propose(ctx context.Context, tenant, id, actor string, in Input) (map[string]any, error) {
 	if e := validate(in); e != nil {
 		return nil, e
 	}
@@ -206,7 +206,7 @@ func (s Store) Approve(ctx context.Context, tenant, id, actor string, in Input) 
 		}
 		selected = append(selected, v)
 	}
-	receipt := map[string]any{"source_case": source(r), "evidence": selected, "approved_by": actor, "approved_at": time.Now().UTC().Format(time.RFC3339Nano), "rationale": strings.TrimSpace(in.Rationale), "mode": "local-analyst", "skill_id": "", "insight_id": ""}
+	receipt := map[string]any{"source_case": source(r), "evidence": selected, "proposed_by": actor, "proposed_at": time.Now().UTC().Format(time.RFC3339Nano), "rationale": strings.TrimSpace(in.Rationale), "mode": "local-proposal", "skill_id": "", "insight_id": ""}
 	if in.CreateMemory {
 		m, e := insights.SaveTx(ctx, tx, tenant, actor, "", insights.Input{ID: "EI-" + jobs.ID(), Artifact: r.PrimaryEntity, Kind: in.MemoryKind, Content: in.Context, Hint: "none", ValidUntil: in.ValidUntil}, false)
 		if e != nil {
@@ -241,7 +241,7 @@ func (s Store) Approve(ctx context.Context, tenant, id, actor string, in Input) 
 	if e = q.InsertLearning(ctx, investigationsql.InsertLearningParams{TenantID: tenant, InvestigationID: id, SourceVersion: in.ExpectedUpdatedAt, RequestHash: hash, Document: document}); e != nil {
 		return nil, e
 	}
-	if e = investigations.ResourceAudit(ctx, tx, tenant, "investigations", id, "learning_approved", receipt); e != nil {
+	if e = investigations.ResourceAudit(ctx, tx, tenant, "investigations", id, "learning_proposed", receipt); e != nil {
 		return nil, e
 	}
 	return receipt, tx.Commit(ctx)

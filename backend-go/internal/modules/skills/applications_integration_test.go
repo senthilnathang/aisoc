@@ -37,7 +37,7 @@ func TestApplicationSnapshotsFeedbackAndIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.Mutate(ctx, tenant, id, "publish", "actor", nil); err != nil {
+	if _, err = s.Mutate(ctx, tenant, id, "publish", "reviewer", nil); err != nil {
 		t.Fatal(err)
 	}
 	caseID := "case-" + jobs.ID()

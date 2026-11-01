@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFile,writeFile} from 'node:fs/promises';
-import {argumentsFor,target,output,root} from './harness.mjs';
+import {argumentsFor,target,output,root,roleHeaders} from './harness.mjs';
 const options=argumentsFor(),server=await target(options);
 const plan={kind:'runbook',title:'Validation',description:'',domain:'Identity',trigger:'Test',steps:[{title:'Review',instructions:'',approval_required:false}]};
 const base='/api/v1/response-plans';
@@ -30,7 +30,7 @@ add('singleton empty title',{...plan,title:['']});
 try{
  const results=[];
  for(const f of fixtures){
-  const response=await fetch(server.url+f.path,{method:f.method,headers:{...(f.method==='GET'?{}:{'content-type':f.contentType||'application/json'}),'x-tenant-id':'validation-fixture'},...(f.method==='GET'?{}:{body:f.raw??JSON.stringify(f.body)}),signal:AbortSignal.timeout(10000)});
+  const response=await fetch(server.url+f.path,{method:f.method,headers:{...(f.method==='GET'?{}:{'content-type':f.contentType||'application/json'}),'x-tenant-id':'validation-fixture',...roleHeaders(f.method,f.path,'validation-fixture')},...(f.method==='GET'?{}:{body:f.raw??JSON.stringify(f.body)}),signal:AbortSignal.timeout(10000)});
   const body=await response.json();assert.ok(response.status>=400,f.name+' accepted');
   results.push({name:f.name,status:response.status,body});
  }

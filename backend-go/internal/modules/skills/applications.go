@@ -231,7 +231,7 @@ func Apply(ctx context.Context, tx pgx.Tx, tenant, targetType, targetID string, 
 			}
 		}
 		snap := map[string]any{}
-		for _, key := range []string{"id", "name", "skill_type", "version", "description", "apply_when", "content_markdown", "modules", "connectors", "alert_types", "alert_categories", "source_entities", "runtime_entities", "insight_refs", "learning_origin"} {
+		for _, key := range []string{"id", "name", "skill_type", "version", "description", "apply_when", "content_markdown", "modules", "connectors", "alert_types", "alert_categories", "source_entities", "runtime_entities", "insight_refs", "learning_origin", "approval"} {
 			snap[key] = skill[key]
 		}
 		snap["version"] = version

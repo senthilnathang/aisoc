@@ -1,5 +1,7 @@
 # Investigate → Respond: approved mock session revocation
 
+Current approval contract: [independent proposer, approver and executor roles](INDEPENDENT_APPROVAL_ROLES.md). Outcome learning saves proposals; Memory requires independent approval before reuse, and responses require three distinct operators.
+
 Updated 2026-11-01. Local/mock only. This reuses the sandbox executor; it does not
 connect an identity provider or enable production response.
 

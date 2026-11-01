@@ -1,3 +1,4 @@
+import { hasRole, independentReviewer } from "./permissions";
 import { changedResource } from "./resourceEvents";
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 const TENANT_ID = import.meta.env.VITE_TENANT_ID || "demo";
@@ -12,9 +13,13 @@ class ApiClient {
 
   setSession(session) {
     this.authMode = session?.mode || "token";
+    this.session = session;
     this.csrfToken = session?.csrf_token || null;
     if (session?.tenant_id) this.tenantId = session.tenant_id;
   }
+
+  can(role) { return hasRole(this.session, role); }
+  independent(item) { return independentReviewer(this.session, item); }
 
   async request(path, options = {}) {
     const response = await fetch(`${this.baseUrl}${path}`, {

@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"aisoc/backend/internal/platform/auth"
 	"aisoc/backend/internal/platform/fault"
 	"aisoc/backend/internal/platform/jobs"
 	"context"
@@ -188,6 +189,7 @@ func (s Store) MutateMaterial(ctx context.Context, tenant, skill, id, operation,
 	if parent["learning_archived"] == true {
 		return nil, fault.New(409, "SKILL_ARCHIVED", "Archived skill materials cannot be changed.")
 	}
+	auth.RecordProposer(parent, actor)
 	if parent["state"] == "published" {
 		if parent["published_materials"] == nil {
 			release, e := CaptureMaterialsTx(ctx, tx, tenant, skill)

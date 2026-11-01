@@ -1,6 +1,7 @@
 package learning
 
 import (
+	"aisoc/backend/internal/modules/insights"
 	"aisoc/backend/internal/modules/investigations"
 	"aisoc/backend/internal/modules/skills"
 	"aisoc/backend/internal/platform/database"
@@ -42,12 +43,15 @@ func TestLifecycleStagingSourceChangeAndArchive(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	receipt, e := s.Approve(ctx, tenant, sourceCase.ID, "analyst", Input{ExpectedUpdatedAt: sourceCase.UpdatedAt, EvidenceIDs: []string{artifact["id"].(string)}, Confirm: true, Rationale: "Reviewed local fixture evidence.", CreateSkill: true, Name: "Lifecycle skill", Guidance: "Original reviewed guidance.", CreateMemory: true, MemoryKind: "user", Context: "Original local identity context.", ValidUntil: time.Now().Add(time.Hour).UTC().Format(time.RFC3339)})
+	receipt, e := s.Propose(ctx, tenant, sourceCase.ID, "analyst", Input{ExpectedUpdatedAt: sourceCase.UpdatedAt, EvidenceIDs: []string{artifact["id"].(string)}, Confirm: true, Rationale: "Reviewed local fixture evidence.", CreateSkill: true, Name: "Lifecycle skill", Guidance: "Original reviewed guidance.", CreateMemory: true, MemoryKind: "user", Context: "Original local identity context.", ValidUntil: time.Now().Add(time.Hour).UTC().Format(time.RFC3339)})
 	if e != nil {
 		t.Fatal(e)
 	}
 	sid, mid := receipt["skill_id"].(string), receipt["insight_id"].(string)
-	if _, e = sk.Mutate(ctx, tenant, sid, "save-publish", "analyst", map[string]any{"expected_version": float64(1)}); e != nil {
+	if _, e = sk.Mutate(ctx, tenant, sid, "publish", "reviewer", map[string]any{"expected_version": float64(1)}); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", "enterprise-insights", mid, LifecycleInput{Operation: "approve", ExpectedVersion: 1, Confirm: true, Rationale: "Independent review of saved Memory."}); e != nil {
 		t.Fatal(e)
 	}
 	before := create("open", "unknown")
@@ -68,17 +72,24 @@ func TestLifecycleStagingSourceChangeAndArchive(t *testing.T) {
 	in := LifecycleInput{Operation: "publish-staged", ExpectedVersion: 3, Confirm: true, Rationale: "Reviewed and approve staged instructions."}
 	bad := in
 	bad.Confirm = false
-	if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", "skills", sid, bad); e == nil {
+	if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", "skills", sid, bad); e == nil {
 		t.Fatal("no confirmation")
 	}
 	if _, e = s.ReviewLifecycle(ctx, "foreign", "analyst", "skills", sid, in); e == nil {
 		t.Fatal("foreign publish")
 	}
-	if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", "skills", sid, in); e != nil {
+	if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", "skills", sid, in); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", "skills", sid, in); e == nil {
+	if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", "skills", sid, in); e == nil {
 		t.Fatal("stale publication")
+	}
+	// Source reapproval must not erase authorship of pending content edits.
+	if _, e = sk.Mutate(ctx, tenant, sid, "patch", "second-editor", map[string]any{"expected_version": float64(4), "description": "Additional staged revision"}); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = (insights.Store{Pool: pool}).Save(ctx, tenant, "memory-editor", mid, insights.Input{ExpectedVersion: 2, Artifact: "lifecycle-user", Kind: "user", Content: "Pending edited identity context", ValidUntil: time.Now().Add(time.Hour).UTC().Format(time.RFC3339)}, false); e != nil {
+		t.Fatal(e)
 	}
 	// Source changes invalidate both owners without modifying earlier snapshots.
 	changed, e := cases.Patch(ctx, tenant, sourceCase.ID, map[string]json.RawMessage{"determination": json.RawMessage(`"suspicious"`)}, []string{"determination"})
@@ -100,16 +111,26 @@ func TestLifecycleStagingSourceChangeAndArchive(t *testing.T) {
 	for _, resource := range []struct {
 		kind, id string
 		version  int
-	}{{"skills", sid, 4}, {"enterprise-insights", mid, 1}} {
+	}{{"skills", sid, 5}, {"enterprise-insights", mid, 3}} {
 		in := LifecycleInput{Operation: "reapprove", ExpectedVersion: resource.version, ExpectedSourceVersion: changed.UpdatedAt, Confirm: true, Rationale: "Reviewed changed outcome and continued applicability."}
 		bad := in
 		bad.ExpectedSourceVersion = sourceCase.UpdatedAt
-		if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", resource.kind, resource.id, bad); e == nil {
+		if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", resource.kind, resource.id, bad); e == nil {
 			t.Fatal("stale source accepted")
 		}
-		if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", resource.kind, resource.id, in); e != nil {
+		if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", resource.kind, resource.id, in); e != nil {
 			t.Fatal(e)
 		}
+	}
+	if _, e = s.ReviewLifecycle(ctx, tenant, "second-editor", "skills", sid, LifecycleInput{Operation: "publish-staged", ExpectedVersion: 6, Confirm: true, Rationale: "Must not approve own staged revision."}); e == nil {
+		t.Fatal("source reapproval erased staged authors")
+	}
+	inMemory := LifecycleInput{Operation: "approve", ExpectedVersion: 4, Confirm: true, Rationale: "Review edited Memory after source reapproval."}
+	if _, e = s.ReviewLifecycle(ctx, tenant, "memory-editor", "enterprise-insights", mid, inMemory); e == nil {
+		t.Fatal("source reapproval erased Memory authors")
+	}
+	if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", "enterprise-insights", mid, inMemory); e != nil {
+		t.Fatal("cannot approve Memory against reviewed current source", e)
 	}
 	resumed := create("open", "unknown")
 	pool.QueryRow(ctx, `SELECT count(*) FROM skill_applications WHERE tenant_id=$1 AND target_id=$2`, tenant, resumed.ID).Scan(&count)
@@ -125,8 +146,8 @@ func TestLifecycleStagingSourceChangeAndArchive(t *testing.T) {
 	for _, resource := range []struct {
 		kind, id string
 		version  int
-	}{{"skills", sid, 5}, {"enterprise-insights", mid, 2}} {
-		if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", resource.kind, resource.id, LifecycleInput{Operation: "archive", ExpectedVersion: resource.version, Confirm: true, Rationale: "Explicitly retire local fixture guidance."}); e != nil {
+	}{{"skills", sid, 6}, {"enterprise-insights", mid, 5}} {
+		if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", resource.kind, resource.id, LifecycleInput{Operation: "archive", ExpectedVersion: resource.version, Confirm: true, Rationale: "Explicitly retire local fixture guidance."}); e != nil {
 			t.Fatal(e)
 		}
 	}
@@ -135,7 +156,7 @@ func TestLifecycleStagingSourceChangeAndArchive(t *testing.T) {
 	if count != 0 {
 		t.Fatal("archived guidance applied")
 	}
-	if _, e = sk.Mutate(ctx, tenant, sid, "set-enabled", "analyst", map[string]any{"expected_version": float64(6), "enabled": true}); e == nil {
+	if _, e = sk.Mutate(ctx, tenant, sid, "set-enabled", "analyst", map[string]any{"expected_version": float64(7), "enabled": true}); e == nil {
 		t.Fatal("archive bypass")
 	}
 }
@@ -167,7 +188,7 @@ func TestStagedMaterialsDiscardAndAuditRollback(t *testing.T) {
 		t.Fatal(e)
 	}
 	mid := material["id"].(string)
-	if _, e = sk.Mutate(ctx, tenant, id, "publish", "analyst", nil); e != nil {
+	if _, e = sk.Mutate(ctx, tenant, id, "publish", "reviewer", nil); e != nil {
 		t.Fatal(e)
 	}
 	if _, e = sk.MutateMaterial(ctx, tenant, id, mid, "patch", "analyst", map[string]any{"content": "Draft reference"}); e != nil {
@@ -181,7 +202,7 @@ func TestStagedMaterialsDiscardAndAuditRollback(t *testing.T) {
 	if _, e = pool.Exec(ctx, `CREATE FUNCTION lifecycle_audit_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='lifecycle_discard-staged' THEN RAISE EXCEPTION 'audit failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER lifecycle_audit_fail BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION lifecycle_audit_fail()`); e != nil {
 		t.Fatal(e)
 	}
-	_, failed := s.ReviewLifecycle(ctx, tenant, "analyst", "skills", id, in)
+	_, failed := s.ReviewLifecycle(ctx, tenant, "reviewer", "skills", id, in)
 	if _, e = pool.Exec(ctx, `DROP TRIGGER lifecycle_audit_fail ON audit_events; DROP FUNCTION lifecycle_audit_fail()`); e != nil {
 		t.Fatal(e)
 	}
@@ -192,7 +213,7 @@ func TestStagedMaterialsDiscardAndAuditRollback(t *testing.T) {
 	if e != nil || current["content"] != "Draft reference" || current["version"] != float64(2) {
 		t.Fatal("partial restore", current, e)
 	}
-	if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", "skills", id, in); e != nil {
+	if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", "skills", id, in); e != nil {
 		t.Fatal(e)
 	}
 	current, e = sk.Material(ctx, tenant, id, mid)
@@ -202,7 +223,7 @@ func TestStagedMaterialsDiscardAndAuditRollback(t *testing.T) {
 	if _, e = sk.MutateMaterial(ctx, tenant, id, mid, "patch", "analyst", map[string]any{"content": "Approved next reference"}); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = s.ReviewLifecycle(ctx, tenant, "analyst", "skills", id, LifecycleInput{Operation: "publish-staged", ExpectedVersion: 6, Confirm: true, Rationale: "Approve next saved material release."}); e != nil {
+	if _, e = s.ReviewLifecycle(ctx, tenant, "reviewer", "skills", id, LifecycleInput{Operation: "publish-staged", ExpectedVersion: 6, Confirm: true, Rationale: "Approve next saved material release."}); e != nil {
 		t.Fatal(e)
 	}
 	r, e = sk.Get(ctx, tenant, id)

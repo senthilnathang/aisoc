@@ -61,7 +61,7 @@ try{
     await call('POST','/api/v1/remediations',403,{cookie:authCookie},simulation);
     const remediation=await call('POST','/api/v1/remediations',201,operator,simulation);
     const remediationPath='/api/v1/remediations/'+remediation.data.id;
-    for(const [method,suffix,body,status] of [['PATCH','',{description:'Edited'},200],['POST','/execute',undefined,200],['DELETE','',undefined,204]]){
+    for(const [method,suffix,body,status] of [['PATCH','',{description:'Edited'},200],['POST','/execute',undefined,409],['DELETE','',undefined,204]]){
       await call(method,remediationPath+suffix,403,{cookie:authCookie},body);
       await call(method,remediationPath+suffix,404,foreign,body);
       await call(method,remediationPath+suffix,status,{cookie:authCookie,'x-csrf-token':fresh.data.csrf_token},body);
@@ -102,8 +102,8 @@ try{
     const skillRoot='/api/v1/skills',skillBody={name:'Authenticated skill'};
     await call('GET',skillRoot,401);await call('POST',skillRoot,403,{cookie:authCookie},skillBody);await call('GET',skillRoot,401,{authorization:'Bearer '+source.data.api_key});
     const skill=await call('POST',skillRoot,201,operator,skillBody),skillPath=skillRoot+'/'+skill.data.id;assert.equal(skill.data.created_by,'fixture-a');
-    for(const [method,suffix,body]of [['GET',''],['PATCH','',{}],['DELETE',''],['POST','/publish'],['POST','/toggle']])await call(method,skillPath+suffix,404,foreign,body);
-    await call('PATCH',skillPath,403,{cookie:authCookie},{});await call('POST',skillPath+'/publish',200,{cookie:authCookie,'x-csrf-token':fresh.data.csrf_token});
+    for(const [method,suffix,body]of [['GET',''],['PATCH','',{}],['DELETE',''],['POST','/publish',{expected_version:1}],['POST','/toggle']])await call(method,skillPath+suffix,404,foreign,body);
+    await call('PATCH',skillPath,403,{cookie:authCookie},{});await call('POST',skillPath+'/publish',403,{cookie:authCookie,'x-csrf-token':fresh.data.csrf_token},{expected_version:1});
     const materialBody={name:'Guide.txt',content:'Review evidence'};await call('POST',skillPath+'/materials',403,{cookie:authCookie},materialBody);const material=await call('POST',skillPath+'/materials',201,operator,materialBody),materialPath=skillPath+'/materials/'+material.data.id;
     await call('GET',materialPath,404,foreign);await call('GET',materialPath+'/versions',404,foreign);await call('PATCH',materialPath,403,{cookie:authCookie},{content:'Edit'});await call('DELETE',materialPath,403,{cookie:authCookie});
     await call('PATCH',materialPath,200,operator,{content:'Edited'});assert.equal((await call('GET',skillPath+'/history',200,operator)).data.items[0].details.actor,'fixture-a');
