@@ -8,6 +8,7 @@ import (
 	"aisoc/backend/internal/modules/telemetry"
 	"aisoc/backend/internal/platform/fault"
 	"encoding/json"
+	"net/netip"
 	"time"
 )
 
@@ -25,7 +26,7 @@ type PreviewResult struct {
 }
 
 func Invalid() error {
-	return fault.New(400, "INVALID_LOCAL_INTEGRATION", "Provide four related login observations and valid tenant-bound local context.")
+	return fault.New(400, "INVALID_LOCAL_INTEGRATION", "Provide 4–12 related login observations and valid tenant-bound local context.")
 }
 func Conflict() error {
 	return fault.New(409, "LOCAL_INTEGRATION_CONFLICT", "The draft changed or is sealed. Refresh; create a new profile to change imported evidence.")
@@ -33,13 +34,19 @@ func Conflict() error {
 func Preview(d Document, b telemetry.Binding, now time.Time) (PreviewResult, error) {
 	p := PreviewResult{Mode: "local-json-mock-v1", Events: []telemetry.Event{}, Context: []*pb.EvidenceItem{}}
 	raw, err := json.Marshal(d)
-	if err != nil || len(raw) > 65536 || d.SchemaVersion != "1" || len(d.Events) != 4 {
+	if err != nil || len(raw) > 65536 || d.SchemaVersion != "1" || (len(d.Events) < 4 || len(d.Events) > 12) {
 		return p, Invalid()
 	}
 	watermark := time.Time{}
 	keys := map[string]bool{}
 	for _, event := range d.Events {
 		if event.TenantID != b.TenantID || event.Source != b.Source {
+			return p, Invalid()
+		}
+		first := d.Events[0].Projection
+		ip, ipErr := netip.ParseAddr(event.Projection.SourceIP)
+		firstIP, firstErr := netip.ParseAddr(first.SourceIP)
+		if ipErr != nil || firstErr != nil || ip.Unmap() != firstIP.Unmap() || event.Projection.PrincipalRef != first.PrincipalRef || event.Projection.AssetRef != first.AssetRef {
 			return p, Invalid()
 		}
 		event.ConnectorID = b.ConnectorID
@@ -59,6 +66,14 @@ func Preview(d Document, b telemetry.Binding, now time.Time) (PreviewResult, err
 	p.Findings, err = telemetry.SuspiciousLogins(b, p.Events, watermark.Add(time.Minute))
 	if err != nil || len(p.Findings) != 1 {
 		return p, Invalid()
+	}
+	// Keep the whole imported window related to the one selected finding.
+	end, _ := time.Parse(time.RFC3339Nano, p.Findings[0].ObservedUntil)
+	for _, event := range p.Events {
+		at, _ := time.Parse(time.RFC3339Nano, event.EventTime)
+		if at.After(end) || at.Before(end.Add(-5*time.Minute)) {
+			return p, Invalid()
+		}
 	}
 	if d.Context != nil {
 		p.Context, err = d.Context.Resolve(b, p.Events[0].Projection.PrincipalRef, p.Events[0].Projection.AssetRef, watermark, now)

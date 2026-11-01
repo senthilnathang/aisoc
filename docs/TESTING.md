@@ -603,3 +603,14 @@ The disposable detection suite includes case ownership, pagination, concurrent C
 ## Guidance lifecycle regression
 
 New lifecycle integration tests cover staged instructions/materials, audit rollback, stale source/revision rejection, archive and snapshot preservation. The local browser script is scripts/framework/learning-lifecycle-browser.js; platform acceptance includes lifecycle HTTP checks. See [coverage](SKILLS_MEMORY_LIFECYCLE.md).
+
+## Build lifecycle regression
+
+See [Build lifecycle](BUILD_INTEGRATION_LIFECYCLE.md). Run the disposable acceptance
+suite plus `node --test tests/frontend/*.test.mjs`, frontend lint/build and
+`make sqlc-check`/`go vet ./...` in `backend-go`. The real-browser script
+`scripts/framework/build-lifecycle-browser-check.js` requires a running local
+foundation and the Build IAM/EDR showcase; it retains one archived clone per run,
+never imports it and never enables a response. The existing
+`local-integrations-browser-check.js` intercepts mutations to exercise errors and
+uncertain-import recovery without changing database state.

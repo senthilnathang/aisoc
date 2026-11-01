@@ -7,7 +7,40 @@ package localsql
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const archiveProfile = `-- name: ArchiveProfile :one
+UPDATE local_integration_profiles SET state='archived',version=version+1,actor=$3,updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name
+`
+
+type ArchiveProfileParams struct {
+	TenantID string
+	ID       string
+	Actor    string
+}
+
+func (q *Queries) ArchiveProfile(ctx context.Context, arg ArchiveProfileParams) (LocalIntegrationProfile, error) {
+	row := q.db.QueryRow(ctx, archiveProfile, arg.TenantID, arg.ID, arg.Actor)
+	var i LocalIntegrationProfile
+	err := row.Scan(
+		&i.TenantID,
+		&i.ID,
+		&i.ScopeID,
+		&i.Name,
+		&i.Version,
+		&i.State,
+		&i.Document,
+		&i.Actor,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ClonedFrom,
+		&i.ClonedVersion,
+		&i.CloneName,
+	)
+	return i, err
+}
 
 const auditProfile = `-- name: AuditProfile :exec
 INSERT INTO audit_events(tenant_id,id,resource,resource_id,action,details,created_at,updated_at) VALUES($1,$2,'local_integrations',$3,$4,$5,now(),now())
@@ -32,6 +65,23 @@ func (q *Queries) AuditProfile(ctx context.Context, arg AuditProfileParams) erro
 	return err
 }
 
+const canArchiveProfile = `-- name: CanArchiveProfile :one
+SELECT EXISTS(SELECT 1 FROM stream_findings f JOIN l1_escalations e ON e.tenant_id=f.tenant_id AND e.investigation_id=f.investigation_id WHERE f.tenant_id=$1 AND f.connector_id=$2 AND e.state='synced')
+ AND NOT EXISTS(SELECT 1 FROM stream_findings f LEFT JOIN l1_escalations e ON e.tenant_id=f.tenant_id AND e.investigation_id=f.investigation_id WHERE f.tenant_id=$1 AND f.connector_id=$2 AND (e.state IS NULL OR e.state<>'synced')) AS allowed
+`
+
+type CanArchiveProfileParams struct {
+	TenantID    string
+	ConnectorID string
+}
+
+func (q *Queries) CanArchiveProfile(ctx context.Context, arg CanArchiveProfileParams) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, canArchiveProfile, arg.TenantID, arg.ConnectorID)
+	var allowed pgtype.Bool
+	err := row.Scan(&allowed)
+	return allowed, err
+}
+
 const countProfiles = `-- name: CountProfiles :one
 SELECT count(*) FROM local_integration_profiles WHERE tenant_id=$1
 `
@@ -53,7 +103,7 @@ func (q *Queries) EnsureTenant(ctx context.Context, id string) error {
 }
 
 const getProfile = `-- name: GetProfile :one
-SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at FROM local_integration_profiles WHERE tenant_id=$1 AND id=$2
+SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name FROM local_integration_profiles WHERE tenant_id=$1 AND id=$2
 `
 
 type GetProfileParams struct {
@@ -75,12 +125,60 @@ func (q *Queries) GetProfile(ctx context.Context, arg GetProfileParams) (LocalIn
 		&i.Actor,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ClonedFrom,
+		&i.ClonedVersion,
+		&i.CloneName,
+	)
+	return i, err
+}
+
+const insertClone = `-- name: InsertClone :one
+INSERT INTO local_integration_profiles(tenant_id,id,scope_id,name,document,actor,cloned_from,cloned_version,clone_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$4) RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name
+`
+
+type InsertCloneParams struct {
+	TenantID      string
+	ID            string
+	ScopeID       string
+	Name          string
+	Document      []byte
+	Actor         string
+	ClonedFrom    string
+	ClonedVersion int32
+}
+
+func (q *Queries) InsertClone(ctx context.Context, arg InsertCloneParams) (LocalIntegrationProfile, error) {
+	row := q.db.QueryRow(ctx, insertClone,
+		arg.TenantID,
+		arg.ID,
+		arg.ScopeID,
+		arg.Name,
+		arg.Document,
+		arg.Actor,
+		arg.ClonedFrom,
+		arg.ClonedVersion,
+	)
+	var i LocalIntegrationProfile
+	err := row.Scan(
+		&i.TenantID,
+		&i.ID,
+		&i.ScopeID,
+		&i.Name,
+		&i.Version,
+		&i.State,
+		&i.Document,
+		&i.Actor,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ClonedFrom,
+		&i.ClonedVersion,
+		&i.CloneName,
 	)
 	return i, err
 }
 
 const insertProfile = `-- name: InsertProfile :one
-INSERT INTO local_integration_profiles(tenant_id,id,scope_id,name,document,actor) VALUES($1,$2,$3,$4,$5,$6) RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at
+INSERT INTO local_integration_profiles(tenant_id,id,scope_id,name,document,actor) VALUES($1,$2,$3,$4,$5,$6) RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name
 `
 
 type InsertProfileParams struct {
@@ -113,12 +211,15 @@ func (q *Queries) InsertProfile(ctx context.Context, arg InsertProfileParams) (L
 		&i.Actor,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ClonedFrom,
+		&i.ClonedVersion,
+		&i.CloneName,
 	)
 	return i, err
 }
 
 const listProfiles = `-- name: ListProfiles :many
-SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at FROM local_integration_profiles WHERE tenant_id=$1 ORDER BY updated_at DESC,id LIMIT 20
+SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name FROM local_integration_profiles WHERE tenant_id=$1 ORDER BY updated_at DESC,id LIMIT 20
 `
 
 func (q *Queries) ListProfiles(ctx context.Context, tenantID string) ([]LocalIntegrationProfile, error) {
@@ -141,6 +242,9 @@ func (q *Queries) ListProfiles(ctx context.Context, tenantID string) ([]LocalInt
 			&i.Actor,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ClonedFrom,
+			&i.ClonedVersion,
+			&i.CloneName,
 		); err != nil {
 			return nil, err
 		}
@@ -153,7 +257,7 @@ func (q *Queries) ListProfiles(ctx context.Context, tenantID string) ([]LocalInt
 }
 
 const lockProfile = `-- name: LockProfile :one
-SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at FROM local_integration_profiles WHERE tenant_id=$1 AND id=$2 FOR UPDATE
+SELECT tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name FROM local_integration_profiles WHERE tenant_id=$1 AND id=$2 FOR UPDATE
 `
 
 type LockProfileParams struct {
@@ -175,6 +279,9 @@ func (q *Queries) LockProfile(ctx context.Context, arg LockProfileParams) (Local
 		&i.Actor,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ClonedFrom,
+		&i.ClonedVersion,
+		&i.CloneName,
 	)
 	return i, err
 }
@@ -190,8 +297,91 @@ func (q *Queries) LockTenant(ctx context.Context, id string) (string, error) {
 	return id_2, err
 }
 
+const profileHistory = `-- name: ProfileHistory :many
+SELECT version,name,state,actor,recorded_at FROM local_integration_revisions WHERE tenant_id=$1 AND profile_id=$2 ORDER BY version DESC LIMIT 50
+`
+
+type ProfileHistoryParams struct {
+	TenantID  string
+	ProfileID string
+}
+
+type ProfileHistoryRow struct {
+	Version    int32
+	Name       string
+	State      string
+	Actor      string
+	RecordedAt pgtype.Timestamptz
+}
+
+func (q *Queries) ProfileHistory(ctx context.Context, arg ProfileHistoryParams) ([]ProfileHistoryRow, error) {
+	rows, err := q.db.Query(ctx, profileHistory, arg.TenantID, arg.ProfileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ProfileHistoryRow
+	for rows.Next() {
+		var i ProfileHistoryRow
+		if err := rows.Scan(
+			&i.Version,
+			&i.Name,
+			&i.State,
+			&i.Actor,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const profileIntakeStatus = `-- name: ProfileIntakeStatus :one
+SELECT (SELECT count(*) FROM stream_events ev WHERE ev.tenant_id=$1 AND ev.connector_id=$2 AND ev.source='qradar-siem') AS accepted_events,
+ (SELECT count(*) FROM stream_inbox i WHERE i.tenant_id=$1 AND i.connector_id=$2 AND i.source='qradar-siem' AND i.processor='build-login-v1') AS processed_events
+`
+
+type ProfileIntakeStatusParams struct {
+	TenantID    string
+	ConnectorID string
+}
+
+type ProfileIntakeStatusRow struct {
+	AcceptedEvents  int64
+	ProcessedEvents int64
+}
+
+func (q *Queries) ProfileIntakeStatus(ctx context.Context, arg ProfileIntakeStatusParams) (ProfileIntakeStatusRow, error) {
+	row := q.db.QueryRow(ctx, profileIntakeStatus, arg.TenantID, arg.ConnectorID)
+	var i ProfileIntakeStatusRow
+	err := row.Scan(&i.AcceptedEvents, &i.ProcessedEvents)
+	return i, err
+}
+
+const profileSnapshotReady = `-- name: ProfileSnapshotReady :one
+SELECT (SELECT count(*) FROM stream_events ev WHERE ev.tenant_id=p.tenant_id AND ev.connector_id=p.id AND ev.source='qradar-siem')=jsonb_array_length(p.document->'events')
+ AND (SELECT count(*) FROM stream_inbox i WHERE i.tenant_id=p.tenant_id AND i.connector_id=p.id AND i.source='qradar-siem' AND i.processor='build-login-v1')=jsonb_array_length(p.document->'events') AS ready
+ FROM local_integration_profiles p WHERE p.tenant_id=$1 AND p.id=$2
+`
+
+type ProfileSnapshotReadyParams struct {
+	TenantID string
+	ID       string
+}
+
+func (q *Queries) ProfileSnapshotReady(ctx context.Context, arg ProfileSnapshotReadyParams) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, profileSnapshotReady, arg.TenantID, arg.ID)
+	var ready pgtype.Bool
+	err := row.Scan(&ready)
+	return ready, err
+}
+
 const readyProfiles = `-- name: ReadyProfiles :many
-SELECT p.tenant_id, p.id, p.scope_id, p.name, p.version, p.state, p.document, p.actor, p.created_at, p.updated_at FROM local_integration_profiles p
+SELECT p.tenant_id, p.id, p.scope_id, p.name, p.version, p.state, p.document, p.actor, p.created_at, p.updated_at, p.cloned_from, p.cloned_version, p.clone_name FROM local_integration_profiles p
 LEFT JOIN stream_worker_status w ON w.tenant_id=p.tenant_id AND w.connector_id=p.id AND w.source='qradar-siem' AND w.processor='build-login-v1' AND w.worker_id='build-worker'
 WHERE p.state='sealed' AND EXISTS(SELECT 1 FROM jsonb_to_recordset($1::jsonb) AS g(tenant_id text,scope_id text) WHERE g.tenant_id=p.tenant_id AND g.scope_id=p.scope_id) AND NOT EXISTS(
  SELECT 1 FROM stream_findings f JOIN l1_escalations e ON e.tenant_id=f.tenant_id AND e.investigation_id=f.investigation_id
@@ -219,6 +409,9 @@ func (q *Queries) ReadyProfiles(ctx context.Context, grants []byte) ([]LocalInte
 			&i.Actor,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ClonedFrom,
+			&i.ClonedVersion,
+			&i.CloneName,
 		); err != nil {
 			return nil, err
 		}
@@ -231,7 +424,7 @@ func (q *Queries) ReadyProfiles(ctx context.Context, grants []byte) ([]LocalInte
 }
 
 const sealProfile = `-- name: SealProfile :one
-UPDATE local_integration_profiles SET state='sealed',updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at
+UPDATE local_integration_profiles SET state='sealed',updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name
 `
 
 type SealProfileParams struct {
@@ -253,12 +446,15 @@ func (q *Queries) SealProfile(ctx context.Context, arg SealProfileParams) (Local
 		&i.Actor,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ClonedFrom,
+		&i.ClonedVersion,
+		&i.CloneName,
 	)
 	return i, err
 }
 
 const updateProfile = `-- name: UpdateProfile :one
-UPDATE local_integration_profiles SET name=$3,document=$4,actor=$5,version=version+1,updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at
+UPDATE local_integration_profiles SET name=$3,document=$4,actor=$5,version=version+1,updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING tenant_id, id, scope_id, name, version, state, document, actor, created_at, updated_at, cloned_from, cloned_version, clone_name
 `
 
 type UpdateProfileParams struct {
@@ -289,6 +485,9 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (L
 		&i.Actor,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ClonedFrom,
+		&i.ClonedVersion,
+		&i.CloneName,
 	)
 	return i, err
 }

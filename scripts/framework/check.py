@@ -461,9 +461,12 @@ def main():
                 build_root='/api/v1/build/integrations'
                 profile_id='build-00000000-0000-4000-8000-000000000042'
                 document=stream_http('/example?scope_id=login-context-suspicious',root=build_root)
+                extended=dict(next(e for e in document['events'] if e['event_type']=='authentication.failed'))
+                extended.update(event_id='extra-build-failure',source_event_id='extra-build-failure',evidence_ref='mock:extra-build-failure')
+                document['events'].append(extended)
                 draft={'scope_id':'login-context-suspicious','name':'Managed local fixture','expected_version':0,'document':document}
                 preview=stream_http('/preview',{'scope_id':draft['scope_id'],'id':profile_id,'document':document},root=build_root)
-                assert len(preview['events'])==4 and len(preview['context'])==2 and preview['events'][0]['connector_id']==profile_id
+                assert len(preview['events'])==5 and len(preview['context'])==2 and preview['events'][0]['connector_id']==profile_id
                 stream_http('/preview',{'scope_id':draft['scope_id'],'id':profile_id,'document':document,'url':'https://not-called.invalid'},root=build_root,expected=400)
                 stream_http('/'+profile_id,draft,root=build_root,method='PUT',actor='b',expected=403)
                 saved=stream_http('/'+profile_id,draft,root=build_root,method='PUT')
@@ -472,13 +475,15 @@ def main():
                 stream_http('/'+profile_id,root=build_root,actor='b',expected=404)
                 stream_http('/'+profile_id,{**draft,'expected_version':99},root=build_root,method='PUT',expected=409)
                 stream_http('/'+profile_id+'/import',{'expected_version':1,'confirm':False},root=build_root,expected=400)
-                assert stream_http('/'+profile_id+'/import',{'expected_version':1,'confirm':True},root=build_root,expected=202)['accepted']['Inserted']==4
+                assert stream_http('/'+profile_id+'/import',{'expected_version':1,'confirm':True},root=build_root,expected=202)['accepted']['Inserted']==5
                 stream_http('/'+profile_id,{**draft,'name':'Cannot change sealed evidence','expected_version':1},root=build_root,method='PUT',expected=409)
                 for _ in range(400):
                     managed=stream_http('/'+profile_id,root=build_root)
                     if managed['cases'] and managed['cases'][0]['state']=='awaiting_review': break
                     time.sleep(.1)
                 else: raise RuntimeError('Managed profile did not reach review')
+                assert managed['intake']=={'accepted_events':5,'processed_events':5}
+                stream_http('/'+profile_id+'/archive',{'expected_version':1,'confirm':True},root=build_root,expected=409)
                 managed_case=managed['cases'][0]
                 managed_review=stream_http('/'+managed_case['investigation_id']+'/l1',root='/api/v1/investigations')
                 assert managed_review['review_scope']==profile_id and managed_review['result_status']=='verified'
@@ -490,7 +495,34 @@ def main():
                 else: raise RuntimeError('Managed profile note did not sync')
                 assert stream_http('/'+profile_id+'/import',{'expected_version':1,'confirm':True},root=build_root,expected=202)['accepted']['Inserted']==0
                 assert sql("SELECT count(*) FROM audit_events WHERE tenant_id='auth-a' AND resource='local_integrations'")=='2'
-                (report/'build-integrations-flow.json').write_text(json.dumps({'passed':True,'preview':True,'create_replay':True,'tenant_isolation':True,'revision_conflict':True,'sealed_edit_denied':True,'managed_worker':'verified','approval':'explicit simulated','sync':'one mock note','replay_inserted':0},indent=2)+'\n')
+                clone_id='build-00000000-0000-4000-8000-000000000047'
+                clone_body={'expected_version':1,'id':clone_id,'name':'Lifecycle draft clone'}
+                stream_http('/'+profile_id+'/clone',clone_body,root=build_root,actor='b',expected=404)
+                stream_http('/'+profile_id+'/archive',{'expected_version':1,'confirm':True},root=build_root,actor='b',expected=404)
+                stream_http('/'+profile_id+'/clone',{**clone_body,'expected_version':99},root=build_root,expected=409)
+                cloned=stream_http('/'+profile_id+'/clone',clone_body,root=build_root)
+                assert cloned['state']=='draft' and cloned['version']==1 and cloned['cloned_from']==profile_id
+                assert cloned['document']['events'][0]['connector_id']==clone_id
+                assert stream_http('/'+profile_id+'/clone',clone_body,root=build_root)['id']==clone_id
+                detail=stream_http('/'+clone_id,root=build_root)
+                assert detail['intake']['accepted_events']==0 and detail['cases']==[] and len(detail['revisions'])==1
+                # Extend the fixture with another failure; the rule still selects four evidence refs.
+                extra=dict(next(e for e in cloned['document']['events'] if e['event_type']=='authentication.failed'))
+                extra.update(event_id='extended-login',source_event_id='extended-login',evidence_ref='mock:extended-login')
+                cloned['document']['events'].append(extra)
+                changed=stream_http('/'+clone_id,{'scope_id':draft['scope_id'],'name':cloned['name'],'expected_version':1,'document':cloned['document']},root=build_root,method='PUT')
+                assert changed['version']==2
+                stream_http('/'+clone_id+'/archive',{'expected_version':2,'confirm':False},root=build_root,expected=400)
+                archived=stream_http('/'+clone_id+'/archive',{'expected_version':2,'confirm':True},root=build_root)
+                assert archived['state']=='archived' and archived['version']==3
+                assert stream_http('/'+clone_id+'/archive',{'expected_version':2,'confirm':True},root=build_root)['version']==3
+                stream_http('/'+clone_id+'/import',{'expected_version':3,'confirm':True},root=build_root,expected=409)
+                detail=stream_http('/'+clone_id,root=build_root)
+                assert len(detail['revisions'])==3 and detail['intake']['accepted_events']==0
+                stream_http('/'+profile_id+'/archive',{'expected_version':1,'confirm':True},root=build_root)
+                stream_http('/'+profile_id+'/import',{'expected_version':2,'confirm':True},root=build_root,expected=409)
+                assert stream_http('/'+profile_id,root=build_root)['cases'][0]['note_id']==managed['cases'][0]['note_id']
+                (report/'build-integrations-flow.json').write_text(json.dumps({'passed':True,'preview':True,'create_replay':True,'tenant_isolation':True,'revision_conflict':True,'sealed_edit_denied':True,'managed_worker':'verified','approval':'explicit simulated','sync':'one mock note','replay_inserted':0,'accepted_events':managed['intake']['accepted_events'],'processed_events':managed['intake']['processed_events'],'lifecycle':{'clone_replay':True,'archive_guards':True,'revision_history':True,'extended_json':True,'tenant_isolation':True}},indent=2)+'\n')
                 action={'id':'demo-revoke','session_id':'demo-session','principal_ref':'demo-user','expected_version':1,'ticket':'TEST-REVIEW'}
                 def response_op(operation, expected=200, **extra):
                     return stream_http('/mock-siem/sandbox-session',{**action,'operation':operation,**extra},expected=expected)
@@ -524,7 +556,7 @@ def main():
                     def record_stage(name, result):
                         acceptance['stages'][name] = result
                         (report/'platform-acceptance.json').write_text(json.dumps(acceptance,indent=2)+'\n')
-                    record_stage('build_response', dict(case_id=managed_case['investigation_id'],build_import_replay=True,response=case_response_report))
+                    record_stage('build_response', dict(case_id=managed_case['investigation_id'],build_import_replay=True,build_lifecycle=json.loads((report/'build-integrations-flow.json').read_text()),response=case_response_report))
                     check_platform_acceptance(stream_http, sql, managed_case['investigation_id'], record_stage)
                 sql("INSERT INTO sandbox_session_actions(tenant_id,connector_id,source,id,session_id,expected_version,ticket) SELECT 'auth-a','mock-qradar','qradar-siem','capacity-'||n,'demo-session',1,'TEST' FROM generate_series(1,98) n")
                 response_op('propose',409,id='capacity-overflow')

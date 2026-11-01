@@ -430,3 +430,7 @@ Use `python3 scripts/framework/acceptance.py` after cross-module changes. It ext
 ## Guidance lifecycle development
 
 Migration 046 adds the shared source-validity function. Regenerate sqlc after editing learning/insight queries. Preserve source-before-resource lock order, atomic audit writes and published-version selection. See [API and test workflow](SKILLS_MEMORY_LIFECYCLE.md).
+
+## Build integration lifecycle — November 2026
+
+For Build lifecycle changes, regenerate sqlc (`cd backend-go && make sqlc`), apply additive migration 047 through the existing runner, run `python3 scripts/framework/acceptance.py`, frontend tests/lint/build, then the local integration browser checks. Do not roll back to old lifecycle code against archived records. See [contracts and rollback](BUILD_INTEGRATION_LIFECYCLE.md).

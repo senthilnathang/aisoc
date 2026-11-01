@@ -132,7 +132,56 @@ func registerLocalIntegrations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []
 			return nil, 0, err
 		}
 		worker, cases, err := streamStatus(r.Context(), pool, localintegrations.Binding(s.TenantID, s.ID), s.Processor)
-		return map[string]any{"profile": p, "worker": worker, "cases": cases}, 200, err
+		if err != nil {
+			return nil, 0, err
+		}
+		history, err := store.History(r.Context(), s.TenantID, s.ID)
+		if err != nil {
+			return nil, 0, err
+		}
+		intake, err := store.IntakeStatus(r.Context(), s.TenantID, s.ID)
+		return map[string]any{"profile": p, "worker": worker, "cases": cases, "revisions": history, "intake": intake}, 200, err
+	}))
+	mux.HandleFunc("POST /api/v1/build/integrations/{id}/archive", streamRespond(func(r *http.Request) (any, int, error) {
+		var body struct {
+			Version int32 `json:"expected_version"`
+			Confirm bool  `json:"confirm"`
+		}
+		if err := streamBody(r, &body); err != nil {
+			return nil, 0, streamError(err)
+		}
+		if !body.Confirm {
+			return nil, 0, fault.New(400, "CONFIRM_REQUIRED", "Confirm archive; retained cases and evidence are preserved.")
+		}
+		s, err := profileScope(r, pool, scopes, r.PathValue("id"))
+		if err != nil {
+			return nil, 0, streamError(err)
+		}
+		a := auth.From(r.Context())
+		p, err := store.Archive(r.Context(), a.Tenant, a.ID, s.ID, body.Version)
+		return p, 200, err
+	}))
+	mux.HandleFunc("POST /api/v1/build/integrations/{id}/clone", streamRespond(func(r *http.Request) (any, int, error) {
+		var body struct {
+			Version int32  `json:"expected_version"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+		}
+		if err := streamBody(r, &body); err != nil {
+			return nil, 0, streamError(err)
+		}
+		s, err := profileScope(r, pool, scopes, r.PathValue("id"))
+		if err != nil {
+			return nil, 0, streamError(err)
+		}
+		a := auth.From(r.Context())
+		for _, configured := range scopes {
+			if configured.TenantID == a.Tenant && (configured.ID == body.ID || configured.ConnectorID == body.ID) {
+				return nil, 0, localintegrations.Conflict()
+			}
+		}
+		p, err := store.Clone(r.Context(), a.Tenant, a.ID, s.ID, body.Version, body.ID, body.Name)
+		return p, 200, err
 	}))
 	mux.HandleFunc("POST /api/v1/build/integrations/{id}/import", streamRespond(func(r *http.Request) (any, int, error) {
 		var body struct {
@@ -169,6 +218,6 @@ func registerLocalIntegrations(mux *http.ServeMux, pool *pgxpool.Pool, scopes []
 			return nil, 0, err
 		}
 		accepted, err := intake.Accept(r.Context(), b, cp, "build-profile-v1", preview.Events)
-		return map[string]any{"accepted": accepted, "state": "sealed", "mode": "local-json-mock-v1"}, 202, streamError(err)
+		return map[string]any{"accepted": accepted, "replayed": accepted.Inserted == 0, "state": "sealed", "mode": "local-json-mock-v1"}, 202, streamError(err)
 	}))
 }

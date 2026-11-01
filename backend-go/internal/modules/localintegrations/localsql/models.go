@@ -9,14 +9,17 @@ import (
 )
 
 type LocalIntegrationProfile struct {
-	TenantID  string
-	ID        string
-	ScopeID   string
-	Name      string
-	Version   int32
-	State     string
-	Document  []byte
-	Actor     string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	TenantID      string
+	ID            string
+	ScopeID       string
+	Name          string
+	Version       int32
+	State         string
+	Document      []byte
+	Actor         string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	ClonedFrom    string
+	ClonedVersion int32
+	CloneName     string
 }

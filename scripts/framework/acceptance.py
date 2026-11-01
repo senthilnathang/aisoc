@@ -52,7 +52,7 @@ def main():
                 process = subprocess.run([sys.executable, str(ROOT/'scripts/framework/check.py'), '--with-streams', '--platform-acceptance'], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
             item = dict(number=number, passed=False, exit_code=process.returncode, seconds=round(time.monotonic()-start, 2))
             result['runs'].append(item)
-            for name in ('platform-acceptance.json', 'report.json', 'case-response-flow.json', 'login-context-flow.json'):
+            for name in ('platform-acceptance.json', 'report.json', 'case-response-flow.json', 'login-context-flow.json', 'build-integrations-flow.json'):
                 path = ROOT/'output/backend-framework'/name
                 if path.exists():
                     shutil.copyfile(path, target/name)

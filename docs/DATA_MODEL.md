@@ -271,3 +271,7 @@ discovery. Mutations and audit commit together. Sealing preserves the snapshot
 before recoverable event acceptance; existing outbox/inbox, finding, job and
 SOAR idempotency records retain processing ownership. See
 [profile lifecycle](BUILD_INTEGRATIONS.md).
+
+## Build integration lifecycle — November 2026
+
+Migration 047 extends `local_integration_profiles` with archived state and clone provenance and adds tenant/profile/version-scoped `local_integration_revisions`. Snapshot trigger and audit share the mutation transaction. Existing rows backfill only the current known revision. See [Build lifecycle](BUILD_INTEGRATION_LIFECYCLE.md).

@@ -50,7 +50,13 @@ func (r Runtime) RunManaged(ctx context.Context, grants []byte) error {
 				_, e = child.Reconcile(pass, "")
 			}
 			if e == nil {
-				e = child.AdvanceMock(pass)
+				// Correlate only the complete sealed snapshot. Partial delivery
+				// must not produce a different finding before later failures arrive.
+				ready, checkErr := q.ProfileSnapshotReady(pass, localsql.ProfileSnapshotReadyParams{TenantID: row.TenantID, ID: row.ID})
+				e = checkErr
+				if e == nil && ready.Valid && ready.Bool {
+					e = child.AdvanceMock(pass)
+				}
 			}
 			cancel()
 			code := ""

@@ -409,3 +409,7 @@ The optional local acceptance runner tests Build case → approved response → 
 ## Guidance lifecycle boundary
 
 Go retains owning transactions and immutable application snapshots. PostgreSQL source-revision eligibility gates Skill/Memory matching; editor revisions are separated from published Skill releases, including materials. See [design and locking](SKILLS_MEMORY_LIFECYCLE.md).
+
+## Build integration lifecycle — November 2026
+
+Build lifecycle remains Go-owned: authenticated grant → validated draft/CAS → immutable sealed intake → existing Redis/Python investigation → analyst-approved mock write-back. Migration 047 adds atomic revision snapshots, clone lineage and archive after completion; PostgreSQL remains authoritative. See [Build lifecycle](BUILD_INTEGRATION_LIFECYCLE.md).

@@ -21,18 +21,20 @@ func ValidID(id string) bool { return profileID.MatchString(id) }
 
 type Store struct{ Pool *pgxpool.Pool }
 type Profile struct {
-	ID        string    `json:"id"`
-	ScopeID   string    `json:"scope_id"`
-	Name      string    `json:"name"`
-	Version   int32     `json:"version"`
-	State     string    `json:"state"`
-	Document  Document  `json:"document"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Actor     string    `json:"actor"`
+	ID            string    `json:"id"`
+	ScopeID       string    `json:"scope_id"`
+	Name          string    `json:"name"`
+	Version       int32     `json:"version"`
+	State         string    `json:"state"`
+	Document      Document  `json:"document"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	Actor         string    `json:"actor"`
+	ClonedFrom    string    `json:"cloned_from,omitempty"`
+	ClonedVersion int32     `json:"cloned_version,omitempty"`
 }
 
 func View(row localsql.LocalIntegrationProfile) (Profile, error) {
-	p := Profile{ID: row.ID, ScopeID: row.ScopeID, Name: row.Name, Version: row.Version, State: row.State, UpdatedAt: row.UpdatedAt.Time, Actor: row.Actor}
+	p := Profile{ID: row.ID, ScopeID: row.ScopeID, Name: row.Name, Version: row.Version, State: row.State, UpdatedAt: row.UpdatedAt.Time, Actor: row.Actor, ClonedFrom: row.ClonedFrom, ClonedVersion: row.ClonedVersion}
 	err := json.Unmarshal(row.Document, &p.Document)
 	return p, err
 }
@@ -152,7 +154,7 @@ func (s Store) Seal(ctx context.Context, tenant, actor, id, scope string, expect
 	if err != nil {
 		return Profile{}, err
 	}
-	if row.ScopeID != scope || row.Version != expected {
+	if row.ScopeID != scope || row.Version != expected || row.State == "archived" {
 		return Profile{}, Conflict()
 	}
 	if row.State == "draft" {

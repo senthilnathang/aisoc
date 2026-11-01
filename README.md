@@ -329,3 +329,7 @@ Run `python3 scripts/framework/acceptance.py` for two disposable Detect-to-Build
 ## Skills/Memory lifecycle
 
 Published Skill edits and materials are staged until explicit publication. Source-case changes block derived guidance until reapproval; archive preserves prior snapshots. See [lifecycle controls](docs/SKILLS_MEMORY_LIFECYCLE.md).
+
+## Build integration lifecycle — November 2026
+
+Build → Local integrations now supports guarded archive, retry-safe draft cloning with lineage, retained revision snapshots, complete JSON bundle uploads and accepted/processed/replay visibility. Integrations remain local/mock. See [Build lifecycle](docs/BUILD_INTEGRATION_LIFECYCLE.md).

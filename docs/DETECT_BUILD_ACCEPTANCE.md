@@ -63,3 +63,7 @@ Two report-validation unit tests, Python compilation, optimized-Python/missing-s
 ## Lifecycle extension
 
 The Skills/Memory stage now also verifies staged publication, source-change detection, explicit reapproval, stale/foreign rejection and archive through Go HTTP endpoints. See [lifecycle coverage](SKILLS_MEMORY_LIFECYCLE.md).
+
+## Build integration lifecycle — November 2026
+
+Build lifecycle coverage now checks extended-window intake, accepted/processed counts, clone lineage and retry, saved revision history, archived import denial, unfinished-work archive rejection, tenant isolation and preservation of synced mock notes. See [Build lifecycle](BUILD_INTEGRATION_LIFECYCLE.md).

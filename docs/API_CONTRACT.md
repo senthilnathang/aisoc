@@ -469,3 +469,7 @@ GET /api/v1/investigations/{id}/detection-feedback accepts limit/offset. PUT /ap
 ## Guidance lifecycle API
 
 GET/POST /api/v1/{skills|enterprise-insights}/{id}/lifecycle exposes source review and version-checked confirmed operations. Published Skill PATCH writes stage edits; staged publication requires the lifecycle endpoint. See [request contract and compatibility](SKILLS_MEMORY_LIFECYCLE.md).
+
+## Build integration lifecycle — November 2026
+
+Build adds `POST /api/v1/build/integrations/{id}/clone` (`id`, `name`, `expected_version`) and `/archive` (`expected_version`, `confirm`). GET detail includes `revisions`, `intake`, and clone lineage; import includes `replayed`. All routes retain tenant/operator/grant authorization. See [full lifecycle semantics](BUILD_INTEGRATION_LIFECYCLE.md).

@@ -11,7 +11,7 @@ connection. Existing provider-specific connector records remain inspect-only.
    source. Eligible startup grants allow mock intake, require analyst review and
    forbid sandbox response execution. An operator without a grant sees an explicit
    empty-permission state; the browser cannot create its own grant.
-2. Load the local example or import login-event and optional IAM/MFA/EDR JSON files.
+2. Load the local example or import event arrays, complete versioned JSON bundles and optional IAM/MFA/EDR context files.
    Edit the JSON, user/device references or historical freshness window. The name
    and evidence remain editable while the profile is a draft. Existing scope IDs
    are fixed after first save.
@@ -25,7 +25,7 @@ connection. Existing provider-specific connector records remain inspect-only.
 5. Explicitly confirm **Import saved JSON**. Go seals the profile before accepting
    events. Subsequent edits are rejected. A failed or lost import response can be
    retried with the same version; event/case/note idempotency remains in the existing
-   pipeline. Create a new profile for different evidence.
+   pipeline. Clone as a new draft for different evidence.
 6. **Refresh pipeline status**, then **Open investigation**. The existing L1 review
    screen shows evidence, hypotheses and approval. Only explicit note approval can
    let the worker append a mock SOAR note; no containment or case closure is enabled.
@@ -37,7 +37,7 @@ simulated approval. Replaying its import inserted zero events.
 
 ## Validation and isolation
 
-Profiles accept schema `1`, exactly four related normalized login observations and
+Profiles accept schema `1`, 4–12 related normalized login observations and
 an optional [IAM/MFA and EDR bundle](LOGIN_CONTEXT_ADAPTERS.md). Evidence must yield
 one suspicious-login candidate. Unknown request fields are rejected. Login JSON
 files are limited to 64 KiB and context files to 32 KiB in the UI; Go independently
@@ -63,14 +63,14 @@ and processing stops after services load the changed startup configuration.
 Additive migration **042** creates `local_integration_profiles`: tenant, ID, parent
 scope, name, revision, draft/sealed state, normalized JSON, actor and timestamps.
 A tenant can retain at most 20 profiles; the UI lists the complete bounded set.
-There is no deletion/archive workflow in this initial local facility. Tenant
+Archive, clone and revision-history controls are described in [Build lifecycle](BUILD_INTEGRATION_LIFECYCLE.md). Archived profiles retain their quota and evidence. Tenant
 initialization, revision checks, profile mutations and their audit writes are atomic.
 Queries are generated with sqlc/pgx in `localintegrations/localsql`.
 
 Sealing and event acceptance are deliberately two recoverable transactions:
 
 - Seal records an immutable source document and audit receipt.
-- Existing `eventstate.Accept` commits the four events, source cursor and outbox.
+- Existing `eventstate.Accept` commits the validated events, source cursor and outbox.
 - Failure between those steps leaves a sealed, retryable profile; no edit/rebind is
   allowed. Repeating import uses the current checkpoint and stable event identities.
 - A concurrent checkpoint conflict is visible and can be retried. It never silently
@@ -118,8 +118,10 @@ applies. Profiles and previews return `Cache-Control: no-store`.
 | GET `/example?scope_id=…` | Bounded synthetic login document and configured optional context; no external call |
 | POST `/preview` | `{scope_id,id,document}` → normalized events, candidate finding, context and gaps |
 | PUT `/{id}` | `{scope_id,name,expected_version,document}`; version 0 creates, positive version edits a draft |
-| GET `/{id}` | Authorized profile, worker checkpoint status and generated cases |
-| POST `/{id}/import` | `{expected_version,confirm:true}` → sealed state and existing event acceptance receipt |
+| GET `/{id}` | Authorized profile, worker/case status, intake counts, lineage and revision metadata |
+| POST `/{id}/import` | `{expected_version,confirm:true}` → sealed state, event acceptance receipt and replay flag |
+| POST `/{id}/clone` | `{id,name,expected_version}` → independent saved draft; retry-safe |
+| POST `/{id}/archive` | `{expected_version,confirm:true}` → retained, immutable archived profile after completion |
 
 Case `/l1` exposes the authorized child profile ID as `review_scope`. The existing
 `POST /api/v1/stream-operations/{scope}/approve-mock-note` resolves that child through
@@ -133,19 +135,22 @@ executed. Editors preserve text on validation and write errors.
 
 ## Deployment, rollback and limits
 
-Run the existing foundation startup to apply migration 042 and deploy Go API/worker
+Run the existing foundation startup to apply migrations 042 and 047 and deploy Go API/worker
 and frontend together. Existing static scopes, CLI scenarios and provider connector
 records retain their behavior. Profiles created through the UI need no worker restart.
 No grants or credential files are rewritten by the API.
 
-Rollback pauses managed profile processing and retains profiles, events, jobs,
-notes and audit records. Older binaries ignore the new profile table; they cannot
-process the new sources. Restore the matching binaries to resume. Do not drop the
-table or delete receipts to replay evidence. Include the table in normal PostgreSQL
-backup/restore. The preserved release profile is not migrated by this work.
+Rollback must preserve profiles, revision snapshots, events, jobs, notes and audit.
+Do not run pre-lifecycle binaries against archived records: old code does not
+understand the archive restriction. Prefer a forward fix; see the explicit
+[lifecycle rollback constraints](BUILD_INTEGRATION_LIFECYCLE.md). Include both
+profile and revision tables in PostgreSQL backup/restore. The preserved release
+profile is not migrated by this work.
 
-Limits: local historical fixtures only; four login events and one finding per
-profile; manual status refresh; no profile deletion/archive, scheduled live polling,
+Limits: local historical fixtures only; 4–12 login observations and one finding per
+profile; manual status refresh; no profile deletion, scheduled live polling,
 provider configuration editor, production throughput claim or response activation.
 Generalize these only with separately tested contracts and operational requirements.
 See [testing evidence](TESTING.md) and [Build catalog](BUILD_WORKSPACE.md).
+
+Migration 047 adds archive/clone/version history and intake status; see [lifecycle controls and rollback](BUILD_INTEGRATION_LIFECYCLE.md).
