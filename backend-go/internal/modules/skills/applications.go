@@ -153,7 +153,7 @@ func Apply(ctx context.Context, tx pgx.Tx, tenant, targetType, targetID string, 
 		}
 		c.InsightRefs = append(c.InsightRefs, refs...)
 	}
-	rows, err := tx.Query(ctx, `SELECT document FROM skills WHERE tenant_id=$1 AND document->>'state'='published' AND document->'enabled'='true'::jsonb ORDER BY `+lowerName+` COLLATE "C",ordinal FOR SHARE`, tenant)
+	rows, err := tx.Query(ctx, `SELECT document FROM skills WHERE tenant_id=$1 AND document->>'state'='published' AND document->'enabled'='true'::jsonb AND aisoc_learning_current(tenant_id,document) ORDER BY `+lowerName+` COLLATE "C",ordinal FOR SHARE`, tenant)
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +190,9 @@ func Apply(ctx context.Context, tx pgx.Tx, tenant, targetType, targetID string, 
 		}
 		skillID := skill["id"].(string)
 		version := int(skill["version"].(float64))
+		if v, ok := skill["published_version"].(float64); ok {
+			version = int(v)
+		}
 		var existing map[string]any
 		err = tx.QueryRow(ctx, `SELECT document FROM skill_applications WHERE tenant_id=$1 AND skill_id=$2 AND target_type=$3 AND target_id=$4 AND skill_version=$5`, tenant, skillID, targetType, targetID, version).Scan(&existing)
 		if err == nil {
@@ -221,10 +224,18 @@ func Apply(ctx context.Context, tx pgx.Tx, tenant, targetType, targetID string, 
 		if err != nil {
 			return nil, err
 		}
+		if release, ok := skill["published_materials"].([]any); ok {
+			materials = []map[string]any{}
+			for _, item := range release {
+				materials = append(materials, item.(map[string]any))
+			}
+		}
 		snap := map[string]any{}
 		for _, key := range []string{"id", "name", "skill_type", "version", "description", "apply_when", "content_markdown", "modules", "connectors", "alert_types", "alert_categories", "source_entities", "runtime_entities", "insight_refs", "learning_origin"} {
 			snap[key] = skill[key]
 		}
+		snap["version"] = version
+		snap["learning_review"] = skill["learning_review"]
 		snap["materials"] = materials
 		encoded, err := json.Marshal(snap)
 		if err != nil {

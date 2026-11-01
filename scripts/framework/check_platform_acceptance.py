@@ -46,7 +46,27 @@ def check_platform_acceptance(http, sql, case_id, record):
     assert count('skill_applications', "target_id='"+follow['id']+"' AND skill_id='"+sid+"'") == 1
     assert count('enterprise_insight_applications', "investigation_id='"+follow['id']+"' AND insight_id='"+mid+"'") == 1
     assert count('case_learning', "investigation_id='"+case_id+"'") == 1
-    record('skills_memory', dict(source_case=case_id, followup_case=follow['id'], skill_id=sid, insight_id=mid, approval_replay=True, snapshots=True, foreign_reads_writes_denied=True))
+    # Lifecycle hardening: edits cannot replace a published release without review.
+    original=api('/skills/'+sid)['content_markdown']
+    staged=api('/skills/'+sid+'/workspace',dict(expected_version=2,content_markdown='New reviewed local lifecycle guidance.'),method='PATCH')
+    assert staged['content_markdown']==original and staged['staged_edit']['content_markdown']!=original
+    api(case_path,dict(determination='benign'),method='PATCH')
+    for kind,identity in [('skills',sid),('enterprise-insights',mid)]:
+        state=api('/'+kind+'/'+identity+'/lifecycle')
+        assert not state['current']
+        request=dict(operation='reapprove',expected_version=state['version'],expected_source_version=state['source']['updated_at'],confirm=True,rationale='Reviewed changed source outcome and scoped reuse.')
+        api('/'+kind+'/'+identity+'/lifecycle',request,actor='b',expected=404)
+        api('/'+kind+'/'+identity+'/lifecycle',{**request,'confirm':False},expected=400)
+        api('/'+kind+'/'+identity+'/lifecycle',request)
+        api('/'+kind+'/'+identity+'/lifecycle',request,expected=409)
+    state=api('/skills/'+sid+'/lifecycle')
+    api('/skills/'+sid+'/lifecycle',dict(operation='publish-staged',expected_version=state['version'],confirm=True,rationale='Explicitly approve saved staged instructions.'))
+    assert api('/skills/'+sid)['content_markdown']=='New reviewed local lifecycle guidance.'
+    for kind,identity in [('skills',sid),('enterprise-insights',mid)]:
+        state=api('/'+kind+'/'+identity+'/lifecycle')
+        api('/'+kind+'/'+identity+'/lifecycle',dict(operation='archive',expected_version=state['version'],confirm=True,rationale='Explicitly retire this disposable fixture guidance.'))
+        assert api('/'+kind+'/'+identity+'/lifecycle')['archived']
+    record('skills_memory', dict(source_case=case_id, followup_case=follow['id'], skill_id=sid, insight_id=mid, approval_replay=True, snapshots=True, foreign_reads_writes_denied=True, staged_publication=True, source_change_detection=True, explicit_reapproval=True, explicit_archive=True))
 
     document = dict(schema_version='1', source='local-acceptance', external_id='acceptance-feed', title='Synthetic domain report', summary='Local fixture only', severity='medium', published_at=datetime.now(timezone.utc).isoformat(timespec='seconds'), indicators=[dict(type='domain', value='Acceptance.Example.Test.'), dict(type='domain', value='acceptance.example.test')])
     preview=api('/threat-intel/import/preview',document)

@@ -157,3 +157,7 @@ navigation and responsive browser verification.
 ## Detect-to-Build acceptance
 
 [Repeatable acceptance suite](DETECT_BUILD_ACCEPTANCE.md): connected local/mock HTTP workflows, two fresh runs, stage reports and explicit production limits.
+
+## Skills/Memory lifecycle
+
+[Staging, source review and archive](SKILLS_MEMORY_LIFECYCLE.md) documents release revisions, matching gates, APIs, tests and additive migration 046.

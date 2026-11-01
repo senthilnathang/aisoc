@@ -325,3 +325,7 @@ Investigations now expose explicit source-alert review with confirmation, ration
 ## Repeatable local platform acceptance
 
 Run `python3 scripts/framework/acceptance.py` for two disposable Detect-to-Build acceptance runs. Covers Build import, reviewed mock response, Skills/Memory reuse, Intel/Hunt promotion and detection feedback with replay and tenant checks. [Scope and reports](docs/DETECT_BUILD_ACCEPTANCE.md).
+
+## Skills/Memory lifecycle
+
+Published Skill edits and materials are staged until explicit publication. Source-case changes block derived guidance until reapproval; archive preserves prior snapshots. See [lifecycle controls](docs/SKILLS_MEMORY_LIFECYCLE.md).

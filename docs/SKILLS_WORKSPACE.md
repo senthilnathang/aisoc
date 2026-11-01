@@ -69,3 +69,7 @@ sequenceDiagram
 Rollback is code-only to the prior UI/API; retain all skill documents, material versions, applications and audit history. No destructive migration is involved.
 
 Remaining: complete Markdown/file-tree editing, portable multi-file bundles, separately staged revisions of published skills, optimistic concurrency for legacy material endpoints, lost-response create idempotency, and live model evaluation. These are not implied by matching, publication, an augmented tab, or source examples.
+
+## Staged publication update
+
+Published edits now stage instructions, metadata, scopes and materials. Explicit publication releases saved edits; discard preserves material history. [Lifecycle documentation](SKILLS_MEMORY_LIFECYCLE.md) supersedes immediate-update behavior described in earlier implementation notes.

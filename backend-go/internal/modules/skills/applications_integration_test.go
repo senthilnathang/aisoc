@@ -85,7 +85,7 @@ func TestApplicationSnapshotsFeedbackAndIsolation(t *testing.T) {
 		t.Fatal("snapshot mutated")
 	}
 	if len(apply(tenant, []string{"ip"})) != 1 {
-		t.Fatal("new revision not applied")
+		t.Fatal("published revision missing while material edits are staged")
 	}
 	appID := first[0]["id"].(string)
 	for _, rating := range []string{"helpful", "not_helpful"} {
@@ -101,7 +101,7 @@ func TestApplicationSnapshotsFeedbackAndIsolation(t *testing.T) {
 		t.Fatal(err)
 	}
 	item := outcome["items"].([]map[string]any)[0]
-	if item["applications"] != int64(2) || item["case_applications"] != int64(1) || item["not_helpful"] != int64(1) || item["labeled_closed_cases"] != int64(1) {
+	if item["applications"] != int64(1) || item["case_applications"] != int64(1) || item["not_helpful"] != int64(1) || item["labeled_closed_cases"] != int64(1) {
 		t.Fatal("outcome counts", item)
 	}
 	// Empty-tenant refresh must not depend on legacy table names or seed rows.

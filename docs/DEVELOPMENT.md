@@ -426,3 +426,7 @@ The case panel reuses AlertLabelReview and the existing recommendation engine. M
 ## Platform acceptance workflow
 
 Use `python3 scripts/framework/acceptance.py` after cross-module changes. It extends the existing disposable framework, does not import showcase IDs, and rejects optimized Python assertions. Avoid concurrent framework invocations. See [prerequisites and report handling](DETECT_BUILD_ACCEPTANCE.md).
+
+## Guidance lifecycle development
+
+Migration 046 adds the shared source-validity function. Regenerate sqlc after editing learning/insight queries. Preserve source-before-resource lock order, atomic audit writes and published-version selection. See [API and test workflow](SKILLS_MEMORY_LIFECYCLE.md).

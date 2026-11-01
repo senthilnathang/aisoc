@@ -1,5 +1,5 @@
 -- name: LibrarySkills :many
-SELECT document FROM skills WHERE tenant_id=sqlc.arg(tenant_id)
+SELECT (document || jsonb_build_object('learning_current',aisoc_learning_current(tenant_id,document)))::jsonb AS document FROM skills WHERE tenant_id=sqlc.arg(tenant_id)
 AND (sqlc.arg(state)::text='' OR document->>'state'=sqlc.arg(state))
 AND (sqlc.arg(module)::text='' OR (document->'modules') ? sqlc.arg(module))
 AND (sqlc.arg(origin)::text='' OR (sqlc.arg(origin)='augmented' AND document->>'origin'='environment_generated') OR (sqlc.arg(origin)='custom' AND document->>'origin'<>'environment_generated'))

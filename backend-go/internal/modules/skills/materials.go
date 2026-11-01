@@ -185,6 +185,20 @@ func (s Store) MutateMaterial(ctx context.Context, tenant, skill, id, operation,
 		}
 		return nil, missing(name)
 	}
+	if parent["learning_archived"] == true {
+		return nil, fault.New(409, "SKILL_ARCHIVED", "Archived skill materials cannot be changed.")
+	}
+	if parent["state"] == "published" {
+		if parent["published_materials"] == nil {
+			release, e := CaptureMaterialsTx(ctx, tx, tenant, skill)
+			if e != nil {
+				return nil, e
+			}
+			parent["published_materials"] = release
+		}
+		stagePatch(parent, map[string]any{})
+		parent["materials_staged"] = true
+	}
 	var r map[string]any
 	now := stamp()
 	action := "material_added"

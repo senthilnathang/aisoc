@@ -59,3 +59,7 @@ The finalized `python3 scripts/framework/acceptance.py --runs 2` completed both 
 Each run verified one mock response note/effect under concurrent replay with zero external calls; one Skill and Memory application on a matching follow-up; no applications or hunt evidence leakage to a second tenant with identical entity/IOC values; stable Intel import/hunt/promotion replay; and a three-alert detection replay removing 1/1 FP, 0 TP and 0 unreviewed alerts. A label edit invalidated the prior receipt, and regenerated application left the rule disabled with one apply audit.
 
 Two report-validation unit tests, Python compilation, optimized-Python/missing-stream CLI rejection checks and `git diff --check` also passed. The underlying runs included Go race/vet, Python/Rust, real HTTP authentication/tenant tests and local RPC/stream/fault checks. No frontend code changed and no new browser run is claimed for this suite.
+
+## Lifecycle extension
+
+The Skills/Memory stage now also verifies staged publication, source-change detection, explicit reapproval, stale/foreign rejection and archive through Go HTTP endpoints. See [lifecycle coverage](SKILLS_MEMORY_LIFECYCLE.md).

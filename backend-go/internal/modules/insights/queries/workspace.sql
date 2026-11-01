@@ -1,7 +1,7 @@
 -- name: Registry :one
 WITH filtered AS (
  SELECT (e.document - 'request_hash') || jsonb_build_object('id',e.id,'version',e.version,'archived',e.archived,'valid_from',e.valid_from,'valid_until',e.valid_until,'created_at',e.created_at,'updated_at',e.updated_at,
- 'active_now',NOT e.archived AND (e.valid_from IS NULL OR e.valid_from<=now()) AND (e.valid_until IS NULL OR e.valid_until>now()),
+ 'learning_current',aisoc_learning_current(e.tenant_id,e.document),'active_now',aisoc_learning_current(e.tenant_id,e.document) AND NOT e.archived AND (e.valid_from IS NULL OR e.valid_from<=now()) AND (e.valid_until IS NULL OR e.valid_until>now()),
  'uses_30d',(SELECT count(DISTINCT a.investigation_id) FROM enterprise_insight_applications a WHERE a.tenant_id=e.tenant_id AND a.insight_id=e.id AND a.applied_at>=now()-interval '30 days'),
  'last_used',(SELECT max(a.applied_at) FROM enterprise_insight_applications a WHERE a.tenant_id=e.tenant_id AND a.insight_id=e.id)) AS doc,e.updated_at,e.id
  FROM enterprise_insights e WHERE e.tenant_id=sqlc.arg(tenant_id) AND NOT e.archived
@@ -39,7 +39,7 @@ INSERT INTO enterprise_insights(tenant_id,id,document,artifact_key,valid_from,va
 UPDATE enterprise_insights SET document=$3,artifact_key=$4,valid_from=$5,valid_until=$6,archived=$7,version=version+1,updated_at=now() WHERE tenant_id=$1 AND id=$2;
 
 -- name: MatchingInsights :many
-SELECT * FROM enterprise_insights WHERE tenant_id=sqlc.arg(tenant_id) AND artifact_key=ANY(sqlc.arg(entities)::text[]) AND NOT archived AND (valid_from IS NULL OR valid_from<=now()) AND (valid_until IS NULL OR valid_until>now()) ORDER BY id FOR SHARE;
+SELECT * FROM enterprise_insights WHERE tenant_id=sqlc.arg(tenant_id) AND artifact_key=ANY(sqlc.arg(entities)::text[]) AND NOT archived AND aisoc_learning_current(tenant_id,document) AND (valid_from IS NULL OR valid_from<=now()) AND (valid_until IS NULL OR valid_until>now()) ORDER BY id FOR SHARE;
 
 -- name: InsertApplication :execrows
 INSERT INTO enterprise_insight_applications(tenant_id,insight_id,investigation_id,insight_version,snapshot) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING;

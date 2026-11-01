@@ -405,3 +405,7 @@ Go derives the rule from authenticated tenant/case/alert ownership, locks the ru
 ## Cross-module acceptance boundary
 
 The optional local acceptance runner tests Build case → approved response → Skills/Memory reuse and artifact-linked Intel/Hunt promotion. Detection feedback reviews the Build case’s admitted source alert, while a separate three-alert fixture verifies recommendation replay without tuning the shared mock-login rule. No runtime service or schema was added. See [acceptance topology](DETECT_BUILD_ACCEPTANCE.md).
+
+## Guidance lifecycle boundary
+
+Go retains owning transactions and immutable application snapshots. PostgreSQL source-revision eligibility gates Skill/Memory matching; editor revisions are separated from published Skill releases, including materials. See [design and locking](SKILLS_MEMORY_LIFECYCLE.md).

@@ -228,7 +228,7 @@ func (q *Queries) LockTenant(ctx context.Context, lockKey string) error {
 }
 
 const matchingInsights = `-- name: MatchingInsights :many
-SELECT tenant_id, id, document, artifact_key, version, archived, valid_from, valid_until, created_at, updated_at FROM enterprise_insights WHERE tenant_id=$1 AND artifact_key=ANY($2::text[]) AND NOT archived AND (valid_from IS NULL OR valid_from<=now()) AND (valid_until IS NULL OR valid_until>now()) ORDER BY id FOR SHARE
+SELECT tenant_id, id, document, artifact_key, version, archived, valid_from, valid_until, created_at, updated_at FROM enterprise_insights WHERE tenant_id=$1 AND artifact_key=ANY($2::text[]) AND NOT archived AND aisoc_learning_current(tenant_id,document) AND (valid_from IS NULL OR valid_from<=now()) AND (valid_until IS NULL OR valid_until>now()) ORDER BY id FOR SHARE
 `
 
 type MatchingInsightsParams struct {
@@ -270,7 +270,7 @@ func (q *Queries) MatchingInsights(ctx context.Context, arg MatchingInsightsPara
 const registry = `-- name: Registry :one
 WITH filtered AS (
  SELECT (e.document - 'request_hash') || jsonb_build_object('id',e.id,'version',e.version,'archived',e.archived,'valid_from',e.valid_from,'valid_until',e.valid_until,'created_at',e.created_at,'updated_at',e.updated_at,
- 'active_now',NOT e.archived AND (e.valid_from IS NULL OR e.valid_from<=now()) AND (e.valid_until IS NULL OR e.valid_until>now()),
+ 'learning_current',aisoc_learning_current(e.tenant_id,e.document),'active_now',aisoc_learning_current(e.tenant_id,e.document) AND NOT e.archived AND (e.valid_from IS NULL OR e.valid_from<=now()) AND (e.valid_until IS NULL OR e.valid_until>now()),
  'uses_30d',(SELECT count(DISTINCT a.investigation_id) FROM enterprise_insight_applications a WHERE a.tenant_id=e.tenant_id AND a.insight_id=e.id AND a.applied_at>=now()-interval '30 days'),
  'last_used',(SELECT max(a.applied_at) FROM enterprise_insight_applications a WHERE a.tenant_id=e.tenant_id AND a.insight_id=e.id)) AS doc,e.updated_at,e.id
  FROM enterprise_insights e WHERE e.tenant_id=$1 AND NOT e.archived

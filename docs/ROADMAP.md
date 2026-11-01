@@ -246,3 +246,7 @@ Explicit source-alert labels, analyst confirmation, case audit history, recommen
 ## Repeatable local acceptance
 
 Added a two-run disposable Detect-to-Build gate with stage reports, replay and authenticated tenant-negative checks. Browser coverage and production provider/model/performance/operations validation remain separate gates. See [scope and validation](DETECT_BUILD_ACCEPTANCE.md).
+
+## Skills/Memory lifecycle hardening
+
+Implemented staged Skill instructions/metadata/scopes/materials, committed source-revision change detection, explicit reapproval and terminal archive. Independent approver roles, Memory for hunts, entity resolution and production/model validation remain separate. See [scope](SKILLS_MEMORY_LIFECYCLE.md).

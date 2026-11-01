@@ -45,7 +45,7 @@ func (q *Queries) LibraryCounts(ctx context.Context, arg LibraryCountsParams) (L
 }
 
 const librarySkills = `-- name: LibrarySkills :many
-SELECT document FROM skills WHERE tenant_id=$1
+SELECT (document || jsonb_build_object('learning_current',aisoc_learning_current(tenant_id,document)))::jsonb AS document FROM skills WHERE tenant_id=$1
 AND ($2::text='' OR document->>'state'=$2)
 AND ($3::text='' OR (document->'modules') ? $3)
 AND ($4::text='' OR ($4='augmented' AND document->>'origin'='environment_generated') OR ($4='custom' AND document->>'origin'<>'environment_generated'))

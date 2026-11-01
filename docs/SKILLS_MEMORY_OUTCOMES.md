@@ -151,7 +151,6 @@ Roll back application code while retaining the table, generated outputs and audi
 do not drop receipts to retry approval. Existing Skills/Memory APIs can still manage
 outputs. Do not remove migration history or production data to undo this feature.
 
-Remaining: separately staged revisions of published Skills, independent approver
-roles, automatic invalidation review when source outcomes change, Memory context
-for hunts, broader entity resolution, model/RAG quality evaluation and production
-retention. These are not implied by this local end-to-end flow.
+Staged revisions, source-change review and explicit reapproval/archive are now implemented; see [Skills/Memory lifecycle](SKILLS_MEMORY_LIFECYCLE.md).
+
+Remaining: independent approver roles, Memory context for hunts, broader entity resolution, model/RAG quality evaluation and production retention.

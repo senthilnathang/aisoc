@@ -126,10 +126,21 @@ func MutateTx(ctx context.Context, tx pgx.Tx, tenant, id, operation, actor strin
 		if expected, ok := input["expected_version"]; ok && expected != r["version"] {
 			return nil, fault.New(409, "SKILL_CONFLICT", "This skill changed. Reload before saving.")
 		}
+		if r["learning_archived"] == true && operation != "delete" {
+			return nil, fault.New(409, "SKILL_ARCHIVED", "Archived skills cannot be changed or enabled.")
+		}
 		switch operation {
 		case "patch", "save-publish":
 			if !editable(r) {
 				return nil, fault.New(403, "READ_ONLY_SKILL", "This skill cannot be edited.")
+			}
+			if r["state"] == "published" {
+				if operation == "save-publish" {
+					return nil, fault.New(409, "STAGED_APPROVAL_REQUIRED", "Save staged edits, then explicitly publish them.")
+				}
+				stagePatch(r, input)
+				action = "edit_staged"
+				break
 			}
 			for k, v := range input {
 				if k != "expected_version" {
@@ -144,6 +155,9 @@ func MutateTx(ctx context.Context, tx pgx.Tx, tenant, id, operation, actor strin
 			}
 			details["version"] = r["version"].(float64) + 1
 		case "publish":
+			if r["staged_edit"] != nil {
+				return nil, fault.New(409, "STAGED_APPROVAL_REQUIRED", "Use explicit staged publication.")
+			}
 			r["state"] = "published"
 			r["enabled"] = true
 			action = "published"
@@ -184,6 +198,9 @@ func MutateTx(ctx context.Context, tx pgx.Tx, tenant, id, operation, actor strin
 			return nil, fault.New(400, "INVALID_SKILL", "Skill name is required.")
 		}
 		r["version"] = r["version"].(float64) + 1
+		if action == "published" {
+			r["published_version"] = r["version"]
+		}
 		r["updated_at"] = stamp()
 	}
 	if err = save(ctx, tx, r, operation == "create"); err != nil {

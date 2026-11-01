@@ -85,3 +85,7 @@ Forms retain text on conflicts/errors, use safe React text rendering and ignore 
 Apply migration 040 before running the new Go API; normal local startup does this. Local API remains 3003 and frontend 8080. Roll back binaries/UI while retaining the additive tables and audit/snapshot data. Do not drop migration 040 to roll back code.
 
 Remaining work: model-backed suggestions and evaluated RAG consumption; entity canonicalization beyond trimmed case folding; configurable expiry/retention and sensitive-context redaction; hunt-context applications; scalable aggregate materialization/load benchmarks; explicit bulk re-evaluation of historical cases. No performance or autonomous-response claims are made by these screens.
+
+## Source-aware lifecycle
+
+Derived Memory is excluded from future matching when its source revision changes, disappears or reopens. Explicit reapproval and archive preserve original provenance and prior usage snapshots. See [lifecycle controls](SKILLS_MEMORY_LIFECYCLE.md).

@@ -599,3 +599,7 @@ The disposable detection suite includes case ownership, pagination, concurrent C
 ## Repeatable platform acceptance
 
 `python3 scripts/framework/acceptance.py` runs two fresh disposable framework environments. `--runs 1` is available for iteration. Missing stages and failed subprocesses cannot yield a passing aggregate. See [commands, assertions and reports](DETECT_BUILD_ACCEPTANCE.md).
+
+## Guidance lifecycle regression
+
+New lifecycle integration tests cover staged instructions/materials, audit rollback, stale source/revision rejection, archive and snapshot preservation. The local browser script is scripts/framework/learning-lifecycle-browser.js; platform acceptance includes lifecycle HTTP checks. See [coverage](SKILLS_MEMORY_LIFECYCLE.md).
