@@ -1,6 +1,6 @@
 # Reusable records table
 
-Current consumers are `/detect/rules` (`DetectionRegistry.jsx`), Universal Rule Routing / Per-Rule Routing in `/detect/routing` (`DetectionRouting.jsx`), API sources at `/build/api-sources` (`ApiSources.jsx`), and Threat Intel reports at `/threat-intel` and `/hunt/threat-intelligence` (`ThreatIntelWorkspace.jsx`), and Hunt registry at `/hunt/threat-hunting` (`HuntWorkspace.jsx`), and Skills library at `/skills` (`SkillsRegistry.jsx`), and the Active Insights, Prevalence Suggestions and Audit Log tables at `/memory` (`EnterpriseInsights.jsx`), and Build catalog at `/build` (`BuildWorkspace.jsx`), and Investigations/Received alerts at `/investigations` (`InvestigationQueue.jsx`), and Respond workflows/runbooks (`ResponsePlans.jsx`). Other lists remain unchanged.
+Current consumers are `/detect/rules` (`DetectionRegistry.jsx`), Universal Rule Routing / Per-Rule Routing in `/detect/routing` (`DetectionRouting.jsx`), API sources at `/build/api-sources` (`ApiSources.jsx`), the approval inbox at `/respond/inbox` (`ApprovalInbox.jsx`), and Threat Intel reports at `/threat-intel` and `/hunt/threat-intelligence` (`ThreatIntelWorkspace.jsx`), and Hunt registry at `/hunt/threat-hunting` (`HuntWorkspace.jsx`), and Skills library at `/skills` (`SkillsRegistry.jsx`), and the Active Insights, Prevalence Suggestions and Audit Log tables at `/memory` (`EnterpriseInsights.jsx`), and Build catalog at `/build` (`BuildWorkspace.jsx`), and Investigations/Received alerts at `/investigations` (`InvestigationQueue.jsx`), and Respond workflows/runbooks (`ResponsePlans.jsx`). Other lists remain unchanged.
 
 ## Ownership
 
@@ -44,7 +44,7 @@ The Go `GET /api/v1/detection-registry` contract is unchanged. Search, severity/
 - `npm --prefix frontend run lint` and `npm --prefix frontend run build`.
 - `node scripts/framework/records-table-browser.mjs`: real local Go registry/detail smoke, then intercepted read-only fixtures for 57-row paging, page sizes, reload/back, search resets, loading, empty/error/retry and desktop/mobile layout. Reports/screenshots are in `output/records-table/`; it does not mutate demo data.
 
-Remaining raw-table lists after the API sources migration: approval inbox, retention, telemetry browser, response policies, local integrations, build bulk import and stream operations. Confirm each endpoint's filtered total and server pagination before migration; do not calculate global totals from a single fetched page. Preserve that page's actions, filters, URL history and permissions, and add focused browser coverage for each migration. Do not migrate unrelated lists in one sweeping change.
+Remaining raw-table lists after the approval inbox migration: retention, telemetry browser, response policies, local integrations, build bulk import and stream operations. Confirm each endpoint's filtered total and server pagination before migration; do not calculate global totals from a single fetched page. Preserve that page's actions, filters, URL history and permissions, and add focused browser coverage for each migration. Do not migrate unrelated lists in one sweeping change.
 
 
 ## Detection Routing integration
@@ -129,6 +129,14 @@ Validation on 2026-11-02: frontend lint, all 17 frontend regression files, final
 Source name, provider, detection rule, mapping status, key status, expiry, Map events, Rotate key and Revoke are unchanged, and the create, rotate, revoke and mapping dialogs keep their existing behavior. List fetch failures use the table's retry state; action errors stay in their dialogs or the page alert, so rows remain visible. Pagination pauses while a create, rotate or revoke is busy. The detection-rule picker in the create dialog keeps its own search and paging.
 
 Run `node scripts/framework/api-sources-records-table-browser.mjs`. It checks real read-only totals and tenant isolation, then runs intercepted fixtures for paging, page sizes, row dialogs, delayed loading, error and retry with out-of-range recovery, the empty state, keyboard access and desktop/mobile layout. Any non-GET request to the source list is recorded and fails the run. Set `CHROME_PATH` to use a specific Chromium; otherwise Playwright's bundled browser is used. Evidence: `output/playwright/api-sources-records-table/`.
+
+## Approval inbox integration
+
+`/respond/inbox` uses the shared table for pending Respond, Skills and Memory proposals. It keeps the existing `GET /api/v1/approvals` filters (area, handoff stage, search), its tenant-scoped `total`, and the abort-on-change request handling. The page size is 25 by default with 10/25/50 choices, because the API caps `limit` at 50. A nonzero offset beyond a refreshed total resets to zero. Filter and page-size changes reset the offset.
+
+Proposal, area and revision, next operator, ownership, expiry and Preview are unchanged. The saved-revision preview, ownership claim and handoff actions, and the independent-approval rules remain in their existing components. The snapshot note and counts above the table are unchanged. Fetch failures use the table retry state and reload the same page.
+
+Run `node scripts/framework/approvals-records-table-browser.mjs`. It checks real read-only totals and tenant isolation, then runs intercepted fixtures for paging, page-size limits, preview, loading, error and retry with out-of-range recovery, the empty state, keyboard access and desktop/mobile layout. Any non-GET request to the approval list is recorded and fails the run. Evidence: `output/playwright/approvals-records-table/`.
 
 ## Respond workflow and runbook registries
 

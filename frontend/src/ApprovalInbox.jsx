@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Heading, Input, Select, SimpleGrid, Stack, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
+import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Heading, Input, Select, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import RecordsTable from './components/RecordsTable';
 import WorkspaceHeader from './WorkspaceHeader';
 import GuidanceLifecycle from './GuidanceLifecycle';
 import ApprovalOwnership from './ApprovalOwnership';
@@ -40,14 +41,25 @@ function Preview({item,now,setView,onChanged}) {
  </Box>;
 }
 export default function ApprovalInbox({setView}) {
- const [kind,setKind]=useState(()=>['respond','skill','memory'].includes(new URLSearchParams(location.search).get('kind'))?new URLSearchParams(location.search).get('kind'):'all'),[stage,setStage]=useState('all'),[search,setSearch]=useState(()=>new URLSearchParams(location.search).get('search')?.slice(0,200)||''),[offset,setOffset]=useState(0),[refresh,setRefresh]=useState(0);
+ const [kind,setKind]=useState(()=>['respond','skill','memory'].includes(new URLSearchParams(location.search).get('kind'))?new URLSearchParams(location.search).get('kind'):'all'),[stage,setStage]=useState('all'),[search,setSearch]=useState(()=>new URLSearchParams(location.search).get('search')?.slice(0,200)||''),[offset,setOffset]=useState(0),[limit,setLimit]=useState(25),[refresh,setRefresh]=useState(0);
  const [data,setData]=useState(null),[error,setError]=useState(''),[selected,setSelected]=useState(''),[now,setNow]=useState(()=>Date.now());
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[]);
  useEffect(()=>{const controller=new AbortController();let active=true;setData(null);setError('');setSelected('');
-  api.request(`/approvals?${new URLSearchParams({kind,stage,search,offset,limit:25})}`,{signal:controller.signal}).then(x=>{if(active){setData(x);const focus=new URLSearchParams(location.search);const match=x.items.find(i=>i.id===focus.get('focus')&&(i.kind!=='respond'||(i.document.connector_id===focus.get('connector')&&i.document.source===focus.get('source'))));if(match)setSelected(inboxKey(match));}}).catch(e=>{if(active&&e.name!=='AbortError')setError(e.message);});
+  api.request(`/approvals?${new URLSearchParams({kind,stage,search,offset,limit})}`,{signal:controller.signal}).then(x=>{if(!active)return;
+   // A changed result set can leave the offset past the last page; return to the first page.
+   if(offset>0&&x.total<=offset){setOffset(0);return;}
+   setData(x);const focus=new URLSearchParams(location.search);const match=x.items.find(i=>i.id===focus.get('focus')&&(i.kind!=='respond'||(i.document.connector_id===focus.get('connector')&&i.document.source===focus.get('source'))));if(match)setSelected(inboxKey(match));}).catch(e=>{if(active&&e.name!=='AbortError')setError(e.message);});
   return()=>{active=false;controller.abort();};
- },[kind,stage,search,offset,refresh]);
+ },[kind,stage,search,offset,limit,refresh]);
  const change=(setter,value)=>{setter(value);setOffset(0);};
+ const columns=[
+  {id:'proposal',header:'Proposal',render:x=><><Text fontWeight="600">{x.title}</Text><Text fontSize="xs" color={ui.muted} mt="4px" overflowWrap="anywhere">{x.id}</Text></>},
+  {id:'area',header:'Area / revision',render:x=><Text>{labels[x.kind]} · v{x.document.version??'?'}</Text>},
+  {id:'next',header:'Next operator',render:x=>{const next=handoff(x,api.session,now);return <><Badge colorScheme={next.role==='executor'?'blue':'orange'}>{next.role}</Badge>{x.source_changed&&<Text fontSize="xs" mt="4px">Source review required</Text>}</>;}},
+  {id:'ownership',header:'Ownership',render:x=><><Text fontSize="sm">{x.assignment?.owner_id||'Unassigned'}</Text><Text fontSize="xs" color={ownershipLabel(x.assignment,now)==='Owned'?ui.muted:'orange.700'}>{ownershipLabel(x.assignment,now)}</Text>{x.assignment?.expires_at&&<Text fontSize="xs">{date(x.assignment.expires_at)}</Text>}</>},
+  {id:'expiry',header:'Expiry',render:x=>{const expiry=expiryState(x,now);return <><Text color={expiry.expired?'red.600':ui.muted}>{expiry.label}</Text>{x.expires_at&&<Text fontSize="xs">{date(x.expires_at)}</Text>}</>;}},
+  {id:'review',header:'Review',render:x=><Button size="sm" variant="outline" aria-label={`Preview ${x.title}`} onClick={()=>setSelected(inboxKey(x))}>Preview</Button>},
+ ];
  const item=data?.items.find(x=>inboxKey(x)===selected);
  return <Box p={{base:'16px',md:'24px'}} minW="0">
   <WorkspaceHeader justify="space-between" gap="12px" wrap="wrap"><Box><Heading size="lg">Approval inbox</Heading><Text color={ui.muted} mt="8px">Respond, Skills and Memory · Independent review and operator handoffs</Text></Box><Button variant="outline" onClick={()=>setRefresh(x=>x+1)}>Refresh inbox</Button></WorkspaceHeader>
@@ -58,13 +70,27 @@ export default function ApprovalInbox({setView}) {
    <FormControl flex="1" minW="160px"><FormLabel>Handoff stage</FormLabel><Select value={stage} onChange={e=>change(setStage,e.target.value)}><option value="all">All pending work</option><option value="review">Review required</option><option value="execution">Approved for executor review</option></Select></FormControl>
    <FormControl flex="2" minW="200px"><FormLabel>Search proposals</FormLabel><Input value={search} maxLength={200} onChange={e=>change(setSearch,e.target.value)} placeholder="Title or record ID"/></FormControl>
   </Flex>
-  {error&&<Alert status="error"><AlertIcon/>{error}</Alert>}
-  {!data&&!error&&<Text role="status">Loading pending reviews…</Text>}
-  {data&&<><Text fontSize="xs" color={ui.muted} mb="10px">Tenant-scoped snapshot · {date(data.as_of)} · Counts cover all areas. Refresh after a handoff.</Text>
-   <TableContainer {...panel}><Table size="sm"><Thead><Tr>{['Proposal','Area / revision','Next operator','Ownership','Expiry','Review'].map(x=><Th key={x}>{x}</Th>)}</Tr></Thead><Tbody>{data.items.map(x=>{const next=handoff(x,api.session,now),expiry=expiryState(x,now);return <Tr key={inboxKey(x)} bg={selected===inboxKey(x)?ui.soft:undefined}><Td maxW="320px" whiteSpace="normal"><Text fontWeight="600">{x.title}</Text><Text fontSize="xs" color={ui.muted} mt="4px" overflowWrap="anywhere">{x.id}</Text></Td><Td>{labels[x.kind]} · v{x.document.version??'?'}</Td><Td><Badge colorScheme={next.role==='executor'?'blue':'orange'}>{next.role}</Badge>{x.source_changed&&<Text fontSize="xs" mt="4px">Source review required</Text>}</Td><Td><Text fontSize="sm">{x.assignment?.owner_id||'Unassigned'}</Text><Text fontSize="xs" color={ownershipLabel(x.assignment,now)==='Owned'?ui.muted:'orange.700'}>{ownershipLabel(x.assignment,now)}</Text>{x.assignment?.expires_at&&<Text fontSize="xs">{date(x.assignment.expires_at)}</Text>}</Td><Td><Text color={expiry.expired?'red.600':ui.muted}>{expiry.label}</Text>{x.expires_at&&<Text fontSize="xs">{date(x.expires_at)}</Text>}</Td><Td><Button size="sm" variant="outline" aria-label={`Preview ${x.title}`} onClick={()=>setSelected(inboxKey(x))}>Preview</Button></Td></Tr>;})}</Tbody></Table></TableContainer>
-   {!data.items.length&&<Box {...panel} p="24px" mt="10px"><Text>No pending proposals match these filters.</Text></Box>}
-   <Flex justify="space-between" align="center" gap="12px" wrap="wrap" mt="14px"><Text fontSize="sm">{data.total?offset+1:0}–{Math.min(offset+25,data.total)} of {data.total}</Text><Stack direction="row"><Button size="sm" variant="outline" isDisabled={!offset} onClick={()=>setOffset(x=>Math.max(0,x-25))}>Previous</Button><Button size="sm" variant="outline" isDisabled={offset+25>=data.total} onClick={()=>setOffset(x=>x+25)}>Next</Button></Stack></Flex>
-  </>}
+  {data&&<Text fontSize="xs" color={ui.muted} mb="10px">Tenant-scoped snapshot · {date(data.as_of)} · Counts cover all areas. Refresh after a handoff.</Text>}
+  <RecordsTable
+    caption="Approval inbox"
+    recordLabel="proposals"
+    pageSizeLabel="Proposals per page"
+    pageSizes={[10,25,50]}
+    columns={columns}
+    records={data?.items||[]}
+    rowKey={inboxKey}
+    selectedRowKey={selected?selected:undefined}
+    total={data?.total||0}
+    offset={offset}
+    limit={limit}
+    onPageChange={setOffset}
+    onPageSizeChange={size=>{setLimit(size);setOffset(0);}}
+    loading={!data&&!error}
+    loadingLabel="Loading pending reviews…"
+    error={error}
+    onRetry={()=>setRefresh(x=>x+1)}
+    emptyContent="No pending proposals match these filters."
+  />
   {item&&<Preview key={inboxKey(item)} item={item} now={now} setView={setView} onChanged={()=>setRefresh(x=>x+1)}/>}
  </Box>;
 }
