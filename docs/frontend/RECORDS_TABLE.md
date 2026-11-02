@@ -1,6 +1,6 @@
 # Reusable records table
 
-Current consumers are `/detect/rules` (`DetectionRegistry.jsx`), Universal Rule Routing / Per-Rule Routing in `/detect/routing` (`DetectionRouting.jsx`), API sources at `/build/api-sources` (`ApiSources.jsx`), the approval inbox at `/respond/inbox` (`ApprovalInbox.jsx`), and Threat Intel reports at `/threat-intel` and `/hunt/threat-intelligence` (`ThreatIntelWorkspace.jsx`), and Hunt registry at `/hunt/threat-hunting` (`HuntWorkspace.jsx`), and Skills library at `/skills` (`SkillsRegistry.jsx`), and the Active Insights, Prevalence Suggestions and Audit Log tables at `/memory` (`EnterpriseInsights.jsx`), and Build catalog at `/build` (`BuildWorkspace.jsx`), and Investigations/Received alerts at `/investigations` (`InvestigationQueue.jsx`), and Respond workflows/runbooks (`ResponsePlans.jsx`). Other lists remain unchanged.
+Current consumers are `/detect/rules` (`DetectionRegistry.jsx`), Universal Rule Routing / Per-Rule Routing in `/detect/routing` (`DetectionRouting.jsx`), API sources at `/build/api-sources` (`ApiSources.jsx`), the approval inbox at `/respond/inbox` (`ApprovalInbox.jsx`), remediation policies at `/respond/remediation-actions` (`ResponsePolicies.jsx`), and Threat Intel reports at `/threat-intel` and `/hunt/threat-intelligence` (`ThreatIntelWorkspace.jsx`), and Hunt registry at `/hunt/threat-hunting` (`HuntWorkspace.jsx`), and Skills library at `/skills` (`SkillsRegistry.jsx`), and the Active Insights, Prevalence Suggestions and Audit Log tables at `/memory` (`EnterpriseInsights.jsx`), and Build catalog at `/build` (`BuildWorkspace.jsx`), and Investigations/Received alerts at `/investigations` (`InvestigationQueue.jsx`), and Respond workflows/runbooks (`ResponsePlans.jsx`). Other lists remain unchanged.
 
 ## Ownership
 
@@ -44,7 +44,7 @@ The Go `GET /api/v1/detection-registry` contract is unchanged. Search, severity/
 - `npm --prefix frontend run lint` and `npm --prefix frontend run build`.
 - `node scripts/framework/records-table-browser.mjs`: real local Go registry/detail smoke, then intercepted read-only fixtures for 57-row paging, page sizes, reload/back, search resets, loading, empty/error/retry and desktop/mobile layout. Reports/screenshots are in `output/records-table/`; it does not mutate demo data.
 
-Remaining raw-table lists after the approval inbox migration: retention, telemetry browser, response policies, local integrations, build bulk import and stream operations. Confirm each endpoint's filtered total and server pagination before migration; do not calculate global totals from a single fetched page. Preserve that page's actions, filters, URL history and permissions, and add focused browser coverage for each migration. Do not migrate unrelated lists in one sweeping change.
+Remaining raw-table lists after the remediation policies migration: retention (needs a backend total), telemetry browser (keyset cursor, no total), and build bulk import. Local integrations is not a pagination candidate; see its note below. Confirm each endpoint's filtered total and server pagination before migration; do not calculate global totals from a single fetched page. Preserve that page's actions, filters, URL history and permissions, and add focused browser coverage for each migration. Do not migrate unrelated lists in one sweeping change.
 
 
 ## Detection Routing integration
@@ -137,6 +137,16 @@ Run `node scripts/framework/api-sources-records-table-browser.mjs`. It checks re
 Proposal, area and revision, next operator, ownership, expiry and Preview are unchanged. The saved-revision preview, ownership claim and handoff actions, and the independent-approval rules remain in their existing components. The snapshot note and counts above the table are unchanged. Fetch failures use the table retry state and reload the same page.
 
 Run `node scripts/framework/approvals-records-table-browser.mjs`. It checks real read-only totals and tenant isolation, then runs intercepted fixtures for paging, page-size limits, preview, loading, error and retry with out-of-range recovery, the empty state, keyboard access and desktop/mobile layout. Any non-GET request to the approval list is recorded and fails the run. Evidence: `output/playwright/approvals-records-table/`.
+
+## Remediation policies integration
+
+`/respond/remediation-actions` uses the shared table for the saved workflow library. The API (`GET /api/v1/response-plans`) returns the full tenant library, so the page filters and slices that loaded collection locally and supplies the exact filtered total. The default is 25 rows with 10/25/50/100 choices. Search changes reset the offset, and a nonzero offset past the filtered total resets to zero.
+
+Status, enablement, calling mode, severity and source conditions, connector, and per-row Save policy are unchanged. Version-checked policy saves, provider-disabled execution and the Create custom workflow link are unchanged. Pagination pauses while a save is in progress. Refresh reloads the library and recovers an out-of-range page.
+
+Run `node scripts/framework/remediation-policies-records-table-browser.mjs`. It checks real read-only library and policy reads with tenant isolation, then runs intercepted fixtures for paging, search, loading, error and refresh recovery, the empty state, keyboard access and desktop/mobile layout. Policy writes are recorded and fail the run. Evidence: `output/playwright/remediation-policies-records-table/`.
+
+Local integrations (`/build/integrations`) is not a pagination candidate. Its profile list is a sidebar of buttons capped by the API's profile limit, and its only table is the fixed evidence preview for one selected profile.
 
 ## Respond workflow and runbook registries
 
