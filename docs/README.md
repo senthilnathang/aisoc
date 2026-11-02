@@ -4,9 +4,10 @@
 
 [Threat Intel → Hunt → Investigate](INTEL_HUNT_INVESTIGATE.md) documents JSON import, IOC validation/deduplication, evidence-linked hunts, analyst promotion, APIs and local browser verification.
 
-Current architecture and local migration status: 2026-11-01. The selected foundation
-uses API 3003/schema 045, with a 70,000-event local demo. The release on 3002 is
-preserved separately. Historical migration reports and ADR dates remain unchanged.
+Current architecture and local migration status: 2026-11-02. The Go release runs
+from `.run/go-runtime` on API port 3004 with its own PostgreSQL cluster, imported from
+the legacy SQLite snapshot. The foundation profile on 3003 and the legacy Node backend
+on 3002 are preserved separately. Historical migration reports and ADR dates remain unchanged.
 
 | Document | Purpose |
 |---|---|
@@ -36,6 +37,8 @@ preserved separately. Historical migration reports and ADR dates remain unchange
 | [ADR 005](adr/005-redis-streams-boundary.md) | Accepted sandbox boundary: Redis telemetry, PostgreSQL durable orchestration |
 | [Streaming persistence](STREAMING_PERSISTENCE.md) | S02 transactions, outbox leases, inbox deduplication and recovery limits |
 | [Redis Streams sandbox](REDIS_STREAMS.md) | Opt-in runtime, ACLs, adapter limits and disposable verification |
+
+[Archived delivery plans](archive/plans/README.md) (October and November 2026 workspace and migration plans) are historical and are not maintained.
 
 [Phase-zero notes](migration/PHASE_0_STATUS.md), [Node baseline](migration/NODE_BASELINE.md),
 [ADR 001](adr/001-local-modular-monolith.md) and
