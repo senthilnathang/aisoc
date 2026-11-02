@@ -3,6 +3,7 @@ import {chromium} from '../../frontend/node_modules/playwright/index.mjs';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import assert from 'node:assert/strict';
+import {durableHunts} from './durable-hunts.mjs';
 import {phishingWorkflow} from './phishing.mjs';
 import {criticalWorkflows} from './workflows.mjs';
 import {sections} from '../../frontend/src/navigation.js';
@@ -86,6 +87,7 @@ try{
   const policy=await get(foreign,'/build/retention?kind=notification');assert.equal(policy.items.length,0);assert.equal(policy.snapshots.length,0);
   return {session_tenant_bound:true,foreign_case_and_skill_denied:true,foreign_inbox_and_archives_empty:true};
  });
+ await durableHunts({main,login,get,step,fixture,origin,screenshots});
  await step('route_sweep',async()=>{
   const routes=[...sections.flatMap(s=>s.items.map(i=>i.path)),'/investigations/'+fixture.details.case_id,'/detect/rules/'+fixture.details.rule_id,'/hunt/threat-hunting/'+fixture.details.hunt_id,'/threat-intel/'+fixture.details.report_id,'/skills/'+fixture.skill.id,'/skills/new'];
   const results=[];

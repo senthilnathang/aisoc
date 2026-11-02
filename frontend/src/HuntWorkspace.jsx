@@ -434,6 +434,30 @@ function HuntDetail({ id, setView }) {
       active = false;
     };
   }, [id, reload]);
+  const hasActiveExecution = data?.executions?.some(x => ["queued", "running"].includes(x.state));
+  useEffect(() => {
+    if (!hasActiveExecution) return;
+    let active = true;
+    let timer;
+    const poll = async () => {
+      try {
+        const workspace = await api.request(`/hunts/${encodeURIComponent(id)}/workspace`);
+        if (active) { setData(workspace); setError(""); }
+      } catch (e) { if (active) setError(e.message); }
+      if (active) timer = setTimeout(poll, 1000);
+    };
+    timer = setTimeout(poll, 500);
+    return () => { active = false; clearTimeout(timer); };
+  }, [id, hasActiveExecution]);
+  const controlExecution = async (job, operation) => {
+    setBusy(true); setError("");
+    try {
+      const result = await api.action("hunts", id, `executions/${encodeURIComponent(job.id)}/control`, {operation, attempts: job.attempts});
+      setData(d => ({...d, executions: d.executions.map(x => x.id === result.id ? result : x)}));
+      setData(await api.request(`/hunts/${encodeURIComponent(id)}/workspace`));
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
   const run = async () => {
     setBusy(true);
     setError("");
@@ -443,14 +467,9 @@ function HuntDetail({ id, setView }) {
     };
     setRequest(r);
     try {
-      const result = await api.action("hunts", id, "search", r);
-      setData((d) => ({
-        ...d,
-        runs: [result, ...d.runs.filter((x) => x.id !== result.id)].slice(
-          0,
-          20,
-        ),
-      }));
+      const result = await api.action("hunts", id, "executions", r);
+      setData((d) => ({...d, executions: [result, ...(d.executions || []).filter(x => x.id !== result.id)]}));
+      setData(await api.request(`/hunts/${encodeURIComponent(id)}/workspace`));
       setSelectedRun(result.id);
       setFilter("");
       setRequest(null);
@@ -528,7 +547,7 @@ function HuntDetail({ id, setView }) {
           <Button variant="outline" onClick={() => setView("hunt")}>
             All hunts
           </Button>
-          <Button onClick={run} isLoading={busy} isDisabled={loading}>
+          <Button onClick={run} isLoading={busy} isDisabled={loading || hasActiveExecution}>
             Run local search
           </Button>
         </Flex>
@@ -549,6 +568,22 @@ function HuntDetail({ id, setView }) {
       <Text color={ui.muted} fontSize="12px" mb="16px">
         {data.scope}
       </Text>
+      <Box as="section" aria-label="Hunt execution jobs" border="1px solid" borderColor={ui.line} borderRadius="8px" p="16px" mb="16px">
+        <Heading size="sm">Execution progress</Heading>
+        <Text fontSize="sm" color={ui.muted} mt="6px">Durable local queue · Evidence is read when the worker runs. Retries preserve the run ID. No live queries or automatic promotion.</Text>
+        {!data.executions?.length && <Text mt="8px">No queued runs yet. Existing completed searches remain below.</Text>}
+        {(data.executions || []).slice(0, 10).map(job => <Box key={job.id} borderTop="1px solid" borderColor={ui.line} mt="12px" pt="12px" overflowWrap="anywhere">
+          <Flex gap="8px" align="center" wrap="wrap"><Badge colorScheme={job.state === "completed" ? "green" : job.state === "failed" ? "red" : "gray"}>{job.state}</Badge><Text fontSize="sm">Attempt {job.attempts} / {job.max_attempts} · {job.phase.replaceAll("_", " ")}</Text></Flex>
+          <Text fontSize="xs" mt="4px">Run {job.id} · Query: {job.query}</Text>
+          <Text fontSize="xs" color={ui.muted}>Requested by {job.actor} · Revision {job.expected_updated_at}</Text>
+          {job.error_code && <Text fontSize="sm">Last error: {job.error_code}. {job.state === "queued" ? `Retry available after ${new Date(job.available_at).toLocaleString()}.` : "Review before retrying."}</Text>}
+          <Flex mt="8px" gap="8px" wrap="wrap">
+            {["queued", "running"].includes(job.state) && <Button size="sm" variant="outline" isDisabled={busy} aria-label={`Cancel run ${job.id}`} onClick={() => controlExecution(job, "cancel")}>Cancel run</Button>}
+            {job.state === "failed" && job.max_attempts < 9 && <Button size="sm" isDisabled={busy || hasActiveExecution} aria-label={`Retry run ${job.id}`} onClick={() => controlExecution(job, "retry")}>Retry run</Button>}
+            {job.state === "completed" && data.runs.some(r => r.id === job.id) && <Button size="sm" variant="outline" aria-label={`View results ${job.id}`} onClick={() => setSelectedRun(job.id)}>View results</Button>}
+          </Flex>
+        </Box>)}
+      </Box>
       <Grid
         templateColumns={{
           base: "1fr",

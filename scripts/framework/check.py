@@ -601,6 +601,8 @@ def main():
                     check_platform_acceptance(stream_http, sql, managed_case['investigation_id'], record_stage)
                     from check_phishing import check_phishing
                     record_stage('phishing',check_phishing(stream_http,sql))
+                    from check_durable_hunts import check_durable_hunts
+                    record_stage('durable_hunt',check_durable_hunts(stream_http,sql))
                     if options.browser_release_id:
                         from release_checks import check_release
                         check_release(options.browser_release_id,acceptance,stream_http,sql,env,temp,log,spawn,port,wait_port,PG,ROOT)

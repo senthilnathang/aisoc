@@ -39,7 +39,23 @@ def check_release(run_id,acceptance,http,sql,env,temp,log,spawn,port,wait_port,p
     from release_workflow_fixtures import create
     workflows=create(api,run_id,name)
     (fixtures/'workflows.json').write_text(json.dumps(workflows,indent=2)+'\n')
-    manifest=dict(phishing=acceptance['stages']['phishing'],workflows=workflows,run_id=run_id,mode='local/mock',name=name,memory=memory,skill=skill,notice_id=notice,scope='login-context-suspicious',details=dict(case_id=acceptance['stages']['build_response']['case_id'],rule_id=acceptance['stages']['detect_feedback']['rule_id'],hunt_id=acceptance['stages']['intel_hunt']['hunt_id'],report_id=acceptance['stages']['intel_hunt']['report_id']))
+    hunt=api('/hunts',dict(name=name+' durable retry',query='mock-user'),expected=201)
+    # A reproducible failed run lets the UI prove explicit retry without timing races.
+    import uuid
+    retry_blockers=[str(uuid.uuid4()) for _ in range(4)]
+    for job in retry_blockers:
+        sql("INSERT INTO jobs(tenant_id,id,plugin_id,plugin_version,input,state,attempts,lease_until) VALUES('auth-a','"+job+"','python.normalize','1','{}','running',1,now()+interval '5 minutes')")
+    retry=api('/hunts/'+hunt['id']+'/executions',dict(id='browser-retry-'+run_id,expected_updated_at=hunt['updated_at']),expected=202)
+    sql("UPDATE jobs SET state='failed',attempts=3,max_attempts=3,lease_until=NULL,error_code='LOCAL_TEST_FAILURE' WHERE tenant_id='auth-a' AND id='"+retry['job_id']+"'")
+    for job in retry_blockers: sql("DELETE FROM jobs WHERE tenant_id='auth-a' AND id='"+job+"'")
+    cancel_hunt=api('/hunts',dict(name=name+' cancellation',query='local-no-match'),actor='b',expected=201)
+    blockers=[]
+    import uuid
+    for _ in range(4):
+        job=str(uuid.uuid4());blockers.append(job)
+        sql("INSERT INTO jobs(tenant_id,id,plugin_id,plugin_version,input,state,attempts,lease_until) VALUES('auth-b','"+job+"','python.normalize','1','{}','running',1,now()+interval '15 minutes')")
+    durable_hunt=dict(retry_hunt=hunt,retry=retry,cancel_hunt=cancel_hunt)
+    manifest=dict(durable_hunt=durable_hunt,phishing=acceptance['stages']['phishing'],workflows=workflows,run_id=run_id,mode='local/mock',name=name,memory=memory,skill=skill,notice_id=notice,scope='login-context-suspicious',details=dict(case_id=acceptance['stages']['build_response']['case_id'],rule_id=acceptance['stages']['detect_feedback']['rule_id'],hunt_id=acceptance['stages']['intel_hunt']['hunt_id'],report_id=acceptance['stages']['intel_hunt']['report_id']))
     (fixtures/'inputs.json').write_text(json.dumps(dict(memory=memory_input,skill=skill_input,notification=dict(id=notice,recipient='fixture-a',age_days=60)),indent=2)+'\n')
     web_port=int(env['AISOC_RELEASE_WEB_PORT']);env['AISOC_API_PROXY_TARGET']='http://'+env['AISOC_GO_ADDR']
     web=spawn(['node',root/'frontend/node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port',str(web_port),'--strictPort'],root/'frontend')
@@ -54,6 +70,7 @@ def check_release(run_id,acceptance,http,sql,env,temp,log,spawn,port,wait_port,p
     try:
         subprocess.run(['node',str(root/'scripts/release/browser.mjs'),str(fixtures/'manifest.json')],cwd=root,env={k:v for k,v in env.items() if k in ('PATH','HOME','TMPDIR','LANG','AISOC_RELEASE_CHROMIUM')},stdout=log,stderr=log,check=True,timeout=600)
     finally:
+        for job in blockers: sql("DELETE FROM jobs WHERE tenant_id='auth-b' AND id='"+job+"'")
         web.terminate()
         try:web.wait(timeout=10)
         except subprocess.TimeoutExpired:web.kill();web.wait(timeout=5)

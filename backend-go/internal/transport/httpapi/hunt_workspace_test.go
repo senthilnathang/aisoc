@@ -11,7 +11,7 @@ import (
 func TestHuntWorkspaceRejectsMalformedBodies(t *testing.T) {
 	mux := http.NewServeMux()
 	registerHuntWorkspace(mux, hunts.Store{})
-	for _, v := range [][2]string{{"search", `{}`}, {"search", `{"id":"../invalid","expected_updated_at":"x"}`}, {"notes", `{"id":"x","body":""}`}, {"notes", `{"id":"../bad","body":"note"}`}} {
+	for _, v := range [][2]string{{"executions", `{}`}, {"executions", `{"id":"../invalid","expected_updated_at":"x"}`}, {"executions/run/control", `{"operation":"destroy"}`}, {"executions/run/control", `{"operation":"retry","attempts":-1}`}, {"executions/run/control", `{"operation":"retry","attempts":10}`}, {"search", `{}`}, {"search", `{"id":"../invalid","expected_updated_at":"x"}`}, {"notes", `{"id":"x","body":""}`}, {"notes", `{"id":"../bad","body":"note"}`}} {
 		req := httptest.NewRequest("POST", "/api/v1/hunts/x/"+v[0], strings.NewReader(v[1]))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()

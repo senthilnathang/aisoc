@@ -174,7 +174,7 @@ Implemented Cases board/list, guarded local status updates, version-bound sandbo
 
 ## Hunt workspace (2026-11-01)
 
-Implemented screenshot-based registry, TI report table, Plan/notes/Entities/Findings panels and bounded evidence search with persisted audit-backed receipts. Removed invented Hunt dashboard metrics/fallbacks. Remaining: AI-generated plans/chat, live provider queries, feed automation, asynchronous hunt workers and retention tooling. See [implemented boundaries](HUNT_WORKSPACE.md).
+Implemented screenshot-based registry, TI report table, Plan/notes/Entities/Findings panels and bounded evidence search with persisted audit-backed receipts. Removed invented Hunt dashboard metrics/fallbacks. Remaining: AI-generated plans/chat, live provider queries, feed automation, distributed-scale Hunt capacity and retention tooling. Local queued workers, cancellation and recovery are now implemented; see [durable execution](DURABLE_HUNT_EXECUTION.md). See [implemented boundaries](HUNT_WORKSPACE.md).
 
 
 ## Threat Intel workspace (2026-11-01)
@@ -294,3 +294,8 @@ Implemented configurable OIDC with a loopback mock IdP, trusted tenant/role mapp
 ## Local phishing workflow — 2026-11-02
 
 Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](PHISHING_FLOW.md).
+
+
+## Durable local Hunt execution — 2026-11-02
+
+Hunt searches can now run through the existing PostgreSQL job queue and Go investigation-worker, with persisted progress, cancellation, bounded automatic/explicit retries and expired-lease recovery. Completed evidence/Memory receipts and reviewed promotion remain atomic and replay-safe. The UI uses queued execution; synchronous search remains compatible. No live integrations or new service are enabled. See [contracts, limits, deployment and tests](DURABLE_HUNT_EXECUTION.md).

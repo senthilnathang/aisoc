@@ -25,6 +25,7 @@ Use the existing framework prerequisites: PostgreSQL 16 binaries (`AISOC_TEST_PG
 
 | Stage | Assertions |
 |---|---|
+| Durable Hunt | Queued search, cancellation, abandoned-lease recovery by the real worker, tenant denial and idempotent investigation promotion. |
 | Credential phishing | Four message-bound JSON observations → separate detection → cited INCONCLUSIVE gRPC review → approved mock note → independently approved session revocation → approved Skills/Memory snapshots. Replay and tenant-negative assertions are mandatory. |
 | Build → Investigate | JSON preview, grant-bound draft, explicit import, frozen evidence, four normalized events, IAM/EDR evidence, bounded worker execution, Go QA, approved mock SOAR note; replay inserts zero events; foreign profile access/import denied. |
 | Investigate → Respond | Same Build case; evidence-bound mock session proposal, explicit expiring approval, dry run, kill switch, source-conflict and audit rollback; concurrent execution produces one receipt/note and zero external calls. |
@@ -88,3 +89,8 @@ A fifth combined stage verifies OIDC browser redirects, subject mapping, tenant 
 ## Local phishing workflow — 2026-11-02
 
 Added a bounded credential-phishing JSON scenario through Build, deterministic detection, evidence-backed Python gRPC mock investigation, explicit SOAR note review and independently approved sandbox session revocation. Existing outcome-derived Skills/Memory approval and matching are reused. The acceptance suite now requires a phishing API stage and an eleventh browser workflow. No live mail provider, actual model or production response is enabled. See [contract, implementation and test boundaries](PHISHING_FLOW.md).
+
+
+## Durable local Hunt execution — 2026-11-02
+
+Hunt searches can now run through the existing PostgreSQL job queue and Go investigation-worker, with persisted progress, cancellation, bounded automatic/explicit retries and expired-lease recovery. Completed evidence/Memory receipts and reviewed promotion remain atomic and replay-safe. The UI uses queued execution; synchronous search remains compatible. No live integrations or new service are enabled. See [contracts, limits, deployment and tests](DURABLE_HUNT_EXECUTION.md).

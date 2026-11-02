@@ -15,6 +15,7 @@ import uuid
 ROOT=Path(__file__).resolve().parents[2]
 STAGES={'frontend','api','browser','backup','identity'}
 WORKFLOW_EVIDENCE={
+    'durable_hunt':('queued','progress','explicit_retry','cancellation_persisted','enqueue_replay','lost_response_replay'),
     'phishing':('json_upload','cited_review','explicit_note_approval','import_replay','response_and_feedback_visible'),
     'respond_replay':('independent_approval','kill_switch','explicit_execution','same_receipt_replay','external_calls_zero'),
     'skills_lifecycle':('published_unchanged_while_staged','source_change_blocked','independent_reapproval','staged_publication','archived'),

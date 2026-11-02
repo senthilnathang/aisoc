@@ -10,9 +10,10 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-REQUIRED = {'build_response', 'skills_memory', 'intel_hunt', 'detect_feedback', 'phishing'}
+REQUIRED = {'build_response', 'skills_memory', 'intel_hunt', 'detect_feedback', 'phishing', 'durable_hunt'}
 PHISHING_EVIDENCE = {'json_validation','tenant_isolation','detection','cited_investigation','explicit_mock_response','independent_approvals','response_replay','feedback_snapshots','external_calls_zero'}
 
+HUNT_EVIDENCE={'queued','cancellation','recovery','promotion_replay','tenant_isolation'}
 
 def validate_report(report):
     if report.get('passed') is not True or report.get('mode') != 'local/mock':
@@ -21,6 +22,9 @@ def validate_report(report):
         raise ValueError('Missing isolation guarantee')
     if set(report.get('stages', {})) != REQUIRED:
         raise ValueError('Missing acceptance stage')
+    hunt=report['stages']['durable_hunt']
+    if not isinstance(hunt,dict) or any(hunt.get(k) is not True for k in HUNT_EVIDENCE):
+        raise ValueError('Missing durable Hunt acceptance evidence')
     phishing=report['stages']['phishing']
     if not isinstance(phishing,dict) or any(phishing.get(k) is not True for k in PHISHING_EVIDENCE):
         raise ValueError('Missing phishing acceptance evidence')

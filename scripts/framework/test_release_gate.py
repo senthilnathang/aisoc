@@ -1,6 +1,6 @@
 import unittest
 from release_gate import validate_stage, WORKFLOW_EVIDENCE
-from acceptance import REQUIRED, PHISHING_EVIDENCE
+from acceptance import REQUIRED, PHISHING_EVIDENCE, HUNT_EVIDENCE
 
 class ReleaseGateTests(unittest.TestCase):
     def test_malformed_and_missing_frontend(self):
@@ -8,7 +8,7 @@ class ReleaseGateTests(unittest.TestCase):
             with self.subTest(report=report),self.assertRaises(ValueError):validate_stage('frontend',report,'fresh')
 
     def test_api_run_identity_and_all_stages(self):
-        good=dict(passed=True,run_id='fresh',mode='local/mock',active_backend_modified=False,stages={k:({field:True for field in PHISHING_EVIDENCE} if k=='phishing' else {}) for k in REQUIRED})
+        good=dict(passed=True,run_id='fresh',mode='local/mock',active_backend_modified=False,stages={k:({field:True for field in PHISHING_EVIDENCE} if k=='phishing' else {field:True for field in HUNT_EVIDENCE} if k=='durable_hunt' else {}) for k in REQUIRED})
         validate_stage('api',good,'fresh')
         for change in ({'run_id':'old'},{'passed':False},{'passed':1},{'mode':'live'},{'stages':{}},{'stages':None},{'active_backend_modified':True}):
             with self.subTest(change=change),self.assertRaises(ValueError):validate_stage('api',good|change,'fresh')

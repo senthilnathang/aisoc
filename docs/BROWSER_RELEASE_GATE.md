@@ -17,7 +17,7 @@ Each invocation retains `runner.log`, `framework.log`, stage JSON and `output/re
 |---|---|
 | Frontend | Browser launch preflight, lint, production build and frontend regression tests |
 | API | Existing full disposable Detect-to-Build acceptance, Go race/vet, auth/tenant checks, Python/Rust, gRPC, Redis/replay and workflow tests |
-| Browser | Real JSON upload/import, case navigation, independent Memory ownership/approval, notification read/link, retention archive/cleanup/restore, authenticated foreign-tenant denial, four critical workflow stages, phishing import/review/receipt visibility and desktop/mobile route sweep |
+| Browser | Real JSON upload/import, case navigation, independent Memory ownership/approval, notification read/link, retention archive/cleanup/restore, authenticated foreign-tenant denial, four critical workflow stages, phishing import/review/receipt visibility, durable Hunt retry/cancellation/lost-response replay and desktop/mobile route sweep |
 | Identity | Separate mock OIDC provider and API, trusted mapping, independent approval, tenant isolation, logout-all, downgrade/disablement and malformed mapping denial |
 | Backup | Two database clones, matching table fingerprints, restored archive payload resolution after original temporary files are removed, retained snapshot verification and corruption rejection |
 
@@ -34,9 +34,9 @@ The disposable cluster is initialized anew. Existing API acceptance produces con
 - `inputs.json`: new pending Skill/Memory inputs and the aged synthetic read-notification specification.
 - `telemetry.json`: one normal authentication observation with no investigation finding, used for archived-payload recovery.
 - `workflows.json`: fresh reviewed source cases, pending outcome-derived Skill/Memory, a Memory hunt and a disabled local rule with three source alerts. These are setup fixtures; tested mutations use the browser.
-- `manifest.json`: this run's resource IDs, scope and temporary loopback frontend origin. No operator tokens, database URLs or session cookies are retained.
+- `manifest.json`: durable Hunt retry/cancellation fixtures plus this run's resource IDs, scope and temporary loopback frontend origin. No operator tokens, database URLs or session cookies are retained.
 
-Build imports through the real React/Chakra controls and Go API; mutations are not intercepted. Explicit confirmation precedes import, approval, cleanup and restore. Separate test-only browser sessions verify that the author cannot self-approve/claim independent review, a configured reviewer can claim/approve, and another tenant cannot retrieve case/Skill/inbox/archive data. Test credentials are accepted only by this runner's disposable API; no real operator credentials are loaded.
+Build imports through the real React/Chakra controls and Go API. The durable Hunt test deliberately drops one already-accepted enqueue response at the browser fetch boundary to verify lost-response replay; it does not fabricate a server result. Explicit confirmation precedes import, approval, cleanup and restore. Separate test-only browser sessions verify that the author cannot self-approve/claim independent review, a configured reviewer can claim/approve, and another tenant cannot retrieve case/Skill/inbox/archive data. Test credentials are accepted only by this runner's disposable API; no real operator credentials are loaded.
 
 The route sweep derives its workspace routes from `frontend/src/navigation.js` and adds fresh detail pages. It checks headings, error states, domain API failures and document overflow at 1440px and 390px. Focused workflow screenshots and selected route screenshots are saved under `screenshots/`. It is a selected interaction gate plus a broad route/layout sweep, **not** an assertion that every control on every screen has browser mutation coverage. Connected response execution/replay, Skill lifecycle, Memory/Hunt promotion and detection feedback now also have browser stages. Their broader fault, concurrency and authorization negatives remain covered by the API stage.
 
@@ -122,3 +122,17 @@ Added a bounded credential-phishing JSON scenario through Build, deterministic d
 Run `108f639e1ceb493f9bc044d81079f416` passed all five release stages in 279.95 seconds: frontend lint/build and 35 regression tests; backend/API acceptance including phishing; eleven browser stages with 72 desktop/mobile route checks; eight OIDC checks plus self-approval denial; and backup/restore matching 76 tables, one archived payload and two retention snapshots with corruption rejection. Go race/vet and Python worker checks ran in the disposable framework suite. Reports and screenshots are under `output/release-gate/108f639e1ceb493f9bc044d81079f416/`.
 
 The earlier `06da61047f714c6696870297ac50aeb1` run failed during its mobile route sweep after phishing passed. The route gate now explicitly waits for a visible heading before inspecting rendered content, instead of assuming network idle means rendering is complete. The complete rerun passed without weakening authorization or evidence checks. Results validate local/mock behavior only; no live mail provider, production response, actual-model quality or throughput is certified.
+
+
+## Durable local Hunt execution — 2026-11-02
+
+Hunt searches can now run through the existing PostgreSQL job queue and Go investigation-worker, with persisted progress, cancellation, bounded automatic/explicit retries and expired-lease recovery. Completed evidence/Memory receipts and reviewed promotion remain atomic and replay-safe. The UI uses queued execution; synchronous search remains compatible. No live integrations or new service are enabled. See [contracts, limits, deployment and tests](DURABLE_HUNT_EXECUTION.md).
+
+
+## Verified local release — 2026-11-02
+
+Run `aa47ada7f2d348bdae4a7d64bdea2ed0` passed all five release stages in **450.04 seconds**. Evidence includes six API workflow stages, twelve browser stages, 72 desktop/mobile route checks, frontend lint/build and 35 regression tests, Go race/vet and Python/Rust checks, mock OIDC checks and backup/restore. Durable Hunt browser assertions cover explicit retry, persisted cancellation, enqueue replay and a lost accepted response followed by completed receipt recovery without duplicate runs. Completed and cancelled mobile screenshots were visually inspected.
+
+The initial API attempt exposed a test request missing the required cancellation `attempts` field; that request and documentation were corrected. The subsequent browser run caught overflow from a full run ID in the button label; controls now show short labels with exact accessible names. Earlier failed/superseded runs remain failed. Independent review also identified and resolved a tenant-lock/audit deadlock risk and missing receipt refresh after terminal enqueue replay.
+
+Reports and screenshots: `output/release-gate/aa47ada7f2d348bdae4a7d64bdea2ed0/`. This is local/mock correctness and recovery evidence, not live-provider, distributed-scale or throughput certification.

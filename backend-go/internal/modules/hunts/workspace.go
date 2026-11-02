@@ -56,6 +56,7 @@ type Note struct {
 	CreatedAt string `json:"created_at"`
 }
 type Workspace struct {
+	Executions []Execution       `json:"executions"`
 	Promotions []json.RawMessage `json:"promotions"`
 	Intel      []map[string]any  `json:"intel"`
 	Hunt       map[string]any    `json:"hunt"`
@@ -104,6 +105,9 @@ func (s Store) Search(ctx context.Context, tenant, id, actor, key, expected stri
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return Run{}, err
 	}
+	if err = reserveQueuedID(ctx, q, tenant, id, key); err != nil {
+		return Run{}, err
+	}
 	if h["updated_at"] != expected {
 		return Run{}, fault.New(409, "VERSION_CONFLICT", "This hunt changed. Reload before running it.")
 	}
@@ -112,7 +116,7 @@ func (s Store) Search(ctx context.Context, tenant, id, actor, key, expected stri
 	if err = validateSearch(key, query); err != nil {
 		return Run{}, err
 	}
-	n, err := q.HuntRunCount(ctx, huntsql.HuntRunCountParams{TenantID: tenant, HuntID: id})
+	n, err := q.HuntExecutionCount(ctx, huntsql.HuntExecutionCountParams{TenantID: tenant, HuntID: id})
 	if err != nil {
 		return Run{}, err
 	}
@@ -173,6 +177,14 @@ func (s Store) Workspace(ctx context.Context, tenant, id string) (Workspace, err
 		return Workspace{}, err
 	}
 	w := Workspace{Hunt: h, Runs: []Run{}, Notes: []Note{}, Scope: SearchScope}
+	w.Executions = []Execution{}
+	executions, err := q.HuntExecutions(ctx, huntsql.HuntExecutionsParams{TenantID: tenant, HuntID: id})
+	if err != nil {
+		return w, err
+	}
+	for _, row := range executions {
+		w.Executions = append(w.Executions, execution(huntsql.HuntExecutionRow(row)))
+	}
 	rows, err := q.HuntRuns(ctx, huntsql.HuntRunsParams{TenantID: tenant, HuntID: id})
 	if err != nil {
 		return w, err

@@ -1,6 +1,7 @@
 package hunts
 
 import (
+	"aisoc/backend/internal/modules/hunts/huntsql"
 	"aisoc/backend/internal/modules/investigations"
 	"aisoc/backend/internal/modules/skills"
 	"aisoc/backend/internal/platform/fault"
@@ -184,6 +185,13 @@ func (s Store) Mutate(ctx context.Context, tenant, id, operation string, raw map
 			}
 		}
 	case "delete":
+		n, e := huntsql.New(tx).ActiveHuntExecutions(ctx, huntsql.ActiveHuntExecutionsParams{TenantID: tenant, Column2: id})
+		if e != nil {
+			return nil, e
+		}
+		if n > 0 {
+			return nil, conflict("Cancel or finish queued searches before deleting this hunt.")
+		}
 		action = "deleted"
 		_, err = tx.Exec(ctx, `DELETE FROM hunts WHERE tenant_id=$1 AND id=$2`, tenant, id)
 	default:

@@ -76,8 +76,13 @@ The isolated PostgreSQL race suite covers matched cases/artifacts, cross-tenant 
 
 Commands: `python3 scripts/framework/check_detection_intelligence.py`, `make -C backend-go sqlc-check`, `npm --prefix frontend run lint`, `npm --prefix frontend run build`, `node --test tests/frontend/*.test.mjs`.
 
-Remaining: model-backed planning/chat, live SIEM/EDR queries, automatic TI feed hunts, asynchronous distributed execution/cancellation, richer entity typing, report metadata and retention/archive tooling. These require separate contracts and validation; the current screens label their local boundaries explicitly.
+Remaining: model-backed planning/chat, live SIEM/EDR queries, automatic TI feed hunts, distributed-scale execution (local queued execution/cancellation is implemented below), richer entity typing, report metadata and retention/archive tooling. These require separate contracts and validation; the current screens label their local boundaries explicitly.
 
 ## Memory → Hunt — November 2026
 
 Local search now captures approved Memory for its query and returned entity values. Historical run/promotion snapshots are preserved and cannot alter verdicts. See [Memory integration](MEMORY_HUNT_FLOW.md).
+
+
+## Durable local Hunt execution — 2026-11-02
+
+Hunt searches can now run through the existing PostgreSQL job queue and Go investigation-worker, with persisted progress, cancellation, bounded automatic/explicit retries and expired-lease recovery. Completed evidence/Memory receipts and reviewed promotion remain atomic and replay-safe. The UI uses queued execution; synchronous search remains compatible. No live integrations or new service are enabled. See [contracts, limits, deployment and tests](DURABLE_HUNT_EXECUTION.md).
