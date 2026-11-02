@@ -1,6 +1,6 @@
 # Reusable records table
 
-Current consumers are `/detect/rules` (`DetectionRegistry.jsx`), Universal Rule Routing / Per-Rule Routing in `/detect/routing` (`DetectionRouting.jsx`), and Threat Intel reports at `/threat-intel` and `/hunt/threat-intelligence` (`ThreatIntelWorkspace.jsx`), and Hunt registry at `/hunt/threat-hunting` (`HuntWorkspace.jsx`), and Skills library at `/skills` (`SkillsRegistry.jsx`), and the Active Insights, Prevalence Suggestions and Audit Log tables at `/memory` (`EnterpriseInsights.jsx`), and Build catalog at `/build` (`BuildWorkspace.jsx`), and Investigations/Received alerts at `/investigations` (`InvestigationQueue.jsx`), and Respond workflows/runbooks (`ResponsePlans.jsx`). Other lists remain unchanged.
+Current consumers are `/detect/rules` (`DetectionRegistry.jsx`), Universal Rule Routing / Per-Rule Routing in `/detect/routing` (`DetectionRouting.jsx`), API sources at `/build/api-sources` (`ApiSources.jsx`), and Threat Intel reports at `/threat-intel` and `/hunt/threat-intelligence` (`ThreatIntelWorkspace.jsx`), and Hunt registry at `/hunt/threat-hunting` (`HuntWorkspace.jsx`), and Skills library at `/skills` (`SkillsRegistry.jsx`), and the Active Insights, Prevalence Suggestions and Audit Log tables at `/memory` (`EnterpriseInsights.jsx`), and Build catalog at `/build` (`BuildWorkspace.jsx`), and Investigations/Received alerts at `/investigations` (`InvestigationQueue.jsx`), and Respond workflows/runbooks (`ResponsePlans.jsx`). Other lists remain unchanged.
 
 ## Ownership
 
@@ -44,7 +44,7 @@ The Go `GET /api/v1/detection-registry` contract is unchanged. Search, severity/
 - `npm --prefix frontend run lint` and `npm --prefix frontend run build`.
 - `node scripts/framework/records-table-browser.mjs`: real local Go registry/detail smoke, then intercepted read-only fixtures for 57-row paging, page sizes, reload/back, search resets, loading, empty/error/retry and desktop/mobile layout. Reports/screenshots are in `output/records-table/`; it does not mutate demo data.
 
-Suggested next consumer: Build API sources registry. Confirm each endpoint's filtered total and server pagination before migration; do not calculate global totals from a single fetched page. Preserve that page's actions, filters, URL history and permissions, and add focused browser coverage for each migration. Do not migrate unrelated lists in one sweeping change.
+Remaining raw-table lists after the API sources migration: approval inbox, retention, telemetry browser, response policies, local integrations, build bulk import and stream operations. Confirm each endpoint's filtered total and server pagination before migration; do not calculate global totals from a single fetched page. Preserve that page's actions, filters, URL history and permissions, and add focused browser coverage for each migration. Do not migrate unrelated lists in one sweeping change.
 
 
 ## Detection Routing integration
@@ -121,6 +121,14 @@ The caller filters and slices the loaded snapshot; the table receives only the s
 Run `node scripts/framework/investigations-records-table-browser.mjs`. Real API checks are read-only; registry pages and alert submission use intercepted fixtures. Coverage includes both tabs, filters, page sizes, case navigation, polling/clamping, stale-data and initial-load failures, retry, example intake and desktop/mobile keyboard access. Evidence: `output/playwright/investigations-records-table/`.
 
 Validation on 2026-11-02: frontend lint, all 17 frontend regression files, final production build and the Investigations records-table browser suite passed. Both tabs passed desktop/mobile and keyboard access checks. Investigations mobile and Received alerts desktop screenshots were visually inspected. Mock intake, linked/unlinked alert actions, polling-driven empty-page recovery, stale-row warnings and initial-error retry passed. Real API checks were read-only; alert submission was intercepted, so demo data was unchanged. The existing bundle-size warning remains. Evidence: `output/playwright/investigations-records-table/report.json`.
+
+## API sources integration
+
+`/build/api-sources` uses the shared table with 25 rows by default and 10/25/50/100 choices. `GET /api/v1/api-sources` adds a tenant-scoped `total` alongside `items` (`intake.Store.Count`); the existing `limit`/`offset` validation is unchanged. The count and page are separate statements, so a source created between them can make the total briefly differ from the page; the next refresh corrects it. A nonzero offset beyond a refreshed total resets to zero.
+
+Source name, provider, detection rule, mapping status, key status, expiry, Map events, Rotate key and Revoke are unchanged, and the create, rotate, revoke and mapping dialogs keep their existing behavior. List fetch failures use the table's retry state; action errors stay in their dialogs or the page alert, so rows remain visible. Pagination pauses while a create, rotate or revoke is busy. The detection-rule picker in the create dialog keeps its own search and paging.
+
+Run `node scripts/framework/api-sources-records-table-browser.mjs`. It checks real read-only totals and tenant isolation, then runs intercepted fixtures for paging, page sizes, row dialogs, delayed loading, error and retry with out-of-range recovery, the empty state, keyboard access and desktop/mobile layout. Any non-GET request to the source list is recorded and fails the run. Set `CHROME_PATH` to use a specific Chromium; otherwise Playwright's bundled browser is used. Evidence: `output/playwright/api-sources-records-table/`.
 
 ## Respond workflow and runbook registries
 

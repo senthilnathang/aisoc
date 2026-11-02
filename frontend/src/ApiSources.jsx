@@ -1,6 +1,7 @@
 import WorkspaceHeader from "./WorkspaceHeader";
+import RecordsTable from "./components/RecordsTable";
 import React, { useEffect, useState } from "react";
-import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Table, TableContainer, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Text, Textarea, useToast } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
 
@@ -20,16 +21,22 @@ export default function ApiSources({ setView }) {
   const [mappingPreview, setMappingPreview] = useState(null);
   const [mappingBusy, setMappingBusy] = useState(false);
   const [version, setVersion] = useState(0);
-  const [offset,setOffset]=useState(0),[ruleSearch,setRuleSearch]=useState(""),[ruleOffset,setRuleOffset]=useState(0),[ruleOptions,setRuleOptions]=useState([]),[ruleLoading,setRuleLoading]=useState(false),[ruleError,setRuleError]=useState("");
+  const [total, setTotal] = useState(0);
+  const [listError, setListError] = useState("");
+  const [offset,setOffset]=useState(0),[limit,setLimit]=useState(25),[ruleSearch,setRuleSearch]=useState(""),[ruleOffset,setRuleOffset]=useState(0),[ruleOptions,setRuleOptions]=useState([]),[ruleLoading,setRuleLoading]=useState(false),[ruleError,setRuleError]=useState("");
   const toast = useToast();
   useEffect(() => {
     let active = true;
     setLoading(true);
-    Promise.all([api.list("api-sources",{limit:25,offset}), api.detectionRules()]).then(([result, registry]) => {
-      if (active) { setSources(result.items); setRules(registry.items); setError(""); }
-    }).catch(e => { if (active) { setSources([]); setError(e.message); } }).finally(() => { if (active) setLoading(false); });
+    Promise.all([api.list("api-sources",{limit,offset}), api.detectionRules()]).then(([result, registry]) => {
+      if (!active) return;
+      setRules(registry.items); setListError("");
+      // A changed result set can leave the offset past the last page; return to the first page.
+      if (offset > 0 && result.total <= offset) { setOffset(0); return; }
+      setSources(result.items); setTotal(result.total);
+    }).catch(e => { if (active) { setSources([]); setTotal(0); setListError(e.message); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [version,offset]);
+  }, [version,offset,limit]);
   useEffect(()=>{if(!creating)return;let active=true;setRuleLoading(true);setRuleError("");api.detectionRules({search:ruleSearch,limit:25,offset:ruleOffset}).then(result=>{if(active)setRuleOptions(result.items)}).catch(e=>{if(active){setRuleOptions([]);setRuleError(e.message)}}).finally(()=>{if(active)setRuleLoading(false)});return()=>{active=false}},[creating,ruleSearch,ruleOffset]);
   const create = async event => {
     event.preventDefault(); setBusy(true); setError("");
@@ -74,14 +81,37 @@ export default function ApiSources({ setView }) {
     } catch (e) { setError(e instanceof SyntaxError ? "Mapping must be valid JSON." : e.message); }
     finally { setMappingBusy(false); }
   };
+  const columns = [
+    { id: "name", header: "Source", render: source => <><Text fontWeight="600">{source.name}</Text><Text fontSize="11px" color={ui.muted} mt="4px">{source.provider}</Text></> },
+    { id: "rule", header: "Detection rule", render: source => <Text whiteSpace="normal">{rules.find(rule => rule.id === source.rule_id)?.name || source.rule_id}</Text> },
+    { id: "mapping", header: "Mapping", render: source => <Flex align="center" gap="8px" wrap="wrap"><Badge colorScheme={Object.keys(source.mapping?.fields || {}).length ? "green" : "gray"}>{Object.keys(source.mapping?.fields || {}).length ? "Configured" : "Not set"}</Badge><Button size="xs" variant="outline" onClick={() => openMapping(source)}>Map events</Button></Flex> },
+    { id: "status", header: "Key status", render: source => <Badge colorScheme={source.status === "active" ? "green" : "gray"}>{source.status}</Badge> },
+    { id: "expires", header: "Expires", render: source => <Text fontSize="11px">{new Date(source.expires_at).toLocaleString()}</Text> },
+    { id: "actions", header: "Actions", render: source => <Flex gap="8px" wrap="wrap"><Button variant="outline" onClick={() => setConfirm({ action: "rotate", source })}>Rotate key</Button><Button variant="ghost" isDisabled={source.status === "revoked"} onClick={() => setConfirm({ action: "revoke", source })}>Revoke</Button></Flex> },
+  ];
   const example = receipt ? JSON.stringify({ external_id: "provider-event-001", title: "Unusual outbound connection", severity: "high", primary_entity: "workstation-01", evidence: [{ type: "domain", value: "example.test" }] }, null, 2) : "";
   return <Box p={{ base: "16px", md: "28px" }} maxW="1400px" mx="auto" className="page-enter">
     <WorkspaceHeader align="center" gap="12px" wrap="wrap" mb="24px"><Box flex="1"><Text color={ui.muted} fontSize="10px" letterSpacing=".1em">BUILD / PROVIDER-NEUTRAL INTAKE</Text><Heading as="h1" fontSize="26px" mt="6px">API sources</Heading><Text color={ui.muted} mt="8px">Connect cloud, on-premises, and custom systems through a shared alert API.</Text></Box><Button variant="outline" onClick={() => setView("streamOperations")}>Stream operations</Button><Button variant="outline" onClick={() => setView("investigations")}>Investigations</Button><Button isDisabled={loading} onClick={() => { setError(""); setRuleSearch(""); setRuleOffset(0); setCreating(true); }}>Add API source</Button></WorkspaceHeader>
     <Box p="20px" rounded="6px" bg="white" border="1px solid" borderColor={ui.line} mb="20px"><Heading fontSize="15px">One source. One rule. One scoped key.</Heading><Text mt="8px" color={ui.muted}>Each key can submit alerts only to its own endpoint. It cannot read cases or change workspace settings. Configure and preview a native event mapping here, or keep sending normalized alerts directly.</Text></Box>
     {error && !creating && <Alert status="error" mb="16px"><AlertIcon />{error}</Alert>}
-    <TableContainer bg="white" border="1px solid" borderColor={ui.line} rounded="6px"><Table size="sm"><Thead><Tr>{["Source", "Detection rule", "Mapping", "Key status", "Expires", "Actions"].map(label => <Th key={label}>{label}</Th>)}</Tr></Thead><Tbody>{sources.map(source => <Tr key={source.id}>
-      <Td py="18px"><Text fontWeight="600">{source.name}</Text><Text fontSize="11px" color={ui.muted} mt="4px">{source.provider}</Text></Td><Td maxW="300px" whiteSpace="normal">{rules.find(rule => rule.id === source.rule_id)?.name || source.rule_id}</Td><Td><Flex align="center" gap="8px" wrap="wrap"><Badge colorScheme={Object.keys(source.mapping?.fields || {}).length ? "green" : "gray"}>{Object.keys(source.mapping?.fields || {}).length ? "Configured" : "Not set"}</Badge><Button size="xs" variant="outline" onClick={() => openMapping(source)}>Map events</Button></Flex></Td><Td><Badge colorScheme={source.status === "active" ? "green" : "gray"}>{source.status}</Badge></Td><Td fontSize="11px">{new Date(source.expires_at).toLocaleString()}</Td><Td><Flex gap="8px" wrap="wrap"><Button variant="outline" onClick={() => setConfirm({ action: "rotate", source })}>Rotate key</Button><Button variant="ghost" isDisabled={source.status === "revoked"} onClick={() => setConfirm({ action: "revoke", source })}>Revoke</Button></Flex></Td>
-    </Tr>)}</Tbody></Table>{!sources.length && <Text p="28px" color={ui.muted}>{loading ? "Loading sources…" : error ? "Sources could not be loaded." : "No API sources yet. Add a source to issue its first ingestion key."}</Text>}</TableContainer>
+    <RecordsTable
+      caption="API sources"
+      recordLabel="sources"
+      pageSizeLabel="API sources per page"
+      columns={columns}
+      records={sources}
+      rowKey="id"
+      total={total}
+      offset={offset}
+      limit={limit}
+      onPageChange={setOffset}
+      onPageSizeChange={size => { setLimit(size); setOffset(0); }}
+      loading={loading}
+      error={listError}
+      onRetry={() => setVersion(v => v + 1)}
+      paginationDisabled={busy}
+      emptyContent="No API sources yet. Add a source to issue its first ingestion key."
+    />
     {mappingSource && <Box mt="18px" p={{ base: "14px", md: "20px" }} bg="white" border="1px solid" borderColor={ui.line} rounded="6px" minW="0">
       <Flex justify="space-between" gap="12px" wrap="wrap" align="start" mb="14px"><Box><Text color={ui.muted} fontSize="10px" letterSpacing=".08em">NATIVE EVENT MAPPING</Text><Heading fontSize="17px" mt="4px">{mappingSource.name}</Heading><Text mt="5px" color={ui.muted} fontSize="12px">Map dot paths from the provider event to normalized alert fields. Preview does not save or ingest the sample.</Text></Box><Button size="sm" variant="ghost" onClick={() => { setMappingSource(null); setMappingPreview(null); }}>Close</Button></Flex>
       <Grid templateColumns={{ base: "minmax(0, 1fr)", xl: "repeat(2, minmax(0, 1fr))" }} gap="12px">
@@ -92,8 +122,7 @@ export default function ApiSources({ setView }) {
       {mappingPreview && <Box mt="14px"><Alert status={mappingPreview.valid ? "success" : "error"} alignItems="start"><AlertIcon mt="2px" /><Stack spacing="5px"><Text fontWeight="600">{mappingPreview.valid ? "Sample maps successfully" : "Mapping needs changes"}</Text>{mappingPreview.errors?.map((message, index) => <Text key={index} fontSize="12px">{message}</Text>)}</Stack></Alert>{mappingPreview.normalized_alert && <Box as="pre" mt="10px" p="12px" bg={ui.nav} color="white" rounded="4px" fontSize="11px" whiteSpace="pre-wrap" overflowWrap="anywhere">{JSON.stringify(mappingPreview.normalized_alert, null, 2)}</Box>}</Box>}
       <Text mt="12px" color={ui.muted} fontSize="11px">Required mappings: external_id, title, severity. Optional fields include summary, category, alert_type, primary_entity, evidence and insight_refs. Map unrecognized provider severities with severity_map.</Text>
     </Box>}
-    <Text color={ui.muted} fontSize="11px" mt="12px">Page {Math.floor(offset/25)+1} · Key values are shown only when issued; they cannot be retrieved later.</Text>
-    <Flex gap="8px" justify="end" mt="12px"><Button variant="outline" isDisabled={loading||!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Previous sources</Button><Button variant="outline" isDisabled={loading||sources.length<25} onClick={()=>setOffset(offset+25)}>Next sources</Button></Flex>
+    <Text color={ui.muted} fontSize="11px" mt="12px">Key values are shown only when issued; they cannot be retrieved later.</Text>
     <Modal isOpen={creating} onClose={() => setCreating(false)} closeOnOverlayClick={!busy} closeOnEsc={!busy}><ModalOverlay /><ModalContent as="form" onSubmit={create}><ModalHeader>Add API source</ModalHeader><ModalCloseButton isDisabled={busy} /><ModalBody><Stack spacing="16px">
       <FormControl isRequired><FormLabel>Source name</FormLabel><Input maxLength={200} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></FormControl>
       <FormControl isRequired><FormLabel>Provider label</FormLabel><Input maxLength={100} value={draft.provider} onChange={e => setDraft({ ...draft, provider: e.target.value })} placeholder="Custom, Sentinel, Splunk…" /></FormControl>

@@ -58,8 +58,16 @@ func registerSources(mux *http.ServeMux, pool *pgxpool.Pool) {
 				return nil, 0, invalid()
 			}
 		}
-		items, err := store.ListPage(r.Context(), auth.From(r.Context()).Tenant, limit, offset)
-		return map[string]any{"items": items}, 200, err
+		tenant := auth.From(r.Context()).Tenant
+		items, err := store.ListPage(r.Context(), tenant, limit, offset)
+		if err != nil {
+			return nil, 0, err
+		}
+		total, err := store.Count(r.Context(), tenant)
+		if err != nil {
+			return nil, 0, err
+		}
+		return map[string]any{"items": items, "total": total}, 200, nil
 	}))
 	mux.HandleFunc("GET /api/v1/api-sources/{id}", respond(func(r *http.Request) (any, int, error) {
 		item, err := store.Get(r.Context(), auth.From(r.Context()).Tenant, r.PathValue("id"))

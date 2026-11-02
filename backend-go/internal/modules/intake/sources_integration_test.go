@@ -219,4 +219,10 @@ func TestSourceListPagination(t *testing.T) {
 	if err != nil || len(foreign) != 0 {
 		t.Fatal(foreign, err)
 	}
+	if total, err := s.Count(ctx, tenant); err != nil || total != 27 {
+		t.Fatal("tenant total", total, err)
+	}
+	if total, err := s.Count(ctx, tenant+"foreign"); err != nil || total != 0 {
+		t.Fatal("foreign total", total, err)
+	}
 }
