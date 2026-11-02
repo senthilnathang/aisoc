@@ -41,9 +41,18 @@ func Import(ctx context.Context, pool *pgxpool.Pool, raw, key []byte) (Report, e
 			return report, fmt.Errorf("unsupported source table %s", name)
 		}
 	}
+	// The legacy Node response module creates these tables on demand, so a database
+	// that never used response plans or case runbooks will not contain them.
+	onDemand := map[string]bool{"response_plans": true, "response_plan_versions": true, "case_runbooks": true, "case_runbook_events": true}
+	if source.Tables == nil {
+		source.Tables = map[string][]Row{}
+	}
 	for name := range allowed {
 		if _, ok := source.Tables[name]; !ok {
-			return report, fmt.Errorf("snapshot missing table %s", name)
+			if !onDemand[name] {
+				return report, fmt.Errorf("snapshot missing table %s", name)
+			}
+			source.Tables[name] = []Row{}
 		}
 	}
 	sum := sha256.Sum256(raw)

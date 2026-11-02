@@ -88,7 +88,11 @@ def main():
                 config['imported']=True;save()
                 print('Initialized private Go release; API/workers remain stopped')
                 return
-            if not config:raise RuntimeError('Initialize a release before managing it')
+            if not config:
+                # Nothing was ever initialized, so there is nothing to stop; report that cleanly.
+                if args.action=='stop':print('Go release not initialized; nothing to stop');return
+                if args.action=='status':print(json.dumps({'initialized':False,'api_running':False,'worker_running':False,'postgres_running':False}));return
+                raise RuntimeError('Initialize a release before managing it')
             if args.action=='status':
                 print(json.dumps({'api_running':bool(owned('api')),'worker_running':bool(owned('investigation-worker')),'postgres_running':pg_running(),'api_port':config['api_port'],'imported':config['imported']}));return
             if args.action=='stop':

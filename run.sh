@@ -4,11 +4,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN="$ROOT/.run"
 mkdir -p "$RUN"
+# Prefer the Go installed by ./run.sh install over any older system Go.
+export PATH="$HOME/.local/bin:$PATH"
 command_name=${1:-start}
 target=${2:-all}
 usage() {
   cat <<'USAGE'
 Usage:
+  ./run.sh install
   ./run.sh {start|stop|status|logs} [all|both|backend|frontend]
   ./run.sh suspicious-login [--configure] [--config FILE] [--approve-mock-note --comment TEXT]
   ./run.sh import-demo all [--bundle DIRECTORY] [--dry-run]
@@ -20,6 +23,41 @@ Selected files must belong to a validated benchmark bundle. Imports are replay-s
 USAGE
 }
 case "$command_name" in help|-h|--help) usage; exit 0;; esac
+# Go version required by the Go backend; go.mod is the single source of truth.
+go_required() { sed -n 's/^go \([0-9.]*\)$/\1/p' "$ROOT/backend-go/go.mod" | head -n 1; }
+go_installed() { command -v go >/dev/null 2>&1 && go version | awk '{print $3}' | sed 's/^go//'; }
+check_go() {
+  local required installed
+  required=$(go_required)
+  installed=$(go_installed) || { echo "Go is not installed (need go $required); run ./run.sh install" >&2; return 1; }
+  if [[ "$(printf '%s\n%s\n' "$required" "$installed" | sort -V | head -n 1)" != "$required" ]]; then
+    echo "Go $installed is older than required $required; run ./run.sh install" >&2; return 1
+  fi
+}
+install_go() {
+  local required arch tarball url prefix tmp expected
+  required=$(go_required)
+  if check_go 2>/dev/null; then echo "Go $(go_installed) already satisfies go $required"; return 0; fi
+  case "$(uname -m)" in x86_64) arch=amd64;; aarch64|arm64) arch=arm64;; *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1;; esac
+  tarball="go${required}.linux-${arch}.tar.gz"
+  url="https://go.dev/dl/$tarball"
+  prefix="$HOME/.local/go-$required"
+  tmp=$(mktemp -d)
+  curl -fsSL "$url" -o "$tmp/$tarball"
+  curl -fsSL "$url.sha256" -o "$tmp/$tarball.sha256"
+  expected=$(awk '{print $1}' "$tmp/$tarball.sha256")
+  echo "$expected  $tmp/$tarball" | sha256sum -c --quiet - || { echo 'Go checksum mismatch; not installed' >&2; exit 1; }
+  mkdir -p "$prefix" "$HOME/.local/bin"
+  tar -C "$prefix" --strip-components=1 -xzf "$tmp/$tarball"
+  rm -rf "$tmp"
+  ln -sfn "$prefix/bin/go" "$HOME/.local/bin/go"
+  ln -sfn "$prefix/bin/gofmt" "$HOME/.local/bin/gofmt"
+  export PATH="$HOME/.local/bin:$PATH"
+  check_go
+  echo "Installed Go $required at $prefix"
+  echo 'Add to your shell profile if not already present: export PATH="$HOME/.local/bin:$PATH"'
+}
+if [[ "$command_name" == install ]]; then install_go; exit 0; fi
 backend_mode=go
 runtime_profile=release
 if [[ -f "$RUN/runtime-profile" ]]; then read -r runtime_profile < "$RUN/runtime-profile"; fi
@@ -40,6 +78,7 @@ if [[ "$command_name" == import-demo ]]; then
 fi
 case "$command_name" in start|stop|status|logs) ;; *) usage >&2; exit 2;; esac
 case "$target" in all|both) services=(backend frontend);; backend|frontend) services=("$target");; *) echo 'Target must be backend, frontend, or all' >&2; exit 2;; esac
+if [[ "$backend_mode" == go && "$command_name" != logs ]]; then check_go || exit 1; fi
 owned_pid() {
   local service=$1 pid
   [[ -f "$RUN/$service.pid" ]] || return 1
