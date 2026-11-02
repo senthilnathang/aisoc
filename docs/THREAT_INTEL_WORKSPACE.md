@@ -70,3 +70,8 @@ Verified with the isolated PostgreSQL race suite: metadata persistence, actual-v
 Apply migration 039 through normal local startup before loading the new frontend. Rollback is code-only: restore previous binaries/assets and retain additive columns/tables and audit history. Backups/retention must include analyst metadata and IOC value snapshots. Report deletion removes links by existing authorized deletion semantics; hunt deletion intentionally retains request tombstones. The UI displays the latest 100 links, but no automatic link archive/expiry is implemented.
 
 Remaining: live TI feed ingestion/polling, STIX/TAXII adapters, model enrichment, deduplicated bulk report/IOC import, automatic relevance scoring, report-to-case verdict attribution and live provider hunt execution. These are not implied by source labels, report severity or local hunt creation.
+
+
+## Shared report table — 2026-11-02
+
+Threat Intel reports now use the shared `RecordsTable` at `/threat-intel` and `/hunt/threat-intelligence`, preserving filters, report metadata and actions. Server paging retains the 50-row default and adds page-size/first/last controls plus empty-page recovery. No backend contract or detail-page indicator behavior changes. See [component contract and browser checks](frontend/RECORDS_TABLE.md).

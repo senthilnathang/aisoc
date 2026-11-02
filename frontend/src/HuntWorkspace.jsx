@@ -1,3 +1,4 @@
+import RecordsTable from "./components/RecordsTable";
 import HuntMemory from "./HuntMemory";
 import { PromoteFinding } from "./IntelHuntFlow";
 import WorkspaceHeader from "./WorkspaceHeader";
@@ -53,6 +54,8 @@ export default function HuntWorkspace({ id, mode = "hunts", setView }) {
     [error, setError] = useState(""),
     [query, setQuery] = useState(""),
     [offset, setOffset] = useState(0),
+    [limit, setLimit] = useState(50),
+    [total, setTotal] = useState(0),
     [reload, setReload] = useState(0),
     [draft, setDraft] = useState(null),
     [busy, setBusy] = useState(false),
@@ -67,11 +70,15 @@ export default function HuntWorkspace({ id, mode = "hunts", setView }) {
         api
           .list(mode === "intel" ? "threat-intel-reports" : "hunts", {
             search: query,
-            limit: 50,
+            limit,
             offset,
           })
           .then((r) => {
-            if (active) setItems(r.items);
+            if (active) {
+              setItems(r.items);
+              setTotal(r.total ?? 0);
+              if (mode !== "intel" && offset > 0 && offset >= r.total) setOffset(0);
+            }
           })
           .catch((e) => {
             if (active) setError(e.message);
@@ -85,7 +92,7 @@ export default function HuntWorkspace({ id, mode = "hunts", setView }) {
       active = false;
       clearTimeout(timer);
     };
-  }, [id, mode, query, offset, reload]);
+  }, [id, mode, query, offset, limit, reload]);
   if (id) return <HuntDetail key={id} id={id} setView={setView} />;
   const create = async (e) => {
     e.preventDefault();
@@ -187,7 +194,31 @@ export default function HuntWorkspace({ id, mode = "hunts", setView }) {
           ? "Stored reports are starting points for analyst-directed local hunts. Feed automation and live IOC queries are not enabled."
           : "Open a hunt to search stored evidence. Legacy simulated verdicts are not presented as verified findings."}
       </Text>
-      {error ? (
+      {mode !== "intel" ? (
+        <Panel overflow="hidden">
+        <RecordsTable
+          caption="Threat hunts"
+          recordLabel="hunts"
+          pageSizeLabel="Hunts per page"
+          records={items} total={total} offset={offset} limit={limit}
+          onPageChange={setOffset}
+          onPageSizeChange={(size) => { setLimit(size); setOffset(0); }}
+          loading={loading} loadingLabel="Loading hunts…" error={error}
+          onRetry={() => setReload((n) => n + 1)}
+          emptyContent="No matching hunts. Add one to get started."
+          columns={[
+            { id: "name", header: "Name / Description", minWidth: "260px", render: (h) => <>
+              <Button variant="link" color={ui.ink} whiteSpace="normal" textAlign="left" onClick={() => setView("huntDetail", h.id)}>{h.name}</Button>
+              <Text mt="6px" noOfLines={2} fontSize="12px" color={ui.muted}>{h.query}</Text>
+            </> },
+            { id: "created_at", header: "Created time", minWidth: "160px", render: (h) => time(h.created_at) },
+            { id: "source", header: "Source" },
+            { id: "updated_at", header: "Last updated", minWidth: "160px", render: (h) => time(h.updated_at) },
+            { id: "actions", header: "Actions", render: (h) => <Button size="sm" variant="outline" onClick={() => setView("huntDetail", h.id)}>Open hunt →</Button> },
+          ]}
+        />
+        </Panel>
+      ) : error ? (
         <Alert status="error">
           <AlertIcon />
           {error}

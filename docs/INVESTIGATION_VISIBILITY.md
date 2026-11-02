@@ -51,3 +51,10 @@ During deployment a pre-existing migration checksum mismatch was diagnosed and
 repaired through explicit historical compatibility plus additive migration 032;
 no recorded checksum or demo data was rewritten. See
 [repair details](WORKER_DISPATCH_SECURITY.md#historical-031-compatibility-and-repair).
+
+
+## Shared Investigations registry table — 2026-11-02
+
+Investigations and Received alerts use the shared table, preserving search, polling and intake/case actions. Pagination covers only the existing latest-100 snapshot; it does not query all historical records. See [component contract and browser checks](frontend/RECORDS_TABLE.md#investigations-registry-integration). Run `node scripts/framework/investigations-records-table-browser.mjs`; domain writes are intercepted.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, final production build and the Investigations records-table browser suite passed. Both tabs passed desktop/mobile and keyboard access checks. Investigations mobile and Received alerts desktop screenshots were visually inspected. Mock intake, linked/unlinked alert actions, polling-driven empty-page recovery, stale-row warnings and initial-error retry passed. Real API checks were read-only; alert submission was intercepted, so demo data was unchanged. The existing bundle-size warning remains. Evidence: `output/playwright/investigations-records-table/report.json`.

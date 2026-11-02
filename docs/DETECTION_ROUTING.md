@@ -67,3 +67,9 @@ This is local intake policy, not production rollout approval. No capacity/latenc
 ### Verified result (2026-11-01)
 
 Passed: disposable PostgreSQL detection/routing/intake/HTTP suites with race detection (including both deterministic sampling branches and existing stream-finding regressions), eight frontend test files, ESLint, production build, sqlc diff and Go vet. Routing browser checks passed on development and compiled preview; the compiled Rules regression suite also passed. Visual inspection covered populated fixture and empty states. Independent review found a save/reload draft-loss window: editing now stops during writes, reload displays a loading state, and the redundant post-save GET was removed. Local migration 035 is applied; no demo policies or provider actions were activated.
+
+## Shared records tables — 2026-11-02
+
+Universal Rule Routing and Per-Rule Routing now use the shared React/Chakra `RecordsTable`. The universal-policy list pages the existing bounded configuration locally while retaining global priority order; per-rule routes retain the server-paginated registry API. Both support page-size selection and first/previous/next/last controls. Active saves disable paging without hiding edits, and per-rule save conflicts preserve visible drafts. Audit details and preview results remain unchanged.
+
+Frontend lint, build and regression tests passed. `scripts/framework/routing-records-table-browser.mjs` passed existing routing/tenant smoke checks plus paginated policy ordering, archive page recovery, explicit confirmation, route draft retention, version conflicts, fetch retry and desktop/mobile layouts. All mutation requests were intercepted; demo records were not changed. Detection Rules browser regression also passed. See [component usage and migration guide](frontend/RECORDS_TABLE.md).

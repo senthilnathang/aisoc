@@ -5,7 +5,7 @@ async page=>{
  let hunt={id:'HUNT-browser',name:'Suspicious login evidence hunt',query:'192.0.2.42',source:'ad_hoc',created_at:at,updated_at:at};let notes=[],runs=[],created=[],report={id:'TI-browser',title:'Identity infrastructure advisory',summary:'Analyst-provided report',source:'Local JSON',severity:'high',published_at:at};
  const findings=[{record_id:'artifact-a',case_id:'case-a',kind:'artifact',label:'Login address',excerpt:'192.0.2.42',entity:'192.0.2.42',source:'Stored case artifact'}];
  const handler=async route=>{const req=route.request(),u=new URL(req.url()),p=u.pathname.replace('/api/v1',''),m=req.method();const reply=(v,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(v)});
- if(p==='/hunts'&&m==='GET')return reply({items:[hunt]});
+ if(p==='/hunts'&&m==='GET')return reply({items:[hunt],total:1});
  if(p==='/hunts'&&m==='POST'){hunt={...hunt,...req.postDataJSON()};created.push(p);return reply(hunt,201)}
  if(p==='/threat-intel/registry')return reply({items:[{...report,indicator_count_actual:0,linked_hunts:0}],total:1,sources:1});
  if(p===`/threat-intel-reports/${report.id}/workspace`)return reply({report,indicator_count:0,hunts:[]});
@@ -13,7 +13,7 @@ async page=>{
  if(p==='/threat-intel-reports'&&m==='GET')return reply({items:[report]});
  if(p==='/threat-intel-reports'&&m==='POST'){created.push(p);report={...report,...req.postDataJSON()};return reply(report,201)}
  if(p===`/hunts/${hunt.id}/workspace`)return reply({hunt,runs,notes,scope:'Local literal search: latest 500 cases and 500 artifacts; no provider actions.'});
- if(p===`/hunts/${hunt.id}/search`){const b=req.postDataJSON();ensure(b.expected_updated_at===at&&b.id,'Missing version/idempotency token');const r={id:b.id,query:hunt.query,actor:'fixture analyst',created_at:at,verdict:'review_required',findings,scope:'Local search',truncated:false};runs=[r,...runs];return reply(r)}
+ if(p===`/hunts/${hunt.id}/executions`){const b=req.postDataJSON();ensure(b.expected_updated_at===at&&b.id,'Missing version/idempotency token');const r={id:b.id,query:hunt.query,actor:'fixture analyst',created_at:at,verdict:'review_required',findings,scope:'Local search',truncated:false};runs=[r,...runs];return reply({id:r.id,state:"completed",phase:"completed",attempts:1,max_attempts:3,query:r.query,actor:r.actor,expected_updated_at:at},202)}
  if(p===`/hunts/${hunt.id}/notes`){const b=req.postDataJSON();ensure(b.id&&b.body,'Missing note identity');notes.push({id:b.id,body:b.body,actor:'fixture analyst',created_at:at});return reply({saved:true})}
  if(p.startsWith('/navigation/'))return reply({label:hunt.name});
  if(p.endsWith('/run'))throw new Error('Legacy simulated run must not be used');return route.continue();};

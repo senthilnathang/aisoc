@@ -86,3 +86,10 @@ Local search now captures approved Memory for its query and returned entity valu
 ## Durable local Hunt execution — 2026-11-02
 
 Hunt searches can now run through the existing PostgreSQL job queue and Go investigation-worker, with persisted progress, cancellation, bounded automatic/explicit retries and expired-lease recovery. Completed evidence/Memory receipts and reviewed promotion remain atomic and replay-safe. The UI uses queued execution; synchronous search remains compatible. No live integrations or new service are enabled. See [contracts, limits, deployment and tests](DURABLE_HUNT_EXECUTION.md).
+
+
+## Shared Hunt registry table — 2026-11-02
+
+Hunt registry now uses the shared paginated table while preserving search, creation and detail actions. The Go list API adds a tenant-scoped filtered total via sqlc; no migration is required. See [table contract, rollout and verification](frontend/RECORDS_TABLE.md#hunt-registry-integration). Browser regression command: `node scripts/framework/hunt-records-table-browser.mjs`; writes use intercepted local fixtures.
+
+Validation on 2026-11-02: frontend lint/build and all 17 frontend regression files passed; Hunt and HTTP tests passed with the race detector against disposable PostgreSQL, including filtered totals, pagination, empty pages and tenant isolation. Go vet and sqlc diff passed. The local Hunt browser suite passed with all mutations intercepted; demo records were not changed. The existing bundle-size warning remains.

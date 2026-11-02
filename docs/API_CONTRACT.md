@@ -511,3 +511,8 @@ Added GET/POST `/api/v1/approvals/assignment`, GET `/api/v1/notifications`, and 
 ## Retention endpoints — November 2026
 
 Added GET `/api/v1/build/retention`, POST `/api/v1/build/retention/policy`, POST `/api/v1/build/retention/actions` and GET `/api/v1/build/retention/archives/:id`. Mutations require proposer permission; notification records additionally require the authenticated recipient. Policy/source revisions, confirmations and reasons gate archive and cleanup. See [scope, contracts and recovery tests](RETENTION_RECOVERY.md).
+
+
+### Hunt registry pagination — 2026-11-02
+
+`GET /api/v1/hunts` returns `{ "items": [...], "total": 123 }`. The additive `total` counts all matching tenant-scoped records before `limit`/`offset`, even when the requested page is empty. Search/status semantics and updated-time/ordinal ordering are unchanged. Rows and count come from one PostgreSQL statement via sqlc. The UI requests 50 rows by default and supports 10/25/50/100; existing API default 100 and maximum 500 remain unchanged. See [Hunt shared-table integration](frontend/RECORDS_TABLE.md#hunt-registry-integration).

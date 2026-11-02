@@ -66,3 +66,10 @@ draft editors, JSON file import, Go validation and evidence preview. Explicit im
 seals a tenant-scoped snapshot and feeds the existing workers without restart.
 Case note approval remains mandatory; provider endpoints and response execution
 remain disabled. Existing provider-specific connector records remain inspect-only.
+
+
+## Shared catalog table — 2026-11-02
+
+The Build catalog uses `RecordsTable` with server totals, 10/25/50/100 page sizes (default 25), first/last navigation and empty-page recovery. Kind/search filters, metadata inspection, read-only connector handling and manager links are preserved. Local integration configuration/import/lifecycle screens are unchanged. See [component guide](frontend/RECORDS_TABLE.md#build-catalog-integration) and run `node scripts/framework/build-records-table-browser.mjs` for the focused local browser regression.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Build records-table browser suite passed. Desktop (1440px) and mobile (390px) screenshots were visually inspected. Coverage includes real read-only API totals/tenant isolation, duplicate IDs across asset kinds, filters, inspector, manager navigation, stale-response rejection, empty-page recovery and error/retry/loading. Integration lifecycle mutations were not rerun for this catalog-only change. No demo data was changed. The existing bundle-size warning remains. Evidence: `output/playwright/build-records-table/report.json`.

@@ -82,3 +82,10 @@ Commands: `python3 scripts/framework/check_detection_intelligence.py`, `make -C 
 ## Platform review (2026-11-01)
 
 Action records, Approvals and Activity now use server status/search filters and 25-row pages. Search covers titles/descriptions. Overview counts are tenant-wide through /remediations/summary; list counts describe only the visible page. Approval remains local simulation only. See [review and verification](PLATFORM_REVIEW_2026-11-01.md).
+
+
+## Shared Respond registry tables — 2026-11-02
+
+Workflow and runbook registries use the shared table with client-side pagination of the existing saved library, preserving state/domain/search filters and all detail actions. No backend/schema or execution-policy changes are required. See [component contract and verification](frontend/RECORDS_TABLE.md#respond-workflow-and-runbook-registries). Run `node scripts/framework/respond-records-table-browser.mjs`; domain writes use intercepted local fixtures.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Respond records-table browser suite passed. Both registries passed desktop (1440px), mobile (390px) and keyboard-scroll checks; workflow mobile and runbook desktop screenshots were visually inspected. Existing dry-preview isolation, policy version checks and runbook JSON import regression passed. All domain mutations were intercepted; no demo data or provider actions changed. The pre-existing bundle-size warning remains. Evidence: `output/playwright/respond-records-table/report.json`.

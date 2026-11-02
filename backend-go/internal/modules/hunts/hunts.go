@@ -68,6 +68,11 @@ func (s Store) Detail(ctx context.Context, tenant, id string) (map[string]any, e
 	return record, tx.Commit(ctx)
 }
 
+// Registry returns page rows and their filtered count from one PostgreSQL snapshot.
+func (s Store) Registry(ctx context.Context, tenant, search, status string, limit, offset int) (json.RawMessage, error) {
+	return huntsql.New(s.Pool).HuntRegistry(ctx, huntsql.HuntRegistryParams{TenantID: tenant, Search: search, Status: status, Pattern: "%" + search + "%", PageLimit: int32(limit), PageOffset: int64(offset)})
+}
+
 func (s Store) List(ctx context.Context, tenant, search, status string, limit, offset int) ([]map[string]any, error) {
 	rows, err := s.Pool.Query(ctx, `SELECT document FROM hunts WHERE tenant_id=$1 AND ($2='' OR document->>'status'=$2) AND ($3='' OR document->>'name' ILIKE $4 ESCAPE '' OR document->>'query' ILIKE $4 ESCAPE '') ORDER BY updated_at DESC,ordinal DESC LIMIT $5 OFFSET $6`, tenant, status, search, "%"+search+"%", limit, offset)
 	if err != nil {

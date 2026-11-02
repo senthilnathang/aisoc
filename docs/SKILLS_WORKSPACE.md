@@ -75,3 +75,10 @@ Remaining: complete Markdown/file-tree editing, portable multi-file bundles, sep
 ## Staged publication update
 
 Published edits now stage instructions, metadata, scopes and materials. Explicit publication releases saved edits; discard preserves material history. [Lifecycle documentation](SKILLS_MEMORY_LIFECYCLE.md) supersedes immediate-update behavior described in earlier implementation notes.
+
+
+## Shared Skills library table — 2026-11-02
+
+Skills library now uses the shared records table with server pagination, preserving filters, published/draft counts, lifecycle badges, detail navigation, upload/create and guarded enablement. No API/schema changes are required. See [component contract and browser coverage](frontend/RECORDS_TABLE.md#skills-library-integration). Run `node scripts/framework/skills-records-table-browser.mjs` for local read-only API checks and intercepted workflow fixtures.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Skills records-table browser suite passed. Desktop (1440px) and mobile (390px) screenshots were visually inspected. The existing workflow fixture was updated from the obsolete Publish button to saved-draft approval by a separate mock approver; self-approval remains disabled. Browser writes were intercepted and demo data was not changed. The pre-existing bundle-size warning remains. Evidence: `output/playwright/skills-records-table/report.json`.

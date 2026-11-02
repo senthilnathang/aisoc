@@ -1,6 +1,7 @@
+import RecordsTable from "./components/RecordsTable";
 import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Table, TableContainer, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Alert, AlertIcon, Badge, Box, Button, Flex, FormControl, FormLabel, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Stack, Text, Textarea, useToast } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
 
@@ -54,6 +55,7 @@ export default function InvestigationQueue({ setView }) {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("cases");
   const [search, setSearch] = useState("");
+  const [offset, setOffset] = useState(0), [limit, setLimit] = useState(25);
   const [intake, setIntake] = useState(false);
   const [version, setVersion] = useState(0);
   const toast = useToast();
@@ -72,22 +74,26 @@ export default function InvestigationQueue({ setView }) {
     return () => { active = false; clearTimeout(timer); };
   }, [version]);
   const records = (tab === "cases" ? queue?.items || [] : alerts).filter(item => `${item.title} ${item.source} ${item.id} ${item.external_id || ""}`.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => { if (offset > 0 && offset >= records.length) setOffset(0); }, [offset, records.length]);
   return <Box p={{ base: "12px", md: "20px" }} w="100%" minW="0" className="page-enter investigation-queue">
     <WorkspaceHeader gap="16px" align="center" wrap="wrap" mb="14px"><Box flex="1" minW="200px"><Text color={ui.muted} fontSize="10px" letterSpacing=".1em">SECURITY OPERATIONS / ALERT INTAKE</Text><Heading as="h1" fontSize="26px" mt="6px">Investigations</Heading><Text color={ui.muted} mt="8px">Follow every received alert from intake to an evidence-backed review.</Text></Box><Button isDisabled={!queue || !!error} onClick={() => setIntake(true)}>Submit alert</Button></WorkspaceHeader>
     <Grid templateColumns="repeat(3, minmax(0, 1fr))" gap={{ base: "6px", md: "12px" }} mb="12px">{[[queue?.summary.alerts, "Received alerts"], [queue?.summary.active_runs, "Active local runs"], [queue?.summary.open_cases, "Open investigations"]].map(([value, label]) => <Box key={label} bg="white" border="1px solid" borderColor={ui.line} p={{ base: "10px", md: "12px 16px" }} rounded="6px"><Text color={ui.muted} fontSize="11px">{label}</Text><Text fontFamily="heading" fontWeight="700" fontSize="24px" mt="2px">{value ?? "—"}</Text></Box>)}</Grid>
     <Text fontSize="11px" color={ui.muted} mb="16px">Local deterministic processing · No external tools · Outcomes require analyst review · Refreshes every 2 seconds</Text>
-    {error && <Alert status="error" mb="16px"><AlertIcon />{error}. Displayed records may be stale.<Button ml="auto" variant="outline" onClick={() => setVersion(v => v + 1)}>Retry</Button></Alert>}
+    {error && queue && <Alert status="error" mb="16px"><AlertIcon />{error}. Displayed records may be stale.<Button ml="auto" variant="outline" onClick={() => setVersion(v => v + 1)}>Retry</Button></Alert>}
     <Box bg="white" border="1px solid" borderColor={ui.line} rounded="6px" overflow="hidden">
-      <Flex className="queue-toolbar" p="12px" gap="8px" wrap="wrap" align="center"><Button variant={tab === "cases" ? "solid" : "ghost"} onClick={() => setTab("cases")}>Investigations</Button><Button variant={tab === "alerts" ? "solid" : "ghost"} onClick={() => setTab("alerts")}>Received alerts</Button><Input ml={{ md: "auto" }} maxW={{ base: "none", md: "300px" }} placeholder="Search title, source or ID" aria-label="Search investigations and alerts" value={search} onChange={e => setSearch(e.target.value)} /></Flex>
-      <TableContainer className="queue-table"><Table size="sm"><Thead><Tr>{["Title / source", "Severity", tab === "cases" ? "Processing" : "Routing", tab === "cases" ? "Determination" : "Source alert ID", "Received", ""].map((heading, index) => <Th key={index}>{heading}</Th>)}</Tr></Thead><Tbody>{records.map(item => <Tr key={item.id}>
-        <Td py="12px" maxW="440px" whiteSpace="normal" overflowWrap="anywhere"><Text fontWeight="600" whiteSpace="normal">{item.title}</Text><Text color={ui.muted} fontSize="11px" mt="5px">{item.source}</Text></Td>
-        <Td data-label="Severity"><Badge colorScheme={["critical", "high"].includes(item.severity) ? "red" : "yellow"}>{item.severity}</Badge></Td>
-        <Td data-label={tab === "cases" ? "Processing" : "Routing"}><Badge colorScheme={item.run_status === "completed" ? "green" : item.run_status === "failed" ? "red" : "gray"}>{tab === "cases" ? item.run_status || "Manual case" : item.disposition.replaceAll("_", " ")}</Badge>{item.run_status && <Text fontSize="10px" mt="4px" color={ui.muted}>{item.run_phase}/3 steps</Text>}</Td>
-        <Td data-label={tab === "cases" ? "Determination" : "Source alert ID"} whiteSpace="normal" overflowWrap="anywhere" fontSize="12px">{tab === "cases" ? item.determination : item.external_id}</Td><Td data-label="Received" fontSize="11px" color={ui.muted}>{new Date(item.created_at).toLocaleString()}</Td>
-        <Td>{(tab === "cases" || item.investigation_id) && <Button variant="outline" onClick={() => setView("investigationDetail", tab === "cases" ? item.id : item.investigation_id)}>Open case</Button>}</Td>
-      </Tr>)}</Tbody></Table></TableContainer>
-      {!records.length && <Text p="30px" color={ui.muted}>{queue ? "No matching records." : "Loading investigations…"}</Text>}
-      <Text px="16px" py="12px" bg={ui.soft} fontSize="11px" color={ui.muted}>Showing {records.length} records from the latest 100 {tab === "cases" ? "investigations" : "alerts"}.</Text>
+      <Flex className="queue-toolbar" p="12px" gap="8px" wrap="wrap" align="center"><Button variant={tab === "cases" ? "solid" : "ghost"} onClick={() => { setTab("cases"); setOffset(0); }}>Investigations</Button><Button variant={tab === "alerts" ? "solid" : "ghost"} onClick={() => { setTab("alerts"); setOffset(0); }}>Received alerts</Button><Input ml={{ md: "auto" }} maxW={{ base: "none", md: "300px" }} placeholder="Search title, source or ID" aria-label="Search investigations and alerts" value={search} onChange={e => { setSearch(e.target.value); setOffset(0); }} /></Flex>
+      <RecordsTable
+        caption={tab === "cases" ? "Investigations registry" : "Received alerts"}
+        recordLabel={tab === "cases" ? "investigations" : "alerts"}
+        records={records.slice(offset, offset + limit)} total={records.length} offset={offset} limit={limit}
+        onPageChange={setOffset} pageSizeLabel="Registry records per page"
+        onPageSizeChange={size => { setLimit(size); setOffset(0); }}
+        loading={!queue && !error} loadingLabel="Loading investigations…"
+        error={!queue ? error : ""} onRetry={() => setVersion(v => v + 1)}
+        paginationDisabled={Boolean(error)} emptyContent="No matching records."
+        columns={[{id:"column0",header:"Title / source",minWidth:"260px",render:item=><><Text fontWeight="600" whiteSpace="normal">{item.title}</Text><Text color={ui.muted} fontSize="11px" mt="5px">{item.source}</Text></>},{id:"column1",header:"Severity",render:item=><><Badge colorScheme={["critical", "high"].includes(item.severity) ? "red" : "yellow"}>{item.severity}</Badge></>},{id:"column2",header:tab === "cases" ? "Processing" : "Routing",render:item=><><Badge colorScheme={item.run_status === "completed" ? "green" : item.run_status === "failed" ? "red" : "gray"}>{tab === "cases" ? item.run_status || "Manual case" : item.disposition.replaceAll("_", " ")}</Badge>{item.run_status && <Text fontSize="10px" mt="4px" color={ui.muted}>{item.run_phase}/3 steps</Text>}</>},{id:"column3",header:tab === "cases" ? "Determination" : "Source alert ID",render:item=><>{tab === "cases" ? item.determination : item.external_id}</>},{id:"column4",header:"Received",render:item=><>{new Date(item.created_at).toLocaleString()}</>},{id:"column5",header:"Actions",render:item=><>{(tab === "cases" || item.investigation_id) && <Button variant="outline" onClick={() => setView("investigationDetail", tab === "cases" ? item.id : item.investigation_id)}>Open case</Button>}</>}]}
+      />
+      <Text px="16px" py="12px" bg={ui.soft} fontSize="11px" color={ui.muted}>Search and pagination cover the latest 100 {tab === "cases" ? "investigations" : "alerts"} only. Summary counts may include older records.</Text>
     </Box>
     {intake && <AlertIntake rules={rules} onClose={() => setIntake(false)} onIngested={result => {
       setIntake(false); setVersion(v => v + 1);

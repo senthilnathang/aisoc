@@ -93,3 +93,10 @@ Derived Memory is excluded from future matching when its source revision changes
 ## Memory → Hunt — November 2026
 
 Memory reuse now includes Hunt search runs. Usage shows separate hunt applications; registry investigation counts are unchanged. See [eligibility and immutable snapshots](MEMORY_HUNT_FLOW.md).
+
+
+## Shared Memory library tables — 2026-11-02
+
+Active Insights, Prevalence Suggestions and Audit Log use the shared records table, preserving filters and actions. Generated-context cards remain unchanged. Existing filtered API totals support pagination without backend/schema changes. See [component contract and browser checks](frontend/RECORDS_TABLE.md#memory-library-integration). Run `node scripts/framework/memory-records-table-browser.mjs` for local read-only API checks and intercepted workflow fixtures.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Memory records-table browser suite passed. All three table views passed desktop (1440px), mobile (390px) and keyboard-scroll checks. Active mobile, prevalence desktop and audit mobile screenshots were visually inspected. Existing workflow coverage passed for usage snapshots, edit conflicts, prevalence creation, generated-card provenance, archive confirmation and delayed modal completion. All domain writes were intercepted; demo data was unchanged. The existing bundle-size warning remains. Evidence: `output/playwright/memory-records-table/report.json`.

@@ -477,3 +477,45 @@ Added a bounded credential-phishing JSON scenario through Build, deterministic d
 ## Durable local Hunt execution — 2026-11-02
 
 Hunt searches can now run through the existing PostgreSQL job queue and Go investigation-worker, with persisted progress, cancellation, bounded automatic/explicit retries and expired-lease recovery. Completed evidence/Memory receipts and reviewed promotion remain atomic and replay-safe. The UI uses queued execution; synchronous search remains compatible. No live integrations or new service are enabled. See [contracts, limits, deployment and tests](DURABLE_HUNT_EXECUTION.md).
+
+
+## Shared records table — Detection Rules first
+
+`/detect/rules` now uses the controlled React/Chakra `RecordsTable` for rows, loading/error/empty states and server pagination. Page-owned filters, URL state, sorting and inspector actions are preserved. Other list pages remain unchanged. See [component contract and incremental migration guide](frontend/RECORDS_TABLE.md).
+
+Detection Routing is the second consumer: universal-policy pagination operates on the bounded ordered configuration; per-rule routes retain server paging. Preview/save guards, cross-page priority and version-checked route edits are preserved. The routing-table browser regression intercepts all writes and checks both tables on desktop/mobile.
+
+
+## Shared report table — 2026-11-02
+
+Threat Intel reports now use the shared `RecordsTable` at `/threat-intel` and `/hunt/threat-intelligence`, preserving filters, report metadata and actions. Server paging retains the 50-row default and adds page-size/first/last controls plus empty-page recovery. No backend contract or detail-page indicator behavior changes. See [component contract and browser checks](frontend/RECORDS_TABLE.md).
+
+
+## Shared Hunt registry table — 2026-11-02
+
+Hunt registry now uses the shared paginated table while preserving search, creation and detail actions. The Go list API adds a tenant-scoped filtered total via sqlc; no migration is required. See [table contract, rollout and verification](frontend/RECORDS_TABLE.md#hunt-registry-integration). Browser regression command: `node scripts/framework/hunt-records-table-browser.mjs`; writes use intercepted local fixtures.
+
+
+## Shared Skills library table — 2026-11-02
+
+Skills library now uses the shared records table with server pagination, preserving filters, published/draft counts, lifecycle badges, detail navigation, upload/create and guarded enablement. No API/schema changes are required. See [component contract and browser coverage](frontend/RECORDS_TABLE.md#skills-library-integration). Run `node scripts/framework/skills-records-table-browser.mjs` for local read-only API checks and intercepted workflow fixtures.
+
+
+## Shared Memory library tables — 2026-11-02
+
+Active Insights, Prevalence Suggestions and Audit Log use the shared records table, preserving filters and actions. Generated-context cards remain unchanged. Existing filtered API totals support pagination without backend/schema changes. See [component contract and browser checks](frontend/RECORDS_TABLE.md#memory-library-integration). Run `node scripts/framework/memory-records-table-browser.mjs` for local read-only API checks and intercepted workflow fixtures.
+
+
+## Shared Build catalog table — 2026-11-02
+
+Build's asset registry now uses the shared table, preserving kind/search filters, metadata inspection and links to owning workspaces. Local integration editors and lifecycle workflows remain unchanged. See [component contract and browser coverage](frontend/RECORDS_TABLE.md#build-catalog-integration). Run `node scripts/framework/build-records-table-browser.mjs`; real API checks are read-only and pagination uses fixtures.
+
+
+## Shared Investigations registry table — 2026-11-02
+
+Investigations and Received alerts use the shared table, preserving search, polling and intake/case actions. Pagination covers only the existing latest-100 snapshot; it does not query all historical records. See [component contract and browser checks](frontend/RECORDS_TABLE.md#investigations-registry-integration). Run `node scripts/framework/investigations-records-table-browser.mjs`; domain writes are intercepted.
+
+
+## Shared Respond registry tables — 2026-11-02
+
+Workflow and runbook registries use the shared table with client-side pagination of the existing saved library, preserving state/domain/search filters and all detail actions. No backend/schema or execution-policy changes are required. See [component contract and verification](frontend/RECORDS_TABLE.md#respond-workflow-and-runbook-registries). Run `node scripts/framework/respond-records-table-browser.mjs`; domain writes use intercepted local fixtures.

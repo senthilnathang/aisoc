@@ -1,0 +1,16 @@
+.records-view{min-width:0}
+.records-table-scroll{position:relative;overflow:auto;max-width:100%}
+.records-table-scroll:focus-visible{outline:2px solid #7367db;outline-offset:-2px}
+.records-table{width:100%;border-collapse:collapse;text-align:left;font-size:11px;min-width:680px}
+.records-table th{font-size:10px;font-weight:500;color:#6a737c;padding:13px 10px;border-bottom:1px solid #e8ebee;white-space:nowrap}
+.records-table td{padding:17px 10px;border-bottom:1px solid #f0f1f3;vertical-align:middle;overflow-wrap:anywhere}
+.records-table tbody tr:nth-child(even){background:#fafbfc}
+.records-table tbody tr.is-selected{background:#efeff7}
+.records-table small{display:block;color:#85909a;font-size:9px;margin-top:4px;overflow-wrap:anywhere}
+.records-table button{font-size:11px}
+.records-pagination{background:#172024;color:#e1e6e9}
+.records-pagination select{background:#26343b;color:white}
+.records-pagination option{color:#1b2731;background:white}
+.records-pagination button{color:white;border-color:#59646a;background:#26343b}
+.records-pagination button:hover:not(:disabled){background:#354a54}
+.records-pagination button:disabled{opacity:.6}

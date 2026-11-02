@@ -1,3 +1,4 @@
+import RecordsTable from "./components/RecordsTable";
 import { IntelJSONImport } from "./IntelHuntFlow";
 import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
@@ -76,6 +77,7 @@ export default function ThreatIntelWorkspace({ id, setView, hunting = false }) {
     [status, setStatus] = useState(""),
     [relevant, setRelevant] = useState(false),
     [offset, setOffset] = useState(0),
+    [limit, setLimit] = useState(50),
     [reload, setReload] = useState(0),
     [creating, setCreating] = useState(false),
     [importing, setImporting] = useState(false);
@@ -91,11 +93,13 @@ export default function ThreatIntelWorkspace({ id, setView, hunting = false }) {
             search,
             status,
             relevant,
-            limit: 50,
+            limit,
             offset,
           })
           .then((r) => {
-            if (active) setData(r);
+            if (!active) return;
+            if (offset > 0 && offset >= r.total) { setOffset(0); return; }
+            setData(r);
           })
           .catch((e) => {
             if (active) setError(e.message);
@@ -109,7 +113,7 @@ export default function ThreatIntelWorkspace({ id, setView, hunting = false }) {
       active = false;
       clearTimeout(timer);
     };
-  }, [id, search, status, relevant, offset, reload]);
+  }, [id, search, status, relevant, offset, limit, reload]);
   if (id) return <ReportDetail key={id} id={id} setView={setView} />;
   return (
     <Box px={{ base: "14px", md: "24px" }} pb="30px">
@@ -193,102 +197,23 @@ export default function ThreatIntelWorkspace({ id, setView, hunting = false }) {
         Relevance and report status are analyst assessments. Local hunt links do
         not imply live scanning or confirmed compromise.
       </Text>
-      {error ? (
-        <Alert status="error">
-          <AlertIcon />
-          {error}
-        </Alert>
-      ) : loading ? (
-        <Spinner />
-      ) : (
-        <Panel overflowX="auto">
-          <Table size="sm">
-            <Thead>
-              <Tr>
-                {[
-                  "Report",
-                  "Actor",
-                  "Targeted industry",
-                  "Targeted region",
-                  "Published",
-                  "Review / hunts",
-                ].map((h) => (
-                  <Th key={h} py="16px">
-                    {h}
-                  </Th>
-                ))}
-              </Tr>
-            </Thead>
-            <Tbody>
-              {data.items.map((r) => (
-                <Tr key={r.id}>
-                  <Td minW="260px">
-                    <Button
-                      variant="link"
-                      whiteSpace="normal"
-                      textAlign="left"
-                      color={ui.ink}
-                      onClick={() => setView("threatIntelDetail", r.id)}
-                    >
-                      {r.title}
-                    </Button>
-                    <Text color={ui.muted} fontSize="11px" mt="6px">
-                      {r.source} · {r.indicator_count_actual} stored IOCs
-                    </Text>
-                  </Td>
-                  <Td>{r.threat_actor || "—"}</Td>
-                  <Td>{r.targeted_industry || "—"}</Td>
-                  <Td>{r.targeted_region || "—"}</Td>
-                  <Td whiteSpace="nowrap">{time(r.published_at)}</Td>
-                  <Td>
-                    <Badge
-                      colorScheme={
-                        r.status === "actionable" ? "orange" : "gray"
-                      }
-                    >
-                      {r.status}
-                    </Badge>
-                    <Text mt="6px" fontSize="11px">
-                      {r.linked_hunts} linked local hunts
-                    </Text>
-                    {r.relevant && (
-                      <Badge mt="4px" variant="outline">
-                        Analyst-relevant
-                      </Badge>
-                    )}
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-          {!data.items.length && (
-            <Text p="30px" color={ui.muted}>
-              No reports match this filter. Ingest a report or adjust the
-              filters.
-            </Text>
-          )}
-          <Flex p="12px" bg="#f5f7fa" align="center" gap="10px">
-            <Text mr="auto" fontSize="12px">
-              {data.total ? offset + 1 : 0}–{offset + data.items.length} of{" "}
-              {data.total} reports
-            </Text>
-            <Button
-              size="sm"
-              isDisabled={!offset}
-              onClick={() => setOffset((n) => Math.max(0, n - 50))}
-            >
-              Previous
-            </Button>
-            <Button
-              size="sm"
-              isDisabled={offset + 50 >= data.total}
-              onClick={() => setOffset((n) => n + 50)}
-            >
-              Next
-            </Button>
-          </Flex>
-        </Panel>
-      )}
+      <Panel overflow="hidden">
+        <RecordsTable
+          caption="Threat intelligence reports" recordLabel="reports" pageSizeLabel="Reports per page"
+          records={data.items} total={data.total} offset={offset} limit={limit}
+          onPageChange={setOffset} onPageSizeChange={size=>{setLimit(size);setOffset(0);}}
+          loading={loading} loadingLabel="Loading intelligence reports…" error={error} onRetry={()=>setReload(n=>n+1)}
+          emptyContent="No reports match this filter. Ingest a report or adjust the filters."
+          columns={[
+            {id:'title',header:'Report',minWidth:260,render:r=><><Button variant="link" whiteSpace="normal" textAlign="left" color={ui.ink} onClick={()=>setView("threatIntelDetail",r.id)}>{r.title}</Button><small>{r.source} · {r.indicator_count_actual} stored IOCs</small></>},
+            {id:'threat_actor',header:'Actor',render:r=>r.threat_actor||'—'},
+            {id:'targeted_industry',header:'Targeted industry',render:r=>r.targeted_industry||'—'},
+            {id:'targeted_region',header:'Targeted region',render:r=>r.targeted_region||'—'},
+            {id:'published_at',header:'Published',render:r=><Text whiteSpace="nowrap">{time(r.published_at)}</Text>},
+            {id:'review',header:'Review / hunts',render:r=><><Badge colorScheme={r.status==='actionable'?'orange':'gray'}>{r.status}</Badge><Text mt="6px" fontSize="11px">{r.linked_hunts} linked local hunts</Text>{r.relevant&&<Badge mt="4px" variant="outline">Analyst-relevant</Badge>}</>},
+          ]}
+        />
+      </Panel>
       {creating && (
         <ReportEditor
           onClose={() => setCreating(false)}

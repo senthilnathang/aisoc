@@ -707,3 +707,59 @@ Run `aa47ada7f2d348bdae4a7d64bdea2ed0` passed all five release stages in **450.0
 The initial API attempt exposed a test request missing the required cancellation `attempts` field; that request and documentation were corrected. The subsequent browser run caught overflow from a full run ID in the button label; controls now show short labels with exact accessible names. Earlier failed/superseded runs remain failed. Independent review also identified and resolved a tenant-lock/audit deadlock risk and missing receipt refresh after terminal enqueue replay.
 
 Reports and screenshots: `output/release-gate/aa47ada7f2d348bdae4a7d64bdea2ed0/`. This is local/mock correctness and recovery evidence, not live-provider, distributed-scale or throughput certification.
+
+
+## Shared records table — Detection Rules first
+
+`/detect/rules` now uses the controlled React/Chakra `RecordsTable` for rows, loading/error/empty states and server pagination. Page-owned filters, URL state, sorting and inspector actions are preserved. Other list pages remain unchanged. See [component contract and incremental migration guide](frontend/RECORDS_TABLE.md).
+
+Detection Routing is the second consumer: universal-policy pagination operates on the bounded ordered configuration; per-rule routes retain server paging. Preview/save guards, cross-page priority and version-checked route edits are preserved. The routing-table browser regression intercepts all writes and checks both tables on desktop/mobile.
+
+
+## Shared report table — 2026-11-02
+
+Threat Intel reports now use the shared `RecordsTable` at `/threat-intel` and `/hunt/threat-intelligence`, preserving filters, report metadata and actions. Server paging retains the 50-row default and adds page-size/first/last controls plus empty-page recovery. No backend contract or detail-page indicator behavior changes. See [component contract and browser checks](frontend/RECORDS_TABLE.md).
+
+Verified on 2026-11-02: `node scripts/framework/threat-reports-table-browser.mjs`, both earlier table browser suites, frontend lint/build and all 17 frontend regression test files passed. Threat Intel checks include real read-only Go API/tenant checks and intercepted mutation workflows; no demo records were changed. Results: `output/threat-reports-table/report.json`. Desktop/mobile report screenshots were visually inspected.
+
+
+## Shared Hunt registry table — 2026-11-02
+
+Hunt registry now uses the shared paginated table while preserving search, creation and detail actions. The Go list API adds a tenant-scoped filtered total via sqlc; no migration is required. See [table contract, rollout and verification](frontend/RECORDS_TABLE.md#hunt-registry-integration). Browser regression command: `node scripts/framework/hunt-records-table-browser.mjs`; writes use intercepted local fixtures.
+
+Validation on 2026-11-02: frontend lint/build and all 17 frontend regression files passed; Hunt and HTTP tests passed with the race detector against disposable PostgreSQL, including filtered totals, pagination, empty pages and tenant isolation. Go vet and sqlc diff passed. The local Hunt browser suite passed with all mutations intercepted; demo records were not changed. The existing bundle-size warning remains.
+
+
+## Shared Skills library table — 2026-11-02
+
+Skills library now uses the shared records table with server pagination, preserving filters, published/draft counts, lifecycle badges, detail navigation, upload/create and guarded enablement. No API/schema changes are required. See [component contract and browser coverage](frontend/RECORDS_TABLE.md#skills-library-integration). Run `node scripts/framework/skills-records-table-browser.mjs` for local read-only API checks and intercepted workflow fixtures.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Skills records-table browser suite passed. Desktop (1440px) and mobile (390px) screenshots were visually inspected. The existing workflow fixture was updated from the obsolete Publish button to saved-draft approval by a separate mock approver; self-approval remains disabled. Browser writes were intercepted and demo data was not changed. The pre-existing bundle-size warning remains. Evidence: `output/playwright/skills-records-table/report.json`.
+
+
+## Shared Memory library tables — 2026-11-02
+
+Active Insights, Prevalence Suggestions and Audit Log use the shared records table, preserving filters and actions. Generated-context cards remain unchanged. Existing filtered API totals support pagination without backend/schema changes. See [component contract and browser checks](frontend/RECORDS_TABLE.md#memory-library-integration). Run `node scripts/framework/memory-records-table-browser.mjs` for local read-only API checks and intercepted workflow fixtures.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Memory records-table browser suite passed. All three table views passed desktop (1440px), mobile (390px) and keyboard-scroll checks. Active mobile, prevalence desktop and audit mobile screenshots were visually inspected. Existing workflow coverage passed for usage snapshots, edit conflicts, prevalence creation, generated-card provenance, archive confirmation and delayed modal completion. All domain writes were intercepted; demo data was unchanged. The existing bundle-size warning remains. Evidence: `output/playwright/memory-records-table/report.json`.
+
+
+## Shared Build catalog table — 2026-11-02
+
+Build's asset registry now uses the shared table, preserving kind/search filters, metadata inspection and links to owning workspaces. Local integration editors and lifecycle workflows remain unchanged. See [component contract and browser coverage](frontend/RECORDS_TABLE.md#build-catalog-integration). Run `node scripts/framework/build-records-table-browser.mjs`; real API checks are read-only and pagination uses fixtures.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Build records-table browser suite passed. Desktop (1440px) and mobile (390px) screenshots were visually inspected. Coverage includes real read-only API totals/tenant isolation, duplicate IDs across asset kinds, filters, inspector, manager navigation, stale-response rejection, empty-page recovery and error/retry/loading. Integration lifecycle mutations were not rerun for this catalog-only change. No demo data was changed. The existing bundle-size warning remains. Evidence: `output/playwright/build-records-table/report.json`.
+
+
+## Shared Investigations registry table — 2026-11-02
+
+Investigations and Received alerts use the shared table, preserving search, polling and intake/case actions. Pagination covers only the existing latest-100 snapshot; it does not query all historical records. See [component contract and browser checks](frontend/RECORDS_TABLE.md#investigations-registry-integration). Run `node scripts/framework/investigations-records-table-browser.mjs`; domain writes are intercepted.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, final production build and the Investigations records-table browser suite passed. Both tabs passed desktop/mobile and keyboard access checks. Investigations mobile and Received alerts desktop screenshots were visually inspected. Mock intake, linked/unlinked alert actions, polling-driven empty-page recovery, stale-row warnings and initial-error retry passed. Real API checks were read-only; alert submission was intercepted, so demo data was unchanged. The existing bundle-size warning remains. Evidence: `output/playwright/investigations-records-table/report.json`.
+
+
+## Shared Respond registry tables — 2026-11-02
+
+Workflow and runbook registries use the shared table with client-side pagination of the existing saved library, preserving state/domain/search filters and all detail actions. No backend/schema or execution-policy changes are required. See [component contract and verification](frontend/RECORDS_TABLE.md#respond-workflow-and-runbook-registries). Run `node scripts/framework/respond-records-table-browser.mjs`; domain writes use intercepted local fixtures.
+
+Validation on 2026-11-02: frontend lint, all 17 frontend regression files, production build and the Respond records-table browser suite passed. Both registries passed desktop (1440px), mobile (390px) and keyboard-scroll checks; workflow mobile and runbook desktop screenshots were visually inspected. Existing dry-preview isolation, policy version checks and runbook JSON import regression passed. All domain mutations were intercepted; no demo data or provider actions changed. The pre-existing bundle-size warning remains. Evidence: `output/playwright/respond-records-table/report.json`.

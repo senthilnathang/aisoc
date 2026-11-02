@@ -1,24 +1,25 @@
+import RecordsTable from "./components/RecordsTable";
 import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
-import { Badge, Box, Button, Flex, Heading, HStack, Input, Select, Stack, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from "@chakra-ui/react";
+import { Badge, Box, Button, Flex, Heading, HStack, Input, Select, Stack, Switch, Text } from "@chakra-ui/react";
 import { api } from "./api";
 import { ui } from "./theme";
 
 export default function SkillsRegistry({ setView }) {
-  const [search, setSearch] = useState(""), [state, setState] = useState(""), [module, setModule] = useState(""), [origin, setOrigin] = useState("custom"), [offset, setOffset] = useState(0);
-  const [data, setData] = useState(null), [error, setError] = useState(""), [loading, setLoading] = useState(true), [revision, refresh] = useState(0), [pending, setPending] = useState(""), [help, setHelp] = useState(false);
+  const [search, setSearch] = useState(""), [state, setState] = useState(""), [module, setModule] = useState(""), [origin, setOrigin] = useState("custom"), [offset, setOffset] = useState(0), [limit, setLimit] = useState(25);
+  const [data, setData] = useState(null), [error, setError] = useState(""), [actionError, setActionError] = useState(""), [loading, setLoading] = useState(true), [revision, refresh] = useState(0), [pending, setPending] = useState(""), [help, setHelp] = useState(false);
   const active = useRef(false), upload = useRef(null);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   useEffect(() => {
     let current = true; setLoading(true); setError("");
-    api.list("skills/library", { search, state: state || undefined, module: module || undefined, origin, limit: 25, offset }).then(result => { if (current) setData(result); }).catch(e => { if (current) { setError(e.message); setData(null); } }).finally(() => { if (current) setLoading(false); });
+    api.list("skills/library", { search, state: state || undefined, module: module || undefined, origin, limit, offset }).then(result => { if (current) { setData(result); if (offset > 0 && offset >= result.total) setOffset(0); } }).catch(e => { if (current) { setError(e.message); setData(null); } }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [search, state, module, origin, offset, revision]);
+  }, [search, state, module, origin, offset, limit, revision]);
   const filter = setter => value => { setter(value); setOffset(0); };
   const toggle = async skill => {
-    setPending(skill.id); setError("");
+    setPending(skill.id); setActionError("");
     try { await api.request(`/skills/${encodeURIComponent(skill.id)}/enabled`, { method: "PUT", body: { expected_version: skill.version, enabled: !skill.enabled } }); if (active.current) refresh(x => x + 1); }
-    catch (e) { if (active.current) setError(e.message); }
+    catch (e) { if (active.current) setActionError(e.message); }
     finally { if (active.current) setPending(""); }
   };
   const importFile = async e => {
@@ -29,7 +30,7 @@ export default function SkillsRegistry({ setView }) {
       if (!content.trim()) throw new Error("The skill file is empty.");
       const draft = { name: file.name.replace(/\.[^.]+$/, "").slice(0,200), content_markdown: content };
       if (active.current) { sessionStorage.setItem("aisoc-skill-template", JSON.stringify(draft)); setView("skillCreate"); }
-    } catch (e) { setError(e.message); }
+    } catch (e) { setActionError(e.message); }
   };
   const items = data?.items || [];
   return <Box p={{ base: "12px", md: "24px" }} className="skills-page skills-library">
@@ -45,10 +46,24 @@ export default function SkillsRegistry({ setView }) {
       <HStack ml={{ md: "auto" }}><input ref={upload} type="file" accept=".md,.markdown,.txt" aria-label="Upload skill file" hidden onChange={importFile} /><Button variant="outline" onClick={() => upload.current.click()}>Upload skill</Button><Button bg={ui.ink} color="white" _hover={{ bg: "#30343b" }} onClick={() => setView("skillCreate")}>＋ Create skill</Button></HStack>
     </Flex>
     {help && <Box bg="white" border="1px solid" borderColor={ui.line} p="16px" mb="16px"><Text fontWeight="600">Guidance for your analysts</Text><Text mt="6px">Save instructions, references and relevance rules. Published, enabled skills can match cases and hunts; matched guidance is recorded for analyst review. It does not run response actions. Upload imports a text draft for review before saving.</Text><Text mt="6px">Augmented skills come from reviewed environment patterns. Review suggestions to create a draft.</Text><Button mt="8px" variant="outline" onClick={() => setView("skillSuggestions")}>Review environment suggestions</Button></Box>}
-    {error && <Box role="alert" p="12px" mb="12px" bg="red.50" color="red.700">{error} <Button size="xs" onClick={() => refresh(x => x + 1)}>Reload library</Button></Box>}
+    {actionError && <Box role="alert" p="12px" mb="12px" bg="red.50" color="red.700">{actionError} <Button size="xs" onClick={() => { setActionError(""); refresh(x => x + 1); }}>Reload library</Button></Box>}
     <Box bg="white" border="1px solid" borderColor={ui.line} borderRadius="6px" overflow="hidden">
-      {loading ? <Text p="24px">Loading skills…</Text> : !error && !items.length ? <Stack p="36px" align="center"><Text fontWeight="600">No skills match this view</Text><Text color={ui.muted}>{origin === "augmented" ? "Review environment suggestions to create an augmented draft." : "Create a skill, upload instructions, or start from a template."}</Text><Button variant="outline" onClick={() => setView(origin === "augmented" ? "skillSuggestions" : "skillTemplates")}>{origin === "augmented" ? "Review suggestions" : "Browse templates"}</Button></Stack> : <TableContainer><Table size="sm"><Thead><Tr>{["Name","Type","Module","State","Last updated"].map(x => <Th key={x} py="16px">{x}</Th>)}</Tr></Thead><Tbody>{items.map(s => <Tr key={s.id} _hover={{ bg: ui.soft }}><Td py="18px" maxW="420px" whiteSpace="normal"><Button variant="link" color={ui.ink} textAlign="left" whiteSpace="normal" onClick={() => setView("skillDetail",s.id)}>{s.name}</Button><Text fontSize="11px" color={ui.muted} mt="4px">{s.origin === "environment_generated" ? "From reviewed cases" : s.origin === "user" ? s.created_by : "Built-in guidance"}</Text>{s.learning_archived?<Badge mt="6px">Archived</Badge>:s.learning_current===false?<Badge mt="6px" colorScheme="orange">Source review required</Badge>:null}{s.staged_edit&&<Badge mt="6px" ml="6px" colorScheme="blue">Staged edits</Badge>}</Td><Td><Badge>{s.skill_type}</Badge></Td><Td><Flex gap="4px" wrap="wrap" maxW="260px">{(s.modules?.length ? s.modules : ["All modules"]).map(m => <Badge key={m}>{m.replaceAll("_"," ")}</Badge>)}</Flex></Td><Td>{s.state === "draft" ? <><Badge colorScheme="blue">Draft</Badge><Text fontSize="10px" color={ui.muted}>Publish to enable</Text></> : <HStack><Switch aria-label={`Enable ${s.name}`} colorScheme="green" isChecked={s.enabled} isDisabled={Boolean(pending) || s.learning_archived || s.learning_current === false} onChange={() => toggle(s)} /><Text fontSize="11px">{s.enabled ? "On" : "Off"}</Text></HStack>}</Td><Td>{new Date(s.updated_at).toLocaleDateString()}</Td></Tr>)}</Tbody></Table></TableContainer>}
-      <Flex p="12px" bg={ui.soft} justify="space-between" align="center" gap="8px" wrap="wrap"><Text fontSize="12px">{data ? `${data.total} skills · ${data.published} published · ${data.drafts} drafts in this view` : "—"}</Text><HStack><Button size="sm" variant="outline" isDisabled={loading || offset === 0} onClick={() => setOffset(Math.max(0,offset-25))}>Previous</Button><Text fontSize="12px">Page {Math.floor(offset/25)+1}</Text><Button size="sm" variant="outline" isDisabled={loading || !data || offset+25 >= data.total} onClick={() => setOffset(offset+25)}>Next</Button></HStack></Flex>
+      <RecordsTable
+        caption="Skills library" recordLabel="skills" pageSizeLabel="Skills per page"
+        records={items} total={data?.total || 0} offset={offset} limit={limit}
+        onPageChange={setOffset} onPageSizeChange={filter(setLimit)}
+        loading={loading} loadingLabel="Loading skills…" error={error}
+        onRetry={() => refresh(x => x + 1)} paginationDisabled={Boolean(pending)}
+        emptyContent={<Stack align="center"><Text fontWeight="600">No skills match this view</Text><Text color={ui.muted}>{origin === "augmented" ? "Review environment suggestions to create an augmented draft." : "Create a skill, upload instructions, or start from a template."}</Text><Button variant="outline" onClick={() => setView(origin === "augmented" ? "skillSuggestions" : "skillTemplates")}>{origin === "augmented" ? "Review suggestions" : "Browse templates"}</Button></Stack>}
+        columns={[
+          { id: "name", header: "Name", minWidth: "240px", render: s => <><Button variant="link" color={ui.ink} textAlign="left" whiteSpace="normal" onClick={() => setView("skillDetail",s.id)}>{s.name}</Button><Text fontSize="11px" color={ui.muted} mt="4px">{s.origin === "environment_generated" ? "From reviewed cases" : s.origin === "user" ? s.created_by : "Built-in guidance"}</Text>{s.learning_archived?<Badge mt="6px">Archived</Badge>:s.learning_current===false?<Badge mt="6px" colorScheme="orange">Source review required</Badge>:null}{s.staged_edit&&<Badge mt="6px" ml="6px" colorScheme="blue">Staged edits</Badge>}</> },
+          { id: "skill_type", header: "Type", render: s => <><Badge>{s.skill_type}</Badge></> },
+          { id: "modules", header: "Module", render: s => <><Flex gap="4px" wrap="wrap" maxW="260px">{(s.modules?.length ? s.modules : ["All modules"]).map(m => <Badge key={m}>{m.replaceAll("_"," ")}</Badge>)}</Flex></> },
+          { id: "state", header: "State", render: s => <>{s.state === "draft" ? <><Badge colorScheme="blue">Draft</Badge><Text fontSize="10px" color={ui.muted}>Publish to enable</Text></> : <HStack><Switch aria-label={`Enable ${s.name}`} colorScheme="green" isChecked={s.enabled} isDisabled={Boolean(pending) || s.learning_archived || s.learning_current === false} onChange={() => toggle(s)} /><Text fontSize="11px">{s.enabled ? "On" : "Off"}</Text></HStack>}</> },
+          { id: "updated_at", header: "Last updated", render: s => <>{new Date(s.updated_at).toLocaleDateString()}</> }
+        ]}
+      />
+      {!loading && data && !error && <Text p="12px" fontSize="12px">{`${data.total} skills · ${data.published} published · ${data.drafts} drafts in this view`}</Text>}
     </Box>
   </Box>;
 }

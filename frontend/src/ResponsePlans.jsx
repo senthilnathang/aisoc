@@ -1,3 +1,4 @@
+import RecordsTable from "./components/RecordsTable";
 import WorkspaceHeader from "./WorkspaceHeader";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -25,12 +26,6 @@ import {
   Stack,
   Text,
   Textarea,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
 } from "@chakra-ui/react";
 import { api } from "./api";
 import WorkflowCanvas from "./WorkflowCanvas";
@@ -125,6 +120,7 @@ function History({ items }) {
 }
 export default function ResponsePlans({ kind, setView }) {
   const importInput = useRef(null);
+  const [offset, setOffset] = useState(0), [limit, setLimit] = useState(25);
   const [items, setItems] = useState([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
@@ -300,6 +296,7 @@ export default function ResponsePlans({ kind, setView }) {
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
   );
+  useEffect(() => { if (offset > 0 && offset >= visible.length) setOffset(0); }, [offset, visible.length]);
   return (
     <Box className="page-enter" px={{ base: "14px", md: "24px" }} pb="32px">
       <WorkspaceHeader justify="space-between" gap="16px" wrap="wrap" mb="24px">
@@ -363,14 +360,14 @@ export default function ResponsePlans({ kind, setView }) {
           bg="white"
           placeholder="Search titles, steps, or triggers…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setOffset(0); }}
         />
         <Select
           aria-label="Filter by state"
           maxW="170px"
           bg="white"
           value={state}
-          onChange={(e) => setState(e.target.value)}
+          onChange={(e) => { setState(e.target.value); setOffset(0); }}
         >
           <option value="active">Active</option>
           <option value="archived">Archived</option>
@@ -381,7 +378,7 @@ export default function ResponsePlans({ kind, setView }) {
           maxW="190px"
           bg="white"
           value={domain}
-          onChange={(e) => setDomain(e.target.value)}
+          onChange={(e) => { setDomain(e.target.value); setOffset(0); }}
         >
           <option value="all">All domains</option>
           {[
@@ -398,68 +395,25 @@ export default function ResponsePlans({ kind, setView }) {
           Refresh
         </Button>
       </Flex>
-      {error && (
-        <Alert status="error" mb="16px">
-          <AlertIcon />
-          {error}
-          <Button ml="auto" onClick={load}>
-            Retry
-          </Button>
-        </Alert>
-      )}
-      {loading ? (
-        <Spinner />
-      ) : (
-        !error && (
-          <>
-            <Text mb="12px" fontSize="11px" color={ui.muted}>
-              {visible.length} {visible.length === 1 ? noun : noun + "s"}
-            </Text>
-            <Box
-              bg="white"
-              border="1px solid"
-              borderColor={ui.line}
-              borderRadius="8px"
-              overflowX="auto"
-            >
-              <Table size="sm">
-                <Thead bg="#f5f7f9">
-                  <Tr>
-                    {[
-                      "Name",
-                      "Description",
-                      "Domain",
-                      "Created",
-                      "Last modified",
-                      "Status",
-                      "",
-                    ].map((h) => (
-                      <Th key={h} py="16px">
-                        {h}
-                      </Th>
-                    ))}
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {visible.map((plan) => (
-                    <Tr key={plan.id}>
-                      <Td minW="220px">
+      <Box bg="white" border="1px solid" borderColor={ui.line} borderRadius="8px" overflow="hidden">
+        <RecordsTable caption={kind === "workflow" ? "Response workflows" : "Response runbooks"}
+          records={visible.slice(offset, offset + limit)} total={visible.length} offset={offset} limit={limit}
+          recordLabel={noun + "s"} pageSizeLabel="Response plans per page" onPageChange={setOffset}
+          onPageSizeChange={size => { setLimit(size); setOffset(0); }}
+          loading={loading} loadingLabel="Loading response plans…" error={error} onRetry={load} paginationDisabled={busy}
+          emptyContent={<Box textAlign="center"><Heading size="sm">No matching {noun}s</Heading><Text color={ui.muted} mt="8px">Create a {noun} or adjust the filters.</Text><Button mt="14px" variant="outline" onClick={() => { setQuery(""); setState("all"); setDomain("all"); setOffset(0); }}>Clear filters</Button></Box>}
+          columns={[{id:"column0",header:"Name",minWidth:"220px",render:plan=><>
                         <Text fontWeight="600">{plan.title}</Text>
                         <Text color={ui.muted} fontSize="11px" mt="6px">
                           {plan.steps.length} steps · v{plan.version}
                         </Text>
-                      </Td>
-                      <Td maxW="360px" minW="200px">
+                      </>},{id:"column1",header:"Description",minWidth:"220px",render:plan=><>
                         <Text noOfLines={2} color={ui.muted}>
                           {plan.description || "No description added."}
                         </Text>
-                      </Td>
-                      <Td>
+                      </>},{id:"column2",header:"Domain",render:plan=><>
                         <Badge>{plan.domain}</Badge>
-                      </Td>
-                      <Td whiteSpace="nowrap">{formatTime(plan.created_at)}</Td>
-                      <Td whiteSpace="nowrap">{formatTime(plan.updated_at)}</Td>
-                      <Td>
+                      </>},{id:"column3",header:"Created",render:plan=><>{formatTime(plan.created_at)}</>},{id:"column4",header:"Last modified",render:plan=><>{formatTime(plan.updated_at)}</>},{id:"column5",header:"Status",render:plan=><>
                         <Badge
                           colorScheme={
                             plan.state === "active" ? "green" : "gray"
@@ -467,39 +421,13 @@ export default function ResponsePlans({ kind, setView }) {
                         >
                           {plan.state}
                         </Badge>
-                      </Td>
-                      <Td>
+                      </>},{id:"column6",header:"Actions",render:plan=><>
                         <Button variant="outline" onClick={() => open(plan)}>
                           Open {noun} →
                         </Button>
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
-            {!visible.length && (
-              <Panel textAlign="center">
-                <Heading size="sm">No matching {noun}s</Heading>
-                <Text color={ui.muted} mt="8px">
-                  Create a {noun} or adjust the filters.
-                </Text>
-                <Button
-                  mt="14px"
-                  variant="outline"
-                  onClick={() => {
-                    setQuery("");
-                    setState("all");
-                    setDomain("all");
-                  }}
-                >
-                  Clear filters
-                </Button>
-              </Panel>
-            )}
-          </>
-        )
-      )}
+                      </>}]}
+        />
+      </Box>
       <Text mt="20px" color={ui.muted} fontSize="11px">
         {kind === "workflow"
           ? "Workflow definitions are saved and versioned. Triggers and steps do not execute provider actions."

@@ -16,8 +16,8 @@ func registerHunts(mux *http.ServeMux, pool *pgxpool.Pool) {
 		if err != nil {
 			return nil, 0, err
 		}
-		items, err := store.List(r.Context(), auth.From(r.Context()).Tenant, o.Search, o.Status, o.Limit, o.Offset)
-		return map[string]any{"items": items}, 200, err
+		result, err := store.Registry(r.Context(), auth.From(r.Context()).Tenant, o.Search, o.Status, o.Limit, o.Offset)
+		return result, 200, err
 	}))
 	mux.HandleFunc("GET /api/v1/hunts/{id}", respond(func(r *http.Request) (any, int, error) {
 		item, err := store.Detail(r.Context(), auth.From(r.Context()).Tenant, r.PathValue("id"))
